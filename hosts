@@ -1,0 +1,2 @@
+[demoserver]
+stigging-sandbox ansible_host=192.168.122.254
