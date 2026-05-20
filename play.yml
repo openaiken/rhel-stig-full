@@ -1,6 +1,6 @@
 ---
 - name: Configure RHEL 9 Host with DISA STIG
-  hosts: "{{ my_host | default('stigging-server') }}"
+  hosts: "{{ my_host | default('stigging-sandbox') }}"
   become: true
   # DO NOT set ignore_task_failures to "yes" unless you're using Check mode. only set it on the CLI when using -C!
   ignore_errors: "{{ ignore_task_failures | default('no') | bool }}"
