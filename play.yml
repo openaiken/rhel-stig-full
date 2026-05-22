@@ -8,9 +8,6 @@
 #    administrator_security_groups:
 #      - wheel
 #      - openaiken_owners
-  collections:
-    - community.general
-
   tasks:
     - name: RHEL 9 STIG
       include_role:
