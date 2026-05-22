@@ -1,0 +1,10 @@
+---
+- name: Generate CKLB checklist from scan results
+  hosts: "{{ my_host | default('stigging-sandbox') }}"
+  gather_facts: true
+  become: false
+
+  tasks:
+    - name: build CKLB
+      include_role:
+        name: cklb_renderer
