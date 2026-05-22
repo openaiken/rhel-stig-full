@@ -91,6 +91,8 @@ class CallbackModule(CallbackBase):
         endtime = strftime("%Y-%m-%dT%H:%M:%S", gmtime())
         for host in stats.processed:
             host_rules = self.rules.get(host, {})
+            if not host_rules:
+                continue
             tr = ET.Element("{http://checklists.nist.gov/xccdf/1.2}TestResult")
             tr.set(
                 "id",
