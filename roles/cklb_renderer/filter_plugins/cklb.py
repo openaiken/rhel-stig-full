@@ -36,19 +36,45 @@ def _latest(paths):
     return max(paths, key=_filename_datetime)
 
 
+_BENCH_PREFIX = 'xccdf_mil.disa.stig_testresult_scap_mil.disa_comp_'
+
+_XCCDF_COMMENTS = (
+    "Result extracted from the official DISA Ansible role and inserted "
+    "into this checklist automatically."
+)
+
+
 def _parse_xccdf(path):
-    """Returns {rule_id: cklb_status} from an XCCDF results file."""
-    accumulator = {}
+    """Returns {rule_id: {status, finding_details, comments}} from an XCCDF results file."""
     root = ET.parse(path).getroot()
+
+    bench_el = root.find(f'{{{XCCDF_NS}}}benchmark')
+    bench_href = bench_el.get('href', '') if bench_el is not None else ''
+    benchmark = bench_href.removeprefix(_BENCH_PREFIX) or bench_href
+    end_time = root.get('end-time', '')
+
+    rules = {}
     for rr in root.findall(f'{{{XCCDF_NS}}}rule-result'):
         idref = rr.get('idref', '')
         m = re.search(r'SV-\d+r\d+', idref)
         if not m:
             continue
         result_el = rr.find(f'{{{XCCDF_NS}}}result')
-        if result_el is not None:
-            accumulator[m.group(0)] = _XCCDF_TO_CKLB.get(result_el.text, 'not_reviewed')
-    return accumulator
+        if result_el is None:
+            continue
+        raw = result_el.text or ''
+        rule_id = m.group(0)
+        rules[rule_id] = {
+            'status': _XCCDF_TO_CKLB.get(raw, 'not_reviewed'),
+            'finding_details': (
+                f"Benchmark: {benchmark}\n"
+                f"Scan completed: {end_time}\n"
+                f"Result: {raw}"
+            ),
+            'comments': _XCCDF_COMMENTS,
+        }
+
+    return rules
 
 
 def cklb_render(template_json, hostname, xccdf_paths, supp_paths, fqdn='', ip_address=''):
@@ -86,7 +112,10 @@ def cklb_render(template_json, hostname, xccdf_paths, supp_paths, fqdn='', ip_ad
                 rule['finding_details'] = entry.get('finding_details', '')
                 rule['comments'] = entry.get('comments', '')
             elif rule_id in xccdf_accum:
-                rule['status'] = xccdf_accum[rule_id]
+                entry = xccdf_accum[rule_id]
+                rule['status'] = entry['status']
+                rule['finding_details'] = entry['finding_details']
+                rule['comments'] = entry['comments']
 
     return cklb
 
