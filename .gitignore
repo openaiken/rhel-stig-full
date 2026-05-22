@@ -1,0 +1,23 @@
+# reports
+reports/
+
+# python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# ansible
+*.retry
+.vault_pass
+vault_pass.txt
+
+# editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# os
+.DS_Store
