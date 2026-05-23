@@ -1,0 +1,26 @@
+---
+# Must match supp_facts_dir in roles/cklb_renderer/defaults/main.yml
+supp_facts_dir: "{{ playbook_dir }}/reports/supp-facts"
+
+# End-of-support dates per RHEL 9 minor version (security patch cutoff).
+# Uses the most generous applicable date (EUS/Enhanced EUS where available).
+# Versions not listed here are assumed current and still supported.
+# Update as Red Hat publishes lifecycle changes.
+# Ref: https://access.redhat.com/support/policy/updates/errata
+#
+#   9.0 - EUS ended 2024-05-31
+#   9.1 - standard only (odd); ended ~6mo after 9.2 GA (May 2023)
+#   9.2 - EUS ended 2025-05-31
+#   9.3 - standard only (odd); ended ~6mo after 9.4 GA (Apr 2024)
+#   9.4 - Enhanced EUS until 2028-04-30
+#   9.5 - standard only (odd); ended ~6mo after 9.6 GA (May 2025)
+#   9.6 - EUS until 2027-05-20 (2yr from GA)
+#   9.7+ - no entry; assumed current
+rhel9_eol_dates:
+  "9.0": "2024-05-31"
+  "9.1": "2023-11-30"
+  "9.2": "2025-05-31"
+  "9.3": "2024-10-31"
+  "9.4": "2028-04-30"
+  "9.5": "2025-11-30"
+  "9.6": "2027-05-20"
