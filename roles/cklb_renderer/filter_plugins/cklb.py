@@ -105,9 +105,10 @@ def cklb_render(template_json, hostname, xccdf_paths, supp_paths, fqdn='', ip_ad
 
     for stig in cklb['stigs']:
         for rule in stig['rules']:
-            rule_id = rule['rule_id']
-            if rule_id in supp_accum:
-                entry = supp_accum[rule_id]
+            stig_id = rule['rule_version']  # RHEL-09-211010 — primary identifier
+            rule_id = rule['rule_id']       # SV-257777r1155676 — used by XCCDF results
+            if stig_id in supp_accum:
+                entry = supp_accum[stig_id]
                 rule['status'] = entry.get('status', 'not_reviewed')
                 rule['finding_details'] = entry.get('finding_details', '')
                 rule['comments'] = entry.get('comments', '')
