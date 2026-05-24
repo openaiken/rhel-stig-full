@@ -2,8 +2,10 @@
 """
 Parse the DISA XCCDF benchmark XML and emit files/rules.json keyed by STIG ID.
 
-Also cross-references roles/rhel9STIG/tasks/main.yml to mark which rules
-are covered by the formal DISA Ansible role (formal_role_covered field).
+Also cross-references the latest XCCDF results file in reports/ to mark which
+rules are actually covered by the formal DISA Ansible role callback
+(formal_role_covered field). This is the ground truth — only rules the callback
+emitted a result for are considered covered.
 
 Usage:
     python3 scripts/parse_xccdf_benchmark.py
@@ -11,7 +13,7 @@ Usage:
 Output:
     files/rules.json — one entry per rule, keyed by STIG ID (RHEL-09-XXXXXX)
 
-Re-run this script if DISA releases a new benchmark version or the formal role changes.
+Re-run after a new formal role scan or if DISA releases a new benchmark version.
 """
 
 import json
@@ -24,7 +26,8 @@ XCCDF_NS = "http://checklists.nist.gov/xccdf/1.1"
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 XCCDF_PATH = os.path.join(REPO_ROOT, "roles", "rhel9STIG", "files",
                            "U_RHEL_9_STIG_V2R8_Manual-xccdf.xml")
-FORMAL_ROLE_TASKS = os.path.join(REPO_ROOT, "roles", "rhel9STIG", "tasks", "main.yml")
+REPORTS_DIR = os.path.join(REPO_ROOT, "reports")
+XCCDF_RESULTS_NS = "http://checklists.nist.gov/xccdf/1.2"
 OUTPUT_PATH = os.path.join(REPO_ROOT, "files", "rules.json")
 
 
@@ -50,11 +53,25 @@ def parse_rule_id(raw_id):
     return raw_id.removesuffix("_rule")
 
 
-def get_formal_role_covered(tasks_path):
-    """Return set of group ID numbers (e.g. '257779') covered by the formal role."""
-    with open(tasks_path, "r") as f:
-        content = f.read()
-    return set(re.findall(r"stigrule_(\d+)", content))
+def get_formal_role_covered(reports_dir):
+    """Return set of group ID numbers recorded in the latest XCCDF results file."""
+    candidates = [
+        os.path.join(reports_dir, f)
+        for f in os.listdir(reports_dir)
+        if f.endswith("-xccdf-results.xml")
+    ]
+    if not candidates:
+        print("WARNING: no XCCDF results files found in reports/ — formal_role_covered will be False for all rules")
+        return set()
+    latest = max(candidates, key=os.path.basename)
+    print(f"Results:  {latest}")
+    root = ET.parse(latest).getroot()
+    covered = set()
+    for rr in root.findall(f"{{{XCCDF_RESULTS_NS}}}rule-result"):
+        m = re.search(r"SV-(\d+)r\d+", rr.get("idref", ""))
+        if m:
+            covered.add(m.group(1))
+    return covered
 
 
 def parse_benchmark(xccdf_path):
@@ -121,10 +138,8 @@ def main():
     rules = parse_benchmark(XCCDF_PATH)
     print(f"Extracted {len(rules)} rules")
 
-    print(f"Checking: {FORMAL_ROLE_TASKS}")
-    covered_numbers = get_formal_role_covered(FORMAL_ROLE_TASKS)
+    covered_numbers = get_formal_role_covered(REPORTS_DIR)
     for rule in rules.values():
-        # group_id is V-257777; the number is what stigrule_NNNNNN uses
         num = rule["group_id"].lstrip("V-")
         rule["formal_role_covered"] = num in covered_numbers
 
