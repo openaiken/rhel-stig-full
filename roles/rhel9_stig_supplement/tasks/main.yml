@@ -13,6 +13,7 @@
 
 - import_tasks: RHEL-09-211010.yml
   tags: [RHEL-09-211010]
+  when: supp_rules['RHEL-09-211010'] | default(true) | bool
 
 - name: write supplement facts to disk
   copy:
