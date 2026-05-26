@@ -8,3 +8,4 @@
     - name: build CKLB
       include_role:
         name: cklb_renderer
+      tags: [validate]
