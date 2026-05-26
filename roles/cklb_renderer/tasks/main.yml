@@ -4,6 +4,7 @@
     cklb_run_ts: "{{ '%y%b%d-%H:%M' | strftime }}"
   run_once: true
   delegate_to: localhost
+  tags: [validate]
 
 - name: find XCCDF results for host
   find:
@@ -11,6 +12,7 @@
     patterns: "*-{{ inventory_hostname }}-xccdf-results.xml"
   register: xccdf_files
   delegate_to: localhost
+  tags: [validate]
 
 - name: find supplement facts for host
   find:
@@ -18,6 +20,7 @@
     patterns: "*-{{ inventory_hostname }}.json"
   register: supp_files
   delegate_to: localhost
+  tags: [validate]
 
 - name: slurp CKLB template
   slurp:
@@ -25,6 +28,7 @@
   register: cklb_template_raw
   delegate_to: localhost
   run_once: true
+  tags: [validate]
 
 - name: render and write CKLB
   copy:
@@ -37,3 +41,4 @@
       ) | to_nice_json(indent=2) }}"
     dest: "{{ cklb_output_dir }}/{{ cklb_run_ts }}-{{ inventory_hostname }}.cklb"
   delegate_to: localhost
+  tags: [validate]

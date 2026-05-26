@@ -8,3 +8,4 @@
     - name: RHEL 9 STIG supplement
       include_role:
         name: rhel9_stig_supplement
+      tags: always

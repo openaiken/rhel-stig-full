@@ -1,23 +1,12 @@
 ---
-- name: Validate RHEL 9 STIG (check mode - no changes made)
+- name: Configure RHEL 9 Host with DISA STIG
   hosts: "{{ my_host | default('stigging-sandbox') }}"
   become: true
-  check_mode: true
-  ignore_errors: true
-  tags: [validate]
+  check_mode: "{{ 'validate' in ansible_run_tags or ansible_check_mode }}"
+  ignore_errors: "{{ 'validate' in ansible_run_tags or ansible_check_mode }}"
   tasks:
     - name: RHEL 9 STIG
-      include_role:
+      import_role:
         name: rhel9STIG
       when: ansible_distribution_major_version == "9"
-
-- name: Remediate RHEL 9 STIG
-  hosts: "{{ my_host | default('stigging-sandbox') }}"
-  become: true
-  ignore_errors: "{{ ignore_task_failures | default('no') | bool }}"
-  tags: [remediate]
-  tasks:
-    - name: RHEL 9 STIG
-      include_role:
-        name: rhel9STIG
-      when: ansible_distribution_major_version == "9"
+      tags: always

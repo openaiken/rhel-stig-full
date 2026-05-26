@@ -2,10 +2,79 @@
 Modification and Extension of the formal RHEL 9 STIG Ansible code, to fully implement every control and produce a ready-to-report Checklist for STIG Viewer 3.x.
 
 ## WIP
-This project is a Work-In-Progress.
+This project is a Work-In-Progress. Furthermore, *this document was largely written by Claude Code, and manually edited for clarity and finer details.*
+
+## Usage
+
+### Typical workflow
+
+**1. Remediate** — apply STIG hardening and run supplement checks:
+```bash
+ansible-playbook formal-role.yml supplement.yml -t remediate
+```
+
+**2. Validate** — run checks in check mode (no changes) and render the CKLB checklist:
+```bash
+ansible-playbook formal-role.yml supplement.yml cklb.yml -t validate
+```
+
+Or run all three playbooks in order with `run.sh`:
+```bash
+./run.sh -t validate
+```
+
+The `formal-role.yml` playbook detects the `validate` tag and automatically enables check mode for the formal role. The supplement role always runs its `validate`-tagged tasks in check mode by design (it only inspects, never modifies).
+
+### Tags
+
+| Tag | Formal role | Supplement role | CKLB renderer |
+|---|---|---|---|
+| `validate` | Runs in check mode (no changes) | Runs all check tasks | Renders checklist |
+| `remediate` | Remediates findings | Runs all remediation tasks | Not applicable |
+| `RHEL-09-XXXXXX` | — | Runs that single supplement rule | — |
+| *(no tag)* | Remediates | Runs all tasks | Renders checklist |
+
+You can also combine tags, e.g. `-t validate,RHEL-09-231190` to validate a single supplement rule.
+
+### Targeting a host
+
+All playbooks default to the `stigging-sandbox` host. Override with:
+```bash
+ansible-playbook formal-role.yml -e my_host=myserver.example.com -t validate
+```
+
+### Vars to configure
+
+All levers are in `group_vars/all/`. Per-host overrides belong in `host_vars/<hostname>/`.
+
+#### `group_vars/all/stig_attestation.yml` — operator attestation
+
+These cannot be determined programmatically. Set each to `true` only after manually verifying the described condition.
+
+| Variable | Rule | Description |
+|---|---|---|
+| `rhel9_attest_patching_current` | RHEL-09-211015 | Confirm patches are current per org patching policy |
+| `rhel9_gui_approved` | RHEL-09-211030 | Set `true` if a graphical display manager is ISSO-approved |
+| `rhel9_attest_disk_encryption_na` | RHEL-09-231190 | Set `true` if encryption is provided at hypervisor/storage layer |
+| `rhel9_grub_superuser` | RHEL-09-212020 | Non-default grub2 superuser account name (leave blank = open finding) |
+
+#### `group_vars/all/stig_formal_role.yml` — formal role Manage overrides
+
+Uncomment and set to `false` to prevent the formal role from remediating a specific rule:
+```yaml
+rhel9STIG_stigrule_257779_Manage: false   # RHEL-09-211020
+```
+
+#### `group_vars/all/stig_supplement.yml` — supplement rule toggles
+
+Set any rule to `false` to skip it entirely from supplement checks:
+```yaml
+supp_rules:
+  RHEL-09-231190: false
+```
 
 ## Project Structure
-*This section written by Claude Code and manually edited.*
+
 
 ### Playbooks
 - **`formal-role.yml`** — runs the unmodified DISA Ansible role (`rhel9STIG`). A custom callback plugin records results as a per-host XCCDF results file in `reports/`.
