@@ -3,12 +3,13 @@
 # RHEL 9 must have GPG signature verification enabled for all software repositories.
 # CAT I (High) | CCI-001749
 #
-# All .repo files in /etc/yum.repos.d/ must have gpgcheck=1.
-# Two conditions checked: repos with gpgcheck set to something other than 1,
+# All .repo files in /etc/yum.repos.d/ must have gpgcheck enabled.
+# Accepts 1, true, or yes (case-insensitive) as valid enabled values.
+# Two conditions checked: repos with gpgcheck set to a non-enabled value,
 # and repo files that have no gpgcheck line at all.
 
-- name: RHEL-09-214025 | check for repos with gpgcheck not equal to 1
-  shell: grep -rh gpgcheck /etc/yum.repos.d/ 2>/dev/null | grep -Ev 'gpgcheck\s*=\s*1' || true
+- name: RHEL-09-214025 | check for repos with gpgcheck not enabled
+  shell: grep -rhi gpgcheck /etc/yum.repos.d/ 2>/dev/null | grep -Evi 'gpgcheck\s*=\s*(1|true|yes)' || true
   register: _214025_bad_gpgcheck
   changed_when: false
   tags: [validate]
@@ -29,17 +30,17 @@
               and not (_214025_missing_gpgcheck.stdout | trim))
           else 'open',
         'finding_details':
-          'Repos with gpgcheck != 1: '
+          'Repos with gpgcheck not enabled (not 1/true/yes): '
           ~ (_214025_bad_gpgcheck.stdout | trim if _214025_bad_gpgcheck.stdout | trim else '(none)')
           ~ '\nRepo files missing gpgcheck: '
           ~ (_214025_missing_gpgcheck.stdout | trim if _214025_missing_gpgcheck.stdout | trim else '(none)')
           ~ '\nResult: '
-          ~ ('not_a_finding - all repos have gpgcheck=1'
+          ~ ('not_a_finding - all repos have gpgcheck enabled'
              if (not (_214025_bad_gpgcheck.stdout | trim)
                  and not (_214025_missing_gpgcheck.stdout | trim))
              else 'OPEN - one or more repos missing or disabling gpgcheck'),
         'comments':
-          'To remediate: sudo sed -i s/gpgcheck\s*=.*/gpgcheck=1/g /etc/yum.repos.d/*'
+          'To remediate: sudo sed -i s/gpgcheck\\s*=.*/gpgcheck=1/g /etc/yum.repos.d/*'
       }
     }) }}"
   tags: [validate]
