@@ -1,0 +1,26 @@
+---
+# RHEL-09-232245 | V-257929
+# A sticky bit must be set on all RHEL 9 public directories.
+# CAT II (Medium) | CCI-001090
+
+# "Public directories" are world-writable directories. Without the sticky bit,
+# any user can delete or rename files owned by other users in that directory.
+
+- name: RHEL-09-232245 | find world-writable directories without sticky bit
+  shell: find / -xdev -type d -perm -0002 ! -perm -1000 2>/dev/null | head -40 || true
+  register: _232245_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-232245 | record sticky bit status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-232245': {
+        'status': 'not_a_finding' if not (_232245_result.stdout | trim) else 'open',
+        'finding_details':
+          'World-writable directories missing sticky bit:\n'
+          ~ (_232245_result.stdout | trim if _232245_result.stdout | trim else '(none)'),
+        'comments': 'Run chmod +t <dir> for each listed directory.'
+      }
+    }) }}"
+  tags: [validate]

@@ -1,0 +1,29 @@
+---
+# RHEL-09-232215 | V-257923
+# RHEL 9 library directories must be group-owned by root or a system account.
+# CAT II (Medium) | CCI-001494
+
+- name: RHEL-09-232215 | find library directories group-owned by non-system accounts
+  shell: >
+    find -L /lib /lib64 /usr/lib /usr/lib64
+    -xdev -type d ! -group root
+    -exec stat -c '%n %G %g' {} \; 2>/dev/null |
+    awk '$3 >= 1000 {print $1, "(group:", $2, "GID:", $3 ")"}' || true
+  register: _232215_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-232215 | record library directory group ownership status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-232215': {
+        'status': 'not_a_finding' if not (_232215_result.stdout | trim) else 'open',
+        'finding_details':
+          'Library directories group-owned by non-system accounts (GID >= 1000):\n'
+          ~ (_232215_result.stdout | trim if _232215_result.stdout | trim else '(none)'),
+        'comments':
+          'Run chgrp root <dir> for each listed directory, or verify the group is '
+          ~ 'a documented system account (GID < 1000).'
+      }
+    }) }}"
+  tags: [validate]

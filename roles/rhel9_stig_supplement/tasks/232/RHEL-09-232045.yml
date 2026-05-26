@@ -1,0 +1,29 @@
+---
+# RHEL-09-232045 | V-257889
+# All RHEL 9 local initialization files must have mode 0740 or less permissive.
+# CAT II (Medium) | CCI-000366
+
+# Checks dotfiles (init files) in home directories of local interactive users
+# (UID 1000-65533). Mode 0740 = rwxr-----; /033 mask catches group write/exec
+# and any other-user bits.
+
+- name: RHEL-09-232045 | find local init files with mode more permissive than 0740
+  shell: >
+    awk -F: '$3 >= 1000 && $3 < 65534 {print $6}' /etc/passwd |
+    xargs -I {} find {} -maxdepth 1 -name ".[^.]*" -type f -perm /033 2>/dev/null || true
+  register: _232045_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-232045 | record local init files mode status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-232045': {
+        'status': 'not_a_finding' if not (_232045_result.stdout | trim) else 'open',
+        'finding_details':
+          'Local init files with mode > 0740:\n'
+          ~ (_232045_result.stdout | trim if _232045_result.stdout | trim else '(none)'),
+        'comments': 'Run chmod 0740 <file> for each listed initialization file.'
+      }
+    }) }}"
+  tags: [validate]

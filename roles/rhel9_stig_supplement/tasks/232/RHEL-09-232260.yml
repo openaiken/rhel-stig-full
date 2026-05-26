@@ -1,0 +1,26 @@
+---
+# RHEL-09-232260 | V-257932
+# RHEL 9 must be configured so that all system device files are correctly
+# labeled to prevent unauthorized modification.
+# CAT II (Medium) | CCI-000318, CCI-000368, CCI-001812, CCI-001813, CCI-001814
+
+- name: RHEL-09-232260 | find device files with unlabeled SELinux context
+  shell: find /dev -context '*unlabeled_t*' 2>/dev/null | head -40 || true
+  register: _232260_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-232260 | record device file SELinux label status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-232260': {
+        'status': 'not_a_finding' if not (_232260_result.stdout | trim) else 'open',
+        'finding_details':
+          'Device files with unlabeled SELinux context:\n'
+          ~ (_232260_result.stdout | trim if _232260_result.stdout | trim else '(none)'),
+        'comments':
+          'Restore SELinux labels with: restorecon -rv /dev. '
+          ~ 'Investigate any persistent unlabeled devices.'
+      }
+    }) }}"
+  tags: [validate]

@@ -1,0 +1,26 @@
+---
+# RHEL-09-232225 | V-257925
+# RHEL 9 audit tools must be group-owned by root.
+# CAT II (Medium) | CCI-001493, CCI-001494
+
+- name: RHEL-09-232225 | find audit tools not group-owned by root
+  shell: >
+    find /sbin/auditctl /sbin/aureport /sbin/ausearch /sbin/autrace
+    /sbin/auditd /sbin/rsyslogd /sbin/augenrules
+    -maxdepth 0 ! -group root 2>/dev/null || true
+  register: _232225_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-232225 | record audit tools group ownership status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-232225': {
+        'status': 'not_a_finding' if not (_232225_result.stdout | trim) else 'open',
+        'finding_details':
+          'Audit tools not group-owned by root:\n'
+          ~ (_232225_result.stdout | trim if _232225_result.stdout | trim else '(none)'),
+        'comments': 'Run chgrp root <tool> for each listed file.'
+      }
+    }) }}"
+  tags: [validate]

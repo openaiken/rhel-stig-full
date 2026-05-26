@@ -243,6 +243,114 @@
   tags: [RHEL-09-231200]
   when: supp_rules['RHEL-09-231200'] | default(true) | bool
 
+- import_tasks: 232/RHEL-09-232010.yml
+  tags: [RHEL-09-232010]
+  when: supp_rules['RHEL-09-232010'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232015.yml
+  tags: [RHEL-09-232015]
+  when: supp_rules['RHEL-09-232015'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232020.yml
+  tags: [RHEL-09-232020]
+  when: supp_rules['RHEL-09-232020'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232035.yml
+  tags: [RHEL-09-232035]
+  when: supp_rules['RHEL-09-232035'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232040.yml
+  tags: [RHEL-09-232040]
+  when: supp_rules['RHEL-09-232040'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232045.yml
+  tags: [RHEL-09-232045]
+  when: supp_rules['RHEL-09-232045'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232050.yml
+  tags: [RHEL-09-232050]
+  when: supp_rules['RHEL-09-232050'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232103.yml
+  tags: [RHEL-09-232103]
+  when: supp_rules['RHEL-09-232103'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232104.yml
+  tags: [RHEL-09-232104]
+  when: supp_rules['RHEL-09-232104'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232190.yml
+  tags: [RHEL-09-232190]
+  when: supp_rules['RHEL-09-232190'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232195.yml
+  tags: [RHEL-09-232195]
+  when: supp_rules['RHEL-09-232195'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232200.yml
+  tags: [RHEL-09-232200]
+  when: supp_rules['RHEL-09-232200'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232205.yml
+  tags: [RHEL-09-232205]
+  when: supp_rules['RHEL-09-232205'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232210.yml
+  tags: [RHEL-09-232210]
+  when: supp_rules['RHEL-09-232210'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232215.yml
+  tags: [RHEL-09-232215]
+  when: supp_rules['RHEL-09-232215'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232220.yml
+  tags: [RHEL-09-232220]
+  when: supp_rules['RHEL-09-232220'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232225.yml
+  tags: [RHEL-09-232225]
+  when: supp_rules['RHEL-09-232225'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232230.yml
+  tags: [RHEL-09-232230]
+  when: supp_rules['RHEL-09-232230'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232235.yml
+  tags: [RHEL-09-232235]
+  when: supp_rules['RHEL-09-232235'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232240.yml
+  tags: [RHEL-09-232240]
+  when: supp_rules['RHEL-09-232240'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232245.yml
+  tags: [RHEL-09-232245]
+  when: supp_rules['RHEL-09-232245'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232250.yml
+  tags: [RHEL-09-232250]
+  when: supp_rules['RHEL-09-232250'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232255.yml
+  tags: [RHEL-09-232255]
+  when: supp_rules['RHEL-09-232255'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232260.yml
+  tags: [RHEL-09-232260]
+  when: supp_rules['RHEL-09-232260'] | default(true) | bool
+
+- import_tasks: 251/RHEL-09-251020.yml
+  tags: [RHEL-09-251020]
+  when: supp_rules['RHEL-09-251020'] | default(true) | bool
+
+- import_tasks: 251/RHEL-09-251035.yml
+  tags: [RHEL-09-251035]
+  when: supp_rules['RHEL-09-251035'] | default(true) | bool
+
+- import_tasks: 251/RHEL-09-251040.yml
+  tags: [RHEL-09-251040]
+  when: supp_rules['RHEL-09-251040'] | default(true) | bool
+
 - name: write supplement facts to disk
   copy:
     content: "{{ supp_facts | to_nice_json(indent=2) }}"

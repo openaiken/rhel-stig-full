@@ -1,0 +1,25 @@
+---
+# RHEL-09-232020 | V-257884
+# RHEL 9 library files must have mode 755 or less permissive.
+# CAT II (Medium) | CCI-001494
+
+- name: RHEL-09-232020 | find library files with mode more permissive than 755
+  shell: >
+    find -L /lib /lib64 /usr/lib /usr/lib64
+    -xdev -type f -perm /022 2>/dev/null || true
+  register: _232020_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-232020 | record library files mode status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-232020': {
+        'status': 'not_a_finding' if not (_232020_result.stdout | trim) else 'open',
+        'finding_details':
+          'Library files with mode > 755:\n'
+          ~ (_232020_result.stdout | trim if _232020_result.stdout | trim else '(none)'),
+        'comments': 'Run chmod 755 <file> for each listed file.'
+      }
+    }) }}"
+  tags: [validate]

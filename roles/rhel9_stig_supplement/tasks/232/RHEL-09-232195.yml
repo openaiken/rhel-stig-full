@@ -1,0 +1,32 @@
+---
+# RHEL-09-232195 | V-257919
+# RHEL 9 system commands must be group-owned by root or a system account.
+# CAT II (Medium) | CCI-001494
+
+# Files group-owned by a non-root group with GID >= 1000 are flagged as open.
+# Files group-owned by root or a system group (GID < 1000) are acceptable.
+
+- name: RHEL-09-232195 | find system commands group-owned by non-system accounts
+  shell: >
+    find -L /bin /sbin /usr/bin /usr/sbin /usr/local/bin /usr/local/sbin
+    -xdev -type f ! -group root
+    -exec stat -c '%n %G %g' {} \; 2>/dev/null |
+    awk '$3 >= 1000 {print $1, "(group:", $2, "GID:", $3 ")"}' || true
+  register: _232195_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-232195 | record system commands group ownership status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-232195': {
+        'status': 'not_a_finding' if not (_232195_result.stdout | trim) else 'open',
+        'finding_details':
+          'System commands group-owned by non-system accounts (GID >= 1000):\n'
+          ~ (_232195_result.stdout | trim if _232195_result.stdout | trim else '(none)'),
+        'comments':
+          'Run chgrp root <file> for each listed file, or verify the group is '
+          ~ 'a documented system account (GID < 1000).'
+      }
+    }) }}"
+  tags: [validate]

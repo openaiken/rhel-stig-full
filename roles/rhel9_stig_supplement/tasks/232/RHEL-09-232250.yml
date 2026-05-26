@@ -1,0 +1,25 @@
+---
+# RHEL-09-232250 | V-257930
+# All RHEL 9 local files and directories must have a valid group owner.
+# CAT II (Medium) | CCI-000366
+
+- name: RHEL-09-232250 | find files and directories with no valid group owner
+  shell: find / -xdev -nogroup 2>/dev/null | head -40 || true
+  register: _232250_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-232250 | record invalid group owner status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-232250': {
+        'status': 'not_a_finding' if not (_232250_result.stdout | trim) else 'open',
+        'finding_details':
+          'Files/directories with no valid group owner:\n'
+          ~ (_232250_result.stdout | trim if _232250_result.stdout | trim else '(none)'),
+        'comments':
+          'Either assign a valid group (chgrp root <path>) or remove the orphaned '
+          ~ 'files. Output truncated at 40 lines; re-run find / -xdev -nogroup for full list.'
+      }
+    }) }}"
+  tags: [validate]

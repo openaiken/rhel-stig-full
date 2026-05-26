@@ -1,0 +1,34 @@
+---
+# RHEL-09-232240 | V-257928
+# All RHEL 9 world-writable directories must be owned by root, sys, bin, or an
+# application user.
+# CAT II (Medium) | CCI-000366
+
+# World-writable dirs not owned by root, sys, or bin are flagged. If owned by
+# an application user, the reviewer must verify that ownership is documented
+# and intentional.
+
+- name: RHEL-09-232240 | find world-writable directories not owned by root/sys/bin
+  shell: >
+    find / -xdev -type d -perm -0002
+    ! -user root ! -user sys ! -user bin 2>/dev/null | head -40 || true
+  register: _232240_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-232240 | record world-writable directory ownership status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-232240': {
+        'status':
+          'not_a_finding' if not (_232240_result.stdout | trim)
+          else 'not_reviewed',
+        'finding_details':
+          'World-writable directories not owned by root, sys, or bin:\n'
+          ~ (_232240_result.stdout | trim if _232240_result.stdout | trim else '(none)'),
+        'comments':
+          'Verify each listed directory is owned by a documented application user. '
+          ~ 'Run chown root <dir> for any without documented application ownership.'
+      }
+    }) }}"
+  tags: [validate]

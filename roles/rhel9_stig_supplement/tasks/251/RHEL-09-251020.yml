@@ -1,0 +1,39 @@
+---
+# RHEL-09-251020 | V-257937
+# The RHEL 9 firewall must employ a deny-all, allow-by-exception policy for
+# allowing connections to other systems.
+# CAT II (Medium) | CCI-000382
+
+# Checks that the default firewalld zone does not use an ACCEPT target, which
+# would allow all unmatched traffic. Targets of default, DROP, or REJECT all
+# enforce deny-all for unmatched connections.
+
+- name: RHEL-09-251020 | get default firewalld zone
+  shell: firewall-cmd --get-default-zone 2>/dev/null || true
+  register: _251020_zone
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-251020 | get default zone target
+  shell: "firewall-cmd --info-zone={{ _251020_zone.stdout | trim }} 2>/dev/null | grep -i 'target:' || true"
+  register: _251020_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-251020 | record firewall deny-all status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-251020': {
+        'status':
+          'open' if 'ACCEPT' in (_251020_result.stdout | upper)
+          else ('not_reviewed' if not (_251020_zone.stdout | trim)
+          else 'not_a_finding'),
+        'finding_details':
+          'Default zone: ' ~ (_251020_zone.stdout | trim if _251020_zone.stdout | trim else '(firewalld not running)')
+          ~ '\nZone target: ' ~ (_251020_result.stdout | trim if _251020_result.stdout | trim else '(none)'),
+        'comments':
+          'A target of ACCEPT allows all unmatched traffic and violates deny-all. '
+          ~ 'Set a restrictive target: firewall-cmd --permanent --zone=<zone> --set-target=DROP'
+      }
+    }) }}"
+  tags: [validate]

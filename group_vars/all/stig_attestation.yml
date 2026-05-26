@@ -33,3 +33,10 @@ rhel9_attest_disk_encryption_na: false
 # To configure: sudo grub2-setpassword (sets password for 'root' superuser) or
 # edit /etc/grub.d/01_users to define a custom non-default username.
 rhel9_grub_superuser: ""
+#
+# ┄┄ RHEL-09-251035 | V-257940 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# Ports, protocols, and services configured in the firewall comply with the
+# organizationally defined PPSM CAL and vulnerability assessments. Before
+# setting true, compare the output in the supplement facts for this rule
+# against the approved PPSM CAL for this system.
+rhel9_attest_ppsm_compliant: false
