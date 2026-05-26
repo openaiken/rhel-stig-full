@@ -1,0 +1,35 @@
+---
+# RHEL-09-214030 | V-257823
+# RHEL 9 must be configured so that the cryptographic hashes of system files match vendor values.
+# CAT II (Medium) | CCI-001749
+#
+# Runs rpm -Va to verify all installed package file hashes. Filters for hash
+# mismatches (field 1 contains '5') excluding config files (field 2 is not 'c').
+# Note: this task may take several minutes on systems with many packages.
+
+- name: RHEL-09-214030 | verify system file hashes against RPM database
+  shell: rpm -Va --noconfig | awk '$1 ~ /..5/ && $2 != "c"'
+  register: _214030_hash
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-214030 | record system file hash verification status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-214030': {
+        'status': 'not_a_finding' if not (_214030_hash.stdout | trim) else 'open',
+        'finding_details':
+          'Files with hash mismatches (non-config): '
+          ~ (_214030_hash.stdout | trim if _214030_hash.stdout | trim else '(none)')
+          ~ '\nResult: '
+          ~ ('not_a_finding - all system file hashes match RPM database'
+             if not (_214030_hash.stdout | trim)
+             else 'OPEN - one or more system files have hash mismatches'),
+        'comments':
+          'To remediate: identify the owning package with rpm -qf <file> '
+          ~ 'then reinstall it with sudo dnf reinstall <package>. '
+          ~ 'Note: rpm -Va may take several minutes to complete.'
+      }
+    }) }}"
+  tags: [validate]
