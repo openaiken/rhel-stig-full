@@ -1,0 +1,35 @@
+---
+# ─── Operator Attestation ──────────────────────────────────────────────────────
+# These variables require human judgment or organizational context that cannot
+# be determined programmatically. Review each entry, verify the described
+# condition on the system, and set to true only when the system is compliant.
+# A false value results in an open finding in the generated checklist.
+#
+# ┄┄ RHEL-09-211015 | V-257778 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# Vendor security patches are installed and up to date per the organizational
+# patching policy. Patching frequency is org-defined and cannot be verified
+# programmatically. Before setting true, confirm currency via:
+#   sudo dnf history list | more
+rhel9_attest_patching_current: false
+#
+# ┄┄ RHEL-09-211030 | V-257781 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# A graphical display manager is required for this system and has been approved
+# by the ISSO. If true, graphical.target as the default boot target is treated
+# as not_a_finding. Default false assumes server/headless use.
+rhel9_gui_approved: false
+#
+# ┄┄ RHEL-09-231190 | V-257879 | RHEL 9 V2R8 | CAT I ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# Local disk partitions must use LUKS encryption unless encryption is provided
+# at the hypervisor or storage array level with documented organizational
+# approval. Set true only when that documented exception applies; the check
+# will auto-detect LUKS otherwise via lsblk.
+rhel9_attest_disk_encryption_na: false
+#
+# ┄┄ RHEL-09-212020 | V-257789 | RHEL 9 V2R8 | CAT I ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# The grub2 superuser account name configured on this system. Must not be a
+# common name (root, admin, administrator). The supplement check verifies that
+# /etc/grub2.cfg contains a superusers line matching this value. Leave blank
+# if grub superuser authentication has not been configured (results in open).
+# To configure: sudo grub2-setpassword (sets password for 'root' superuser) or
+# edit /etc/grub.d/01_users to define a custom non-default username.
+rhel9_grub_superuser: ""
