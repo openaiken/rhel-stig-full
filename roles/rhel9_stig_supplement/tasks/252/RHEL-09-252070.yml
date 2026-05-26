@@ -1,0 +1,25 @@
+---
+# RHEL-09-252070 | V-257962
+# There must be no shosts.equiv files on RHEL 9.
+# CAT I (High) | CCI-000366
+
+- name: RHEL-09-252070 | find shosts.equiv files
+  shell: find / -xdev -name shosts.equiv 2>/dev/null | head -40 || true
+  register: _252070_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-252070 | record shosts.equiv status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-252070': {
+        'status': 'not_a_finding' if not (_252070_result.stdout | trim) else 'open',
+        'finding_details':
+          'shosts.equiv files found:\n'
+          ~ (_252070_result.stdout | trim if _252070_result.stdout | trim else '(none)'),
+        'comments':
+          'Remove all shosts.equiv files: sudo rm /[path]/shosts.equiv. '
+          ~ 'These files enable trust-based rsh/rlogin without passwords and must not exist.'
+      }
+    }) }}"
+  tags: [validate]

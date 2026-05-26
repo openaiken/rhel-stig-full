@@ -40,3 +40,18 @@ rhel9_grub_superuser: ""
 # setting true, compare the output in the supplement facts for this rule
 # against the approved PPSM CAL for this system.
 rhel9_attest_ppsm_compliant: false
+#
+# ┄┄ RHEL-09-252020 | V-257950 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# Configured NTP server(s) in /etc/chrony.conf are organizationally approved
+# authoritative time sources. The STIG requires DoD NTP pool servers; sites
+# that cannot reach DoD NTP directly may use upstream-synchronized sources with
+# documented organizational approval. The supplement check verifies maxpoll <= 16
+# automatically; set this true only after confirming the NTP source is approved.
+rhel9_attest_ntp_source_approved: false
+#
+# ┄┄ RHEL-09-252045 | V-257956 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# All IPsec tunnel connections configured in /etc/ipsec.conf and /etc/ipsec.d/
+# are documented and approved by the ISSO. Only relevant when the ipsec service
+# is active. Leave false if ipsec is inactive (supplement check auto-detects
+# that and marks not_a_finding regardless of this value).
+rhel9_attest_ipsec_tunnels_approved: false

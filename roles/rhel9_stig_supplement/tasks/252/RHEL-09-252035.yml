@@ -1,0 +1,36 @@
+---
+# RHEL-09-252035 | V-257953
+# RHEL 9 systems using DNS resolution must have at least two name servers
+# configured.
+# CAT II (Medium) | CCI-000366
+
+- name: RHEL-09-252035 | count configured nameservers
+  shell: grep -c '^\s*nameserver\s' /etc/resolv.conf 2>/dev/null || echo 0
+  register: _252035_count
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-252035 | collect nameserver lines
+  shell: grep '^\s*nameserver\s' /etc/resolv.conf 2>/dev/null || true
+  register: _252035_lines
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-252035 | record DNS redundancy status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-252035': {
+        'status':
+          'not_a_finding' if (_252035_count.stdout | trim | int) >= 2
+          else 'open',
+        'finding_details':
+          'Nameserver count: ' ~ (_252035_count.stdout | trim)
+          ~ '\nNameserver lines in /etc/resolv.conf:\n'
+          ~ (_252035_lines.stdout | trim if _252035_lines.stdout | trim else '(none)'),
+        'comments':
+          'Configure at least two nameserver entries in /etc/resolv.conf. '
+          ~ 'Note: if this system runs in a cloud platform with a single HA DNS '
+          ~ 'IP, this control is Not Applicable per the STIG check procedure.'
+      }
+    }) }}"
+  tags: [validate]

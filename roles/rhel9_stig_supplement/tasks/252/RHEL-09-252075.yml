@@ -1,0 +1,25 @@
+---
+# RHEL-09-252075 | V-257963
+# There must be no .shosts files on RHEL 9.
+# CAT I (High) | CCI-000366
+
+- name: RHEL-09-252075 | find .shosts files
+  shell: find / -xdev -name .shosts 2>/dev/null | head -40 || true
+  register: _252075_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-252075 | record .shosts status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-252075': {
+        'status': 'not_a_finding' if not (_252075_result.stdout | trim) else 'open',
+        'finding_details':
+          '.shosts files found:\n'
+          ~ (_252075_result.stdout | trim if _252075_result.stdout | trim else '(none)'),
+        'comments':
+          'Remove all .shosts files: sudo rm /[path]/.shosts. '
+          ~ 'These files enable trust-based rsh/rlogin without passwords and must not exist.'
+      }
+    }) }}"
+  tags: [validate]

@@ -1,0 +1,45 @@
+---
+# RHEL-09-252050 | V-257957
+# RHEL 9 must be configured to prevent unrestricted mail relaying.
+# CAT II (Medium) | CCI-000366
+
+# Not Applicable if postfix is not installed.
+# Compliant when smtpd_client_restrictions = permit_mynetworks,reject exactly.
+
+- name: RHEL-09-252050 | check if postfix is installed
+  shell: rpm -q postfix 2>/dev/null && echo installed || echo not_installed
+  register: _252050_postfix
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-252050 | get smtpd_client_restrictions
+  shell: postconf -n smtpd_client_restrictions 2>/dev/null || true
+  register: _252050_restriction
+  changed_when: false
+  when: (_252050_postfix.stdout | trim) == 'installed'
+  tags: [validate]
+
+- name: RHEL-09-252050 | record mail relay restriction status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-252050': {
+        'status':
+          'not_a_finding' if (_252050_postfix.stdout | trim) == 'not_installed'
+          else ('not_a_finding'
+                if 'permit_mynetworks' in (_252050_restriction.stdout | default(''))
+                   and 'reject' in (_252050_restriction.stdout | default(''))
+                   and (_252050_restriction.stdout | default('') | regex_replace('.*=\\s*','') | trim)
+                       == 'permit_mynetworks,reject'
+                else 'open'),
+        'finding_details':
+          'Postfix installed: ' ~ (_252050_postfix.stdout | trim)
+          ~ '\nsmtpd_client_restrictions:\n'
+          ~ (_252050_restriction.stdout | default('') | trim
+             if (_252050_restriction.stdout | default('') | trim)
+             else '(not set or postfix not installed)'),
+        'comments':
+          'Run: sudo postconf -e smtpd_client_restrictions=permit_mynetworks,reject'
+          ~ ' — no additional entries are permitted without ISSO documentation.'
+      }
+    }) }}"
+  tags: [validate]
