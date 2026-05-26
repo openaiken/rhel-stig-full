@@ -15,6 +15,22 @@
   tags: [RHEL-09-211010]
   when: supp_rules['RHEL-09-211010'] | default(true) | bool
 
+- import_tasks: RHEL-09-211015.yml
+  tags: [RHEL-09-211015]
+  when: supp_rules['RHEL-09-211015'] | default(true) | bool
+
+- import_tasks: RHEL-09-211030.yml
+  tags: [RHEL-09-211030]
+  when: supp_rules['RHEL-09-211030'] | default(true) | bool
+
+- import_tasks: RHEL-09-211035.yml
+  tags: [RHEL-09-211035]
+  when: supp_rules['RHEL-09-211035'] | default(true) | bool
+
+- import_tasks: RHEL-09-211045.yml
+  tags: [RHEL-09-211045]
+  when: supp_rules['RHEL-09-211045'] | default(true) | bool
+
 - name: write supplement facts to disk
   copy:
     content: "{{ supp_facts | to_nice_json(indent=2) }}"

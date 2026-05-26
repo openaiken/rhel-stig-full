@@ -1,0 +1,26 @@
+---
+# RHEL-09-211015 | V-257778
+# RHEL 9 vendor packaged system security patches and updates must be installed and up to date.
+# CAT II (Medium) | CCI-000366
+#
+# Patching currency is org-policy-dependent and cannot be determined programmatically.
+# Outcome is driven by rhel9_attest_patching_current in group_vars/all/stig_controls.yml.
+
+- name: RHEL-09-211015 | record patch currency attestation
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-211015': {
+        'status': 'not_a_finding' if rhel9_attest_patching_current | bool else 'open',
+        'finding_details':
+          'Operator attestation: '
+          ~ ('PASS - patches attested current per organizational policy'
+             if rhel9_attest_patching_current | bool
+             else 'FAIL - patch currency has not been attested'),
+        'comments':
+          'Patching frequency is org-defined per RHEL 9 V2R8. '
+          ~ 'Verify currency via: sudo dnf history list | more '
+          ~ 'Set rhel9_attest_patching_current: true in group_vars/all/stig_controls.yml '
+          ~ 'after confirming patches are current per your policy cadence.'
+      }
+    }) }}"
+  tags: [validate]
