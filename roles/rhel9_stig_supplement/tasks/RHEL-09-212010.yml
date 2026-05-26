@@ -1,0 +1,43 @@
+---
+# RHEL-09-212010 | V-257787
+# RHEL 9 must require a boot loader superuser password.
+# CAT II (Medium) | CCI-000213
+#
+# Not applicable on UEFI systems. UEFI is auto-detected via /sys/firmware/efi.
+
+- name: RHEL-09-212010 | check for UEFI firmware
+  stat:
+    path: /sys/firmware/efi
+  register: _212010_efi
+  tags: [validate]
+
+- name: RHEL-09-212010 | check grub superuser password (BIOS only)
+  command: grep password_pbkdf2 /etc/grub2.cfg
+  register: _212010_password
+  changed_when: false
+  failed_when: false
+  when: not _212010_efi.stat.exists
+  tags: [validate]
+
+- name: RHEL-09-212010 | record grub superuser password status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-212010': {
+        'status':
+          'not_applicable' if _212010_efi.stat.exists
+          else ('not_a_finding' if (_212010_password.stdout | default('') | trim)
+                else 'open'),
+        'finding_details':
+          'UEFI system: ' ~ (_212010_efi.stat.exists | string | lower)
+          ~ '\nResult: '
+          ~ ('not_applicable - UEFI systems are exempt per RHEL 9 V2R8'
+             if _212010_efi.stat.exists
+             else ('not_a_finding - password_pbkdf2 entry found in /etc/grub2.cfg'
+                   if (_212010_password.stdout | default('') | trim)
+                   else 'OPEN - password_pbkdf2 not found in /etc/grub2.cfg')),
+        'comments':
+          'Not applicable for UEFI systems per RHEL 9 V2R8. '
+          ~ 'To remediate on BIOS: sudo grub2-setpassword'
+      }
+    }) }}"
+  tags: [validate]

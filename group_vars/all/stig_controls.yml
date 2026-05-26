@@ -23,6 +23,15 @@ rhel9_attest_patching_current: false
 # by the ISSO. If true, graphical.target as the default boot target is treated
 # as not_a_finding. Default false assumes server/headless use.
 rhel9_gui_approved: false
+#
+# ┄┄ RHEL-09-212020 | V-257789 | RHEL 9 V2R8 | CAT I ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# The grub2 superuser account name configured on this system. Must not be a
+# common name (root, admin, administrator). The supplement check verifies that
+# /etc/grub2.cfg contains a superusers line matching this value. Leave blank
+# if grub superuser authentication has not been configured (results in open).
+# To configure: sudo grub2-setpassword (sets password for 'root' superuser) or
+# edit /etc/grub.d/01_users to define a custom non-default username.
+rhel9_grub_superuser: ""
 
 
 # ─── Formal Role (rhel9STIG) ──────────────────────────────────────────────────

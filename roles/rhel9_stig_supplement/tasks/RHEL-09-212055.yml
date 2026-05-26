@@ -1,0 +1,33 @@
+---
+# RHEL-09-212055 | V-257796
+# RHEL 9 must enable auditing of processes that start prior to the audit daemon.
+# CAT III (Low) | CCI-000169
+#
+# audit=1 must be present in ALL kernel args. grubby returns lines missing the
+# param; empty output means all kernels have it (not_a_finding).
+
+- name: RHEL-09-212055 | check audit=1 in grub kernel args
+  shell: grubby --info=ALL | grep args | grep -v 'audit=1'
+  register: _212055_audit
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-212055 | record audit kernel arg status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-212055': {
+        'status': 'not_a_finding' if not (_212055_audit.stdout | trim) else 'open',
+        'finding_details':
+          'Kernels missing audit=1: '
+          ~ (_212055_audit.stdout | trim if _212055_audit.stdout | trim else '(none)')
+          ~ '\nResult: '
+          ~ ('not_a_finding - audit=1 present in all kernel args'
+             if not (_212055_audit.stdout | trim)
+             else 'OPEN - one or more kernels missing audit=1'),
+        'comments':
+          'To remediate: sudo grubby --update-kernel=ALL --args=audit=1 && '
+          ~ 'add audit=1 to GRUB_CMDLINE_LINUX in /etc/default/grub'
+      }
+    }) }}"
+  tags: [validate]

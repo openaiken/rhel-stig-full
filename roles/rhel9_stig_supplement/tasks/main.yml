@@ -31,6 +31,38 @@
   tags: [RHEL-09-211045]
   when: supp_rules['RHEL-09-211045'] | default(true) | bool
 
+- import_tasks: RHEL-09-212010.yml
+  tags: [RHEL-09-212010]
+  when: supp_rules['RHEL-09-212010'] | default(true) | bool
+
+- import_tasks: RHEL-09-212015.yml
+  tags: [RHEL-09-212015]
+  when: supp_rules['RHEL-09-212015'] | default(true) | bool
+
+- import_tasks: RHEL-09-212020.yml
+  tags: [RHEL-09-212020]
+  when: supp_rules['RHEL-09-212020'] | default(true) | bool
+
+- import_tasks: RHEL-09-212035.yml
+  tags: [RHEL-09-212035]
+  when: supp_rules['RHEL-09-212035'] | default(true) | bool
+
+- import_tasks: RHEL-09-212040.yml
+  tags: [RHEL-09-212040]
+  when: supp_rules['RHEL-09-212040'] | default(true) | bool
+
+- import_tasks: RHEL-09-212045.yml
+  tags: [RHEL-09-212045]
+  when: supp_rules['RHEL-09-212045'] | default(true) | bool
+
+- import_tasks: RHEL-09-212050.yml
+  tags: [RHEL-09-212050]
+  when: supp_rules['RHEL-09-212050'] | default(true) | bool
+
+- import_tasks: RHEL-09-212055.yml
+  tags: [RHEL-09-212055]
+  when: supp_rules['RHEL-09-212055'] | default(true) | bool
+
 - name: write supplement facts to disk
   copy:
     content: "{{ supp_facts | to_nice_json(indent=2) }}"
