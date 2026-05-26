@@ -1,0 +1,28 @@
+---
+# RHEL-09-215015 | V-257826
+# RHEL 9 must not have a File Transfer Protocol (FTP) server package installed.
+# CAT I (High) | CCI-000381
+
+- name: RHEL-09-215015 | check if vsftpd is installed
+  command: rpm -q vsftpd
+  register: _215015_vsftpd
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-215015 | record FTP server status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-215015': {
+        'status': 'not_a_finding' if _215015_vsftpd.rc != 0 else 'open',
+        'finding_details':
+          'vsftpd installed: ' ~ (_215015_vsftpd.rc == 0) | string | lower
+          ~ '\nResult: '
+          ~ ('not_a_finding - vsftpd is not installed'
+             if _215015_vsftpd.rc != 0
+             else 'OPEN - vsftpd is installed and must be removed'),
+        'comments':
+          'To remediate: sudo dnf remove vsftpd'
+      }
+    }) }}"
+  tags: [validate]
