@@ -1,13 +1,21 @@
 ---
-- name: Configure RHEL 9 Host with DISA STIG
+- name: Validate RHEL 9 STIG (check mode - no changes made)
   hosts: "{{ my_host | default('stigging-sandbox') }}"
   become: true
-  # DO NOT set ignore_task_failures to "yes" unless you're using Check mode. only set it on the CLI when using -C!
+  check_mode: true
+  ignore_errors: true
+  tags: [validate]
+  tasks:
+    - name: RHEL 9 STIG
+      include_role:
+        name: rhel9STIG
+      when: ansible_distribution_major_version == "9"
+
+- name: Remediate RHEL 9 STIG
+  hosts: "{{ my_host | default('stigging-sandbox') }}"
+  become: true
   ignore_errors: "{{ ignore_task_failures | default('no') | bool }}"
-#  vars:
-#    administrator_security_groups:
-#      - wheel
-#      - openaiken_owners
+  tags: [remediate]
   tasks:
     - name: RHEL 9 STIG
       include_role:
