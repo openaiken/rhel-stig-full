@@ -1,0 +1,48 @@
+---
+# RHEL-09-213110 | V-257817
+# RHEL 9 must implement nonexecutable data to protect its memory from unauthorized code execution.
+# CAT II (Medium) | CCI-002824
+#
+# Two conditions checked:
+#   1. All CPU flags lines in /proc/cpuinfo must include the nx (NX/XD) feature flag.
+#   2. noexec must not appear in any kernel's args (would disable NX enforcement).
+
+- name: RHEL-09-213110 | check for CPUs missing nx flag
+  shell: grep ^flags /proc/cpuinfo | grep -Ev '([^[:alnum:]])(nx)([^[:alnum:]]|$)'
+  register: _213110_nx
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-213110 | check for noexec in grub kernel args
+  shell: grubby --info=ALL | grep args | grep -E '([^[:alnum:]])(noexec)([^[:alnum:]])'
+  register: _213110_noexec
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-213110 | record ExecShield / NX status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-213110': {
+        'status':
+          'not_a_finding'
+          if (not (_213110_nx.stdout | trim) and not (_213110_noexec.stdout | trim))
+          else 'open',
+        'finding_details':
+          'CPUs missing nx flag: '
+          ~ (_213110_nx.stdout | trim if _213110_nx.stdout | trim else '(none - nx present on all CPUs)')
+          ~ '\nKernels with noexec arg: '
+          ~ (_213110_noexec.stdout | trim if _213110_noexec.stdout | trim else '(none)')
+          ~ '\nResult: '
+          ~ ('not_a_finding - nx flag present on all CPUs and noexec not in kernel args'
+             if (not (_213110_nx.stdout | trim) and not (_213110_noexec.stdout | trim))
+             else ('OPEN - one or more CPUs missing nx flag; verify NX/XD is enabled in BIOS/UEFI'
+                   if _213110_nx.stdout | trim
+                   else 'OPEN - noexec found in kernel args; ExecShield is disabled')),
+        'comments':
+          'If NX/XD is disabled in BIOS/UEFI, enable it there. '
+          ~ 'To remove noexec from kernel args: sudo grubby --update-kernel=ALL --remove-args=noexec'
+      }
+    }) }}"
+  tags: [validate]

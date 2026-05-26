@@ -63,6 +63,10 @@
   tags: [RHEL-09-212055]
   when: supp_rules['RHEL-09-212055'] | default(true) | bool
 
+- import_tasks: RHEL-09-213110.yml
+  tags: [RHEL-09-213110]
+  when: supp_rules['RHEL-09-213110'] | default(true) | bool
+
 - name: write supplement facts to disk
   copy:
     content: "{{ supp_facts | to_nice_json(indent=2) }}"
