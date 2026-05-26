@@ -7,11 +7,13 @@
   command: rpm -q --queryformat '%{VERSION}' redhat-release
   register: _rhel_version
   changed_when: false
+  tags: [validate]
 
 - name: RHEL-09-211010 | resolve EOL date and today
   set_fact:
     _211010_eol: "{{ rhel9_eol_dates[_rhel_version.stdout] | default('') }}"
     _211010_today: "{{ now().strftime('%Y-%m-%d') }}"
+  tags: [validate]
 
 - name: RHEL-09-211010 | record vendor support status
   set_fact:
@@ -34,3 +36,4 @@
           ~ 'Ref: https://access.redhat.com/support/policy/updates/errata'
       }
     }) }}"
+  tags: [validate]
