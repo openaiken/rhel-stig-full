@@ -1,0 +1,35 @@
+---
+# RHEL-09-231045 | V-257850
+# RHEL 9 must prevent device files from being interpreted on file systems that contain user home directories.
+# CAT II (Medium) | CCI-001764
+
+# Checks that /home is mounted with the nodev option.
+# An empty result means /home is not separately mounted, which is also a finding.
+
+- name: RHEL-09-231045 | get /home mount options
+  shell: awk '$2 == "/home" { print $4 }' /proc/mounts
+  register: _231045_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-231045 | record /home nodev mount option status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-231045': {
+        'status':
+          'not_a_finding'
+          if ('nodev' in (_231045_result.stdout | default('')))
+          else 'open',
+        'finding_details':
+          '/home mount options: '
+          ~ (_231045_result.stdout | default('') | trim
+             if _231045_result.stdout | default('') | trim
+             else '(not separately mounted - FINDING)')
+          ~ '\nResult: '
+          ~ ('not_a_finding - nodev is set on /home'
+             if ('nodev' in (_231045_result.stdout | default('')))
+             else 'OPEN - nodev not found in /home mount options'),
+        'comments': 'Add nodev to the /home entry in /etc/fstab and remount.'
+      }
+    }) }}"
+  tags: [validate]

@@ -1,0 +1,29 @@
+---
+# RHEL-09-231015 | V-257844
+# RHEL 9 must use a separate file system for /tmp.
+# CAT II (Medium) | CCI-000366
+
+# Checks that /tmp is mounted as a separate filesystem.
+
+- name: RHEL-09-231015 | check /tmp is a separate filesystem
+  shell: awk '$2 == "/tmp"' /proc/mounts
+  register: _231015_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-231015 | record /tmp separate filesystem status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-231015': {
+        'status': 'not_a_finding' if (_231015_result.stdout | trim) else 'open',
+        'finding_details':
+          '/proc/mounts entry: '
+          ~ (_231015_result.stdout | trim if _231015_result.stdout | trim else '(not a separate mount - FINDING)')
+          ~ '\nResult: '
+          ~ ('not_a_finding - /tmp is a separate filesystem'
+             if (_231015_result.stdout | trim)
+             else 'OPEN - /tmp is not on a separate filesystem'),
+        'comments': 'Requires a dedicated partition or logical volume. Configure in /etc/fstab.'
+      }
+    }) }}"
+  tags: [validate]

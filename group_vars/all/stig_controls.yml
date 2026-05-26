@@ -24,6 +24,13 @@ rhel9_attest_patching_current: false
 # as not_a_finding. Default false assumes server/headless use.
 rhel9_gui_approved: false
 #
+# ┄┄ RHEL-09-231190 | V-257879 | RHEL 9 V2R8 | CAT I ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# Local disk partitions must use LUKS encryption unless encryption is provided
+# at the hypervisor or storage array level with documented organizational
+# approval. Set true only when that documented exception applies; the check
+# will auto-detect LUKS otherwise via lsblk.
+rhel9_attest_disk_encryption_na: false
+#
 # ┄┄ RHEL-09-212020 | V-257789 | RHEL 9 V2R8 | CAT I ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 # The grub2 superuser account name configured on this system. Must not be a
 # common name (root, admin, administrator). The supplement check verifies that
