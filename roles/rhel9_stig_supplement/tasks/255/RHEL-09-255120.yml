@@ -1,0 +1,37 @@
+---
+# RHEL-09-255120 | V-258158
+# RHEL 9 SSH private host key files must have mode 0640 or less permissive.
+# CAT II (Medium) | CCI-000366
+
+# stat -c "%a" outputs octal permissions as a decimal digit string (e.g. "640").
+# Comparing as integers works because the octal digit string for any mode more
+# permissive than 0640 will be numerically greater than 640 (e.g. 644, 664, 755).
+
+- name: RHEL-09-255120 | check SSH private host key modes
+  shell: >
+    stat -c "%a %n" /etc/ssh/*_key 2>/dev/null |
+    awk '$1+0 > 640 {print "OVER_LIMIT: " $0}' || true
+  register: _255120_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-255120 | collect all private key modes for context
+  shell: stat -c "%a %n" /etc/ssh/*_key 2>/dev/null || true
+  register: _255120_all
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-255120 | record SSH private key mode status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-255120': {
+        'status': 'not_a_finding' if not (_255120_result.stdout | trim) else 'open',
+        'finding_details':
+          'Private key modes (mode filename):\n'
+          ~ (_255120_all.stdout | trim if _255120_all.stdout | trim else '(no private keys found)')
+          ~ '\nKeys more permissive than 0640:\n'
+          ~ (_255120_result.stdout | trim if _255120_result.stdout | trim else '(none)'),
+        'comments': 'Set mode: sudo chmod 0640 /etc/ssh/*_key && sudo systemctl restart sshd'
+      }
+    }) }}"
+  tags: [validate]
