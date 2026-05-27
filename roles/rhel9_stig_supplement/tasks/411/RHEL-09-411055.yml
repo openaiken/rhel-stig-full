@@ -1,0 +1,78 @@
+---
+# RHEL-09-411055 | V-258000
+# Executable search paths within the initialization files of all local
+# interactive RHEL 9 users must only contain paths that resolve to the system
+# default or the users home directory.
+# CAT II (Medium) | CCI-000366
+
+# The check looks for PATH= lines in user init files (~/.bashrc, ~/.bash_profile,
+# etc.) and /etc/profile.d/*.sh. A path component that is an absolute path
+# starting with '/' but not '/home' or a $HOME/$USER-relative expression,
+# and is not an approved system default path, is a potential finding.
+# Because PATH composition varies widely, this check reports all PATH= lines
+# found and flags any that contain suspicious entries (e.g. '.' or '../').
+# Reviewers must verify absolute non-home paths are organizationally approved.
+
+- name: RHEL-09-411055 | check PATH statements in interactive user init files
+  shell: |
+    findings=""
+    suspicious=""
+    while IFS=: read -r username _ uid _ _ homedir shell; do
+      [ "$uid" -lt 1000 ] 2>/dev/null && continue
+      [[ "$shell" =~ nologin|/false$ ]] && continue
+      [ ! -d "$homedir" ] && continue
+      while IFS= read -r initfile; do
+        while IFS= read -r line; do
+          [[ "$line" =~ ^[[:space:]]*# ]] && continue
+          [[ "${line^^}" =~ (^|[[:space:]])PATH= ]] || [[ "${line^^}" =~ ^EXPORT[[:space:]]+PATH ]] || continue
+          findings="${findings}FILE: ${initfile}: ${line}\n"
+          # flag literal '.' or '..' as a path component
+          if echo "$line" | grep -qP '(^|:)\.(:|$)|(^|:)\.\.(:|$)'; then
+            suspicious="${suspicious}SUSPICIOUS (dot-path): ${initfile}: ${line}\n"
+          fi
+        done < "$initfile"
+      done < <(find "$homedir" -maxdepth 1 -type f -name ".[^.]*" 2>/dev/null)
+    done < /etc/passwd
+    # also check global profile drop-ins
+    for f in /etc/profile /etc/bashrc /etc/profile.d/*.sh; do
+      [ -f "$f" ] || continue
+      while IFS= read -r line; do
+        [[ "$line" =~ ^[[:space:]]*# ]] && continue
+        [[ "${line^^}" =~ (^|[[:space:]])PATH= ]] || continue
+        findings="${findings}FILE: ${f}: ${line}\n"
+        if echo "$line" | grep -qP '(^|:)\.(:|$)|(^|:)\.\.(:|$)'; then
+          suspicious="${suspicious}SUSPICIOUS (dot-path): ${f}: ${line}\n"
+        fi
+      done < "$f"
+    done
+    if [ -n "$suspicious" ]; then
+      echo "STATUS: FAIL"
+      echo "SUSPICIOUS PATH entries (dot components):"
+      echo -e "$suspicious" | sed '/^$/d'
+    elif [ -z "$findings" ]; then
+      echo "STATUS: PASS"
+      echo "RAW: No PATH= lines found in interactive user init files"
+    else
+      echo "STATUS: PASS (review manually)"
+    fi
+    if [ -n "$findings" ]; then
+      echo "ALL PATH lines found:"
+      echo -e "$findings" | sed '/^$/d'
+    fi
+  register: _411055_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-411055 | record PATH init file check status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-411055': {
+        'status': 'not_a_finding' if 'STATUS: PASS' in _411055_result.stdout else 'open',
+        'finding_details': _411055_result.stdout | trim,
+        'comments':
+          'Reviewer must verify that any absolute paths listed outside user home dirs '
+          ~ 'are organizationally approved (documented with ISSO). '
+          ~ 'Presence of . or .. in PATH is always a finding.'
+      }
+    }) }}"
+  tags: [validate]

@@ -1,0 +1,46 @@
+---
+# RHEL-09-411065 | V-258002
+# All RHEL 9 local interactive user home directories defined in the /etc/passwd
+# file must exist.
+# CAT II (Medium) | CCI-000764
+
+# pwck -r checks that assigned home directories exist. If any interactive user's
+# home directory is missing, the SA must confirm whether that account is a
+# local interactive user; if so it is a finding.
+
+- name: RHEL-09-411065 | check interactive user home directories exist
+  shell: |
+    findings=""
+    while IFS=: read -r username _ uid _ _ homedir shell; do
+      [ "$uid" -lt 1000 ] 2>/dev/null && continue
+      [[ "$shell" =~ nologin|/false$ ]] && continue
+      [ -z "$homedir" ] && continue
+      if [ ! -d "$homedir" ]; then
+        findings="${findings}FAIL: ${username} (uid=${uid}): home directory '${homedir}' does not exist\n"
+      else
+        findings="${findings}PASS: ${username} (uid=${uid}): ${homedir} exists\n"
+      fi
+    done < /etc/passwd
+    if [ -z "$findings" ]; then
+      echo "STATUS: PASS (no interactive users found)"
+    elif echo -e "$findings" | grep -q '^FAIL:'; then
+      echo "STATUS: FAIL"
+      echo -e "$findings" | sed '/^$/d'
+    else
+      echo "STATUS: PASS"
+      echo -e "$findings" | sed '/^$/d'
+    fi
+  register: _411065_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-411065 | record home directory existence status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-411065': {
+        'status': 'not_a_finding' if 'STATUS: PASS' in _411065_result.stdout else 'open',
+        'finding_details': _411065_result.stdout | trim,
+        'comments': 'Create missing home directories: mkdir -m 0700 /home/<username> && chown <username>: /home/<username>'
+      }
+    }) }}"
+  tags: [validate]

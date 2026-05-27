@@ -86,3 +86,49 @@ rhel9_attest_wifi_comment: ""
 # different alias, external alerting).
 rhel9_attest_audit_notification_compliant: false
 rhel9_attest_audit_notification_method: ""
+#
+# ┄┄ RHEL-09-411095 | V-258058 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# Complete list of ALL account usernames (system and interactive) authorized to
+# exist in /etc/passwd on this system. Any account not on this list is flagged
+# as a finding. Populate by running on the target host:
+#   awk -F: '{print $1}' /etc/passwd
+# Start with the accounts present at initial system build; add new accounts only
+# after obtaining ISSO approval.
+rhel9_authorized_users:
+  - root
+  - bin
+  - daemon
+  - adm
+  - lp
+  - sync
+  - shutdown
+  - halt
+  - mail
+  - operator
+  - games
+  - ftp
+  - nobody
+  - systemd-coredump
+  - dbus
+  - polkitd
+  - pegasus
+  - sssd
+  - tss
+  - clevis
+  - unbound
+  - fapolicyd
+  - libstoragemgmt
+  - setroubleshoot
+  - postfix
+  - sshd
+  - chrony
+  - tcpdump
+  - locadmin
+#
+# ┄┄ RHEL-09-411040 | V-257993 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# List of temporary account usernames currently provisioned on this system.
+# Temporary accounts must have an expiration date set within 72 hours of
+# creation. Leave this list empty if no temporary accounts exist. The check
+# will report not_a_finding automatically for an empty list.
+# Set expiration: sudo chage -E $(date -d +72hours +%Y-%m-%d) <account>
+rhel9_temporary_accounts: []

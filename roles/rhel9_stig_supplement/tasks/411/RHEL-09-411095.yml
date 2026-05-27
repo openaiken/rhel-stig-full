@@ -1,0 +1,57 @@
+---
+# RHEL-09-411095 | V-258058
+# RHEL 9 must not have unauthorized accounts.
+# CAT II (Medium) | CCI-000366
+
+# Operator must maintain rhel9_authorized_users (list of ALL account usernames,
+# including system accounts) in group_vars/all/stig_attestation.yml.
+# The STIG check focuses on interactive users (UID >= 1000, interactive shell),
+# but including all system accounts in the authorized list also flags unexpected
+# system-level accounts added outside normal package management.
+#
+# The list is passed via environment variable (comma-separated) to avoid
+# Ansible argument-splitting errors when the Jinja2 result contains spaces.
+
+- name: RHEL-09-411095 | check for unauthorized accounts
+  shell: |
+    IFS=',' read -ra authorized <<< "$AUTHORIZED_USERS"
+    findings=""
+    while IFS=: read -r username _ uid _ _ _ shell; do
+      found=false
+      for auth in "${authorized[@]}"; do
+        [ "$auth" = "$username" ] && found=true && break
+      done
+      if $found; then
+        findings="${findings}AUTHORIZED: ${username} (uid=${uid})\n"
+      else
+        findings="${findings}UNAUTHORIZED: ${username} (uid=${uid})\n"
+      fi
+    done < /etc/passwd
+    if [ -z "$findings" ]; then
+      echo "STATUS: PASS"
+    elif echo -e "$findings" | grep -q '^UNAUTHORIZED:'; then
+      echo "STATUS: FAIL"
+      echo -e "$findings" | sed '/^$/d'
+    else
+      echo "STATUS: PASS"
+      echo -e "$findings" | sed '/^$/d'
+    fi
+  environment:
+    AUTHORIZED_USERS: "{{ rhel9_authorized_users | join(',') }}"
+  register: _411095_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-411095 | record unauthorized account check status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-411095': {
+        'status': 'not_a_finding' if 'STATUS: PASS' in _411095_result.stdout else 'open',
+        'finding_details': _411095_result.stdout | trim,
+        'comments':
+          'Maintain the list of authorized interactive accounts in '
+          ~ 'rhel9_authorized_users (group_vars/all/stig_attestation.yml). '
+          ~ 'Remove unauthorized accounts or obtain ISSO approval and add to the list.'
+      }
+    }) }}"
+  tags: [validate]

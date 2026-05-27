@@ -1,0 +1,38 @@
+---
+# RHEL-09-411050 | V-257995
+# RHEL 9 must disable account identifiers after 35 days of inactivity.
+# CAT II (Medium) | CCI-000795
+
+- name: RHEL-09-411050 | check INACTIVE setting in useradd defaults
+  shell: |
+    val=$(grep -i '^\s*INACTIVE' /etc/default/useradd 2>/dev/null | awk -F= '{print $2}' | xargs | head -1)
+    if [ -z "$val" ]; then
+      echo "STATUS: FAIL"
+      echo "RAW: INACTIVE not set in /etc/default/useradd"
+    elif [ "$val" -eq -1 ] 2>/dev/null; then
+      echo "STATUS: FAIL"
+      echo "RAW: INACTIVE=-1 (disabled, must be 1-35)"
+    elif [ "$val" -gt 35 ] 2>/dev/null; then
+      echo "STATUS: FAIL"
+      echo "RAW: INACTIVE=$val (must be <= 35)"
+    elif [ "$val" -le 0 ] 2>/dev/null; then
+      echo "STATUS: FAIL"
+      echo "RAW: INACTIVE=$val (must be 1-35)"
+    else
+      echo "STATUS: PASS"
+      echo "RAW: INACTIVE=$val"
+    fi
+  register: _411050_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-411050 | record account inactivity setting status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-411050': {
+        'status': 'not_a_finding' if 'STATUS: PASS' in _411050_result.stdout else 'open',
+        'finding_details': _411050_result.stdout | trim,
+        'comments': 'Set with: sudo useradd -D -f 35 (sets INACTIVE=35 in /etc/default/useradd)'
+      }
+    }) }}"
+  tags: [validate]

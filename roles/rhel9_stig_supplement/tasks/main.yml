@@ -507,6 +507,62 @@
   tags: [RHEL-09-291040]
   when: supp_rules['RHEL-09-291040'] | default(true) | bool
 
+- import_tasks: 411/RHEL-09-411015.yml
+  tags: [RHEL-09-411015]
+  when: supp_rules['RHEL-09-411015'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411025.yml
+  tags: [RHEL-09-411025]
+  when: supp_rules['RHEL-09-411025'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411030.yml
+  tags: [RHEL-09-411030]
+  when: supp_rules['RHEL-09-411030'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411035.yml
+  tags: [RHEL-09-411035]
+  when: supp_rules['RHEL-09-411035'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411040.yml
+  tags: [RHEL-09-411040]
+  when: supp_rules['RHEL-09-411040'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411045.yml
+  tags: [RHEL-09-411045]
+  when: supp_rules['RHEL-09-411045'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411050.yml
+  tags: [RHEL-09-411050]
+  when: supp_rules['RHEL-09-411050'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411055.yml
+  tags: [RHEL-09-411055]
+  when: supp_rules['RHEL-09-411055'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411060.yml
+  tags: [RHEL-09-411060]
+  when: supp_rules['RHEL-09-411060'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411065.yml
+  tags: [RHEL-09-411065]
+  when: supp_rules['RHEL-09-411065'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411070.yml
+  tags: [RHEL-09-411070]
+  when: supp_rules['RHEL-09-411070'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411095.yml
+  tags: [RHEL-09-411095]
+  when: supp_rules['RHEL-09-411095'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411100.yml
+  tags: [RHEL-09-411100]
+  when: supp_rules['RHEL-09-411100'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411110.yml
+  tags: [RHEL-09-411110]
+  when: supp_rules['RHEL-09-411110'] | default(true) | bool
+
 - name: write supplement facts to disk
   copy:
     content: "{{ supp_facts | to_nice_json(indent=2) }}"

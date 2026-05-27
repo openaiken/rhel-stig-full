@@ -1,0 +1,67 @@
+---
+# RHEL-09-411025 | V-257990
+# RHEL 9 must set the umask value to 077 for all local interactive user
+# accounts.
+# CAT II (Medium) | CCI-000366
+
+- name: RHEL-09-411025 | check umask in interactive user init files
+  shell: |
+    findings=""
+    while IFS=: read -r username _ uid _ _ homedir shell; do
+      [ "$uid" -lt 1000 ] 2>/dev/null && continue
+      [[ "$shell" =~ nologin|/false$ ]] && continue
+      [ ! -d "$homedir" ] && continue
+      while IFS= read -r initfile; do
+        while IFS= read -r line; do
+          # skip comments
+          [[ "$line" =~ ^[[:space:]]*# ]] && continue
+          [[ "$line" =~ [Uu][Mm][Aa][Ss][Kk] ]] || continue
+          mask=$(echo "$line" | grep -oP '0?[0-7]{3,4}' | tail -1)
+          if [ -z "$mask" ]; then
+            findings="${findings}WARN: ${initfile}: umask line found but value unreadable: $line\n"
+          elif [ "$mask" != "077" ] && [ "$mask" != "0077" ]; then
+            findings="${findings}FAIL: ${initfile}: umask=$mask (must be 077)\n"
+          else
+            findings="${findings}PASS: ${initfile}: umask=$mask\n"
+          fi
+        done < "$initfile"
+      done < <(find "$homedir" -maxdepth 1 -type f -name ".[^.]*" 2>/dev/null)
+    done < /etc/passwd
+    # also check /etc/profile and /etc/profile.d/*.sh
+    for f in /etc/profile /etc/bashrc /etc/profile.d/*.sh; do
+      [ -f "$f" ] || continue
+      while IFS= read -r line; do
+        [[ "$line" =~ ^[[:space:]]*# ]] && continue
+        [[ "$line" =~ [Uu][Mm][Aa][Ss][Kk] ]] || continue
+        mask=$(echo "$line" | grep -oP '0?[0-7]{3,4}' | tail -1)
+        [ -z "$mask" ] && continue
+        if [ "$mask" != "077" ] && [ "$mask" != "0077" ]; then
+          findings="${findings}FAIL: ${f}: umask=$mask\n"
+        else
+          findings="${findings}PASS: ${f}: umask=$mask\n"
+        fi
+      done < "$f"
+    done
+    if [ -z "$findings" ]; then
+      echo "STATUS: PASS (no umask lines found in init files)"
+    elif echo -e "$findings" | grep -q '^FAIL:'; then
+      echo "STATUS: FAIL"
+      echo -e "$findings" | sed '/^$/d'
+    else
+      echo "STATUS: PASS"
+      echo -e "$findings" | sed '/^$/d'
+    fi
+  register: _411025_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-411025 | record umask check status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-411025': {
+        'status': 'not_a_finding' if 'STATUS: PASS' in _411025_result.stdout else 'open',
+        'finding_details': _411025_result.stdout | trim,
+        'comments': 'Set umask 077 in /etc/profile or /etc/profile.d/umask.sh'
+      }
+    }) }}"
+  tags: [validate]
