@@ -132,3 +132,13 @@ rhel9_authorized_users:
 # will report not_a_finding automatically for an empty list.
 # Set expiration: sudo chage -E $(date -d +72hours +%Y-%m-%d) <account>
 rhel9_temporary_accounts: []
+#
+# ┄┄ RHEL-09-431016 | V-258038 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# sudo rules must include TYPE=sysadm_t ROLE=sysadm_r for administrator
+# accounts. If sudo is managed via IdM/SSSD rather than local sudoers files,
+# the automated check will detect the SSSD provider and set status to CENTRALIZED
+# in finding_details. Set rhel9_attest_sel_sudo_context_compliant: true only
+# after verifying that the IdM sudo rules include the sysadm_t/sysadm_r context.
+# Document the IdM sudo rule name(s) or HBAC policy in the method field.
+rhel9_attest_sel_sudo_context_compliant: false
+rhel9_attest_sel_sudo_context_method: ""
