@@ -1,0 +1,39 @@
+---
+# RHEL-09-412080 | V-258018
+# RHEL 9 must terminate idle user sessions.
+# CAT II (Medium) | CCI-002361
+
+- name: RHEL-09-412080 | check StopIdleSessionSec in logind.conf
+  shell: |
+    val=$(systemd-analyze cat-config systemd/logind.conf 2>/dev/null \
+          | grep -i '^\s*StopIdleSessionSec\s*=' \
+          | awk -F= '{print $2}' | xargs | tail -1)
+    if [ -z "$val" ]; then
+      echo "STATUS: FAIL"
+      echo "RAW: StopIdleSessionSec not configured (default is infinity)"
+    elif [ "$val" = "infinity" ]; then
+      echo "STATUS: FAIL"
+      echo "RAW: StopIdleSessionSec=infinity (sessions never terminated)"
+    elif [ "$val" -gt 600 ] 2>/dev/null; then
+      echo "STATUS: FAIL"
+      echo "RAW: StopIdleSessionSec=$val (must be <= 600)"
+    else
+      echo "STATUS: PASS"
+      echo "RAW: StopIdleSessionSec=$val"
+    fi
+  register: _412080_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-412080 | record idle session termination status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-412080': {
+        'status': 'not_a_finding' if 'STATUS: PASS' in _412080_result.stdout else 'open',
+        'finding_details': _412080_result.stdout | trim,
+        'comments':
+          'Set StopIdleSessionSec=600 in /etc/systemd/logind.conf and run: '
+          ~ 'systemctl restart systemd-logind'
+      }
+    }) }}"
+  tags: [validate]
