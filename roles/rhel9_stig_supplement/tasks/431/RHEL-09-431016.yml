@@ -4,25 +4,54 @@
 # sudo command.
 # CAT II (Medium) | CCI-002233
 
-# Check looks for TYPE=sysadm_t ROLE=sysadm_r in local sudoers files.
-# If sudo rules are managed centrally via IdM/SSSD, they will not appear in
-# local files. In that case, document the IdM-side enforcement via the
-# attestation vars below.
+# Checks two things:
+# 1. Any privilege-granting sudoers line (local files) that is MISSING
+#    TYPE=sysadm_t ROLE=sysadm_r is reported as needing context elevation.
+#    This applies to local groups too, not just domain accounts.
+# 2. If sudo is also managed via IdM/SSSD, the centralized rules cannot be
+#    inspected here — document IdM-side enforcement via attestation vars.
+#
+# A sudoers privilege rule is any non-comment, non-Defaults, non-alias line
+# that contains an = sign (the host/runas/command spec separator).
 
 - name: RHEL-09-431016 | check sudoers for sysadm_r SELinux context elevation
   shell: |
-    local_result=$(grep -rh 'sysadm_r' /etc/sudoers /etc/sudoers.d/ 2>/dev/null | grep -v '^#' || true)
-    sssd_sudo=$(grep -i '^\s*sudo_provider\s*=' /etc/sssd/sssd.conf /etc/sssd/conf.d/*.conf 2>/dev/null | head -1 | awk -F= '{print $2}' | xargs)
-
-    echo "LOCAL_SUDOERS_MATCH: ${local_result:-none}"
+    sssd_sudo=$(grep -i '^\s*sudo_provider\s*=' /etc/sssd/sssd.conf \
+                /etc/sssd/conf.d/*.conf 2>/dev/null \
+                | head -1 | awk -F= '{print $2}' | xargs)
     echo "SSSD_SUDO_PROVIDER: ${sssd_sudo:-not configured}"
 
-    if [ -n "$local_result" ]; then
-      echo "STATUS: PASS (sysadm_r found in local sudoers)"
+    elevated=""
+    missing=""
+
+    while IFS= read -r line; do
+      # strip leading whitespace
+      trimmed="${line#"${line%%[! ]*}"}"
+      # skip blank, comments, Defaults, alias definitions, include directives
+      [[ -z "$trimmed" ]] && continue
+      [[ "$trimmed" =~ ^# ]] && continue
+      [[ "$trimmed" =~ ^[[:space:]]*(Defaults|User_Alias|Runas_Alias|Cmnd_Alias|Host_Alias|@include|#include) ]] && continue
+      # must contain = to be a privilege rule
+      [[ "$trimmed" != *=* ]] && continue
+      # check for SELinux context elevation
+      if echo "$trimmed" | grep -qiP 'TYPE=sysadm_t' && echo "$trimmed" | grep -qiP 'ROLE=sysadm_r'; then
+        elevated="${elevated}ELEVATED: ${trimmed}\n"
+      else
+        missing="${missing}MISSING_CONTEXT: ${trimmed}\n"
+      fi
+    done < <(grep -rh '' /etc/sudoers /etc/sudoers.d/ 2>/dev/null)
+
+    [ -n "$elevated" ] && echo -e "$elevated" | sed '/^$/d'
+    [ -n "$missing" ]  && echo -e "$missing"  | sed '/^$/d'
+
+    if [ -n "$missing" ]; then
+      echo "STATUS: FAIL (privilege rules exist without sysadm_t/sysadm_r context)"
+    elif [ -n "$elevated" ]; then
+      echo "STATUS: PASS (all local privilege rules include SELinux context elevation)"
     elif [ -n "$sssd_sudo" ] && [ "$sssd_sudo" != "none" ]; then
-      echo "STATUS: CENTRALIZED (sudo via SSSD provider: $sssd_sudo)"
+      echo "STATUS: CENTRALIZED (no local privilege rules; sudo via SSSD: $sssd_sudo)"
     else
-      echo "STATUS: FAIL (sysadm_r not found and no SSSD sudo provider detected)"
+      echo "STATUS: FAIL (no privilege rules found and no SSSD sudo provider detected)"
     fi
   register: _431016_result
   changed_when: false
@@ -34,7 +63,8 @@
       'RHEL-09-431016': {
         'status':
           'not_a_finding' if ('STATUS: PASS' in _431016_result.stdout)
-          else ('not_a_finding' if (rhel9_attest_sel_sudo_context_compliant | bool)
+          else ('not_a_finding' if (rhel9_attest_sel_sudo_context_compliant | bool
+                                    and 'STATUS: FAIL' not in _431016_result.stdout)
           else 'open'),
         'finding_details':
           _431016_result.stdout | trim
@@ -43,9 +73,11 @@
           ~ '\nIdM/centralized method: '
           ~ (rhel9_attest_sel_sudo_context_method if rhel9_attest_sel_sudo_context_method else '(not provided)'),
         'comments':
-          'If sudo is managed via IdM, configure HBAC/sudo rules in IdM to include '
-          ~ 'TYPE=sysadm_t ROLE=sysadm_r, then set rhel9_attest_sel_sudo_context_compliant: true '
-          ~ 'and document the IdM rule name(s) in rhel9_attest_sel_sudo_context_method.'
+          'Every privilege-granting sudoers rule must include TYPE=sysadm_t ROLE=sysadm_r. '
+          ~ 'MISSING_CONTEXT lines above must be corrected regardless of IdM management. '
+          ~ 'For centralized IdM sudo rules, verify sysadm_t/sysadm_r is set in IdM, '
+          ~ 'then set rhel9_attest_sel_sudo_context_compliant: true and document '
+          ~ 'the IdM rule name(s) in rhel9_attest_sel_sudo_context_method.'
       }
     }) }}"
   tags: [validate]
