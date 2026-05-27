@@ -1,0 +1,35 @@
+---
+# RHEL-09-271035 | V-258193
+# RHEL 9 must prevent a user from overriding the disabling of the graphical
+# user interface autorun function.
+# CAT II (Medium) | CCI-000366
+
+# Not Applicable if GDM is not installed.
+
+- name: RHEL-09-271035 | check autorun-never is locked in dconf
+  shell: |
+    rpm -q gdm &>/dev/null || { echo "NA: gdm not installed"; exit 0; }
+    result=$(grep -r '/media-handling/autorun-never' \
+             /etc/dconf/db/local.d/locks/ 2>/dev/null | head -1)
+    if [ -n "$result" ]; then echo "LOCKED: $result"
+    else echo "NOT_LOCKED"
+    fi
+  register: _271035_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-271035 | record autorun-never lock status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-271035': {
+        'status':
+          'not_applicable' if 'NA:' in _271035_result.stdout
+          else ('not_a_finding' if 'LOCKED:' in _271035_result.stdout
+          else 'open'),
+        'finding_details': _271035_result.stdout | trim,
+        'comments':
+          'Add /org/gnome/desktop/media-handling/autorun-never to a lock file '
+          ~ 'under /etc/dconf/db/local.d/locks/. Run dconf update.'
+      }
+    }) }}"
+  tags: [validate]

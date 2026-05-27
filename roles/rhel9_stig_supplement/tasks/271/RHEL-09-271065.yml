@@ -1,0 +1,43 @@
+---
+# RHEL-09-271065 | V-258199
+# RHEL 9 must automatically lock graphical user sessions after 10 minutes of
+# inactivity.
+# CAT II (Medium) | CCI-000057
+
+# Not Applicable if GDM is not installed.
+# Compliant when idle-delay is set to 1–600 (seconds). 0 disables the lock;
+# values > 600 exceed the 10-minute maximum. Stored as uint32 in dconf.
+
+- name: RHEL-09-271065 | check idle-delay in dconf keyfiles
+  shell: |
+    rpm -q gdm &>/dev/null || { echo "NA: gdm not installed"; exit 0; }
+    raw=$(grep -rh '^idle-delay=' /etc/dconf/db/local.d/ 2>/dev/null \
+          | grep -v '/locks/' | head -1 | cut -d= -f2-)
+    val=$(echo "$raw" | grep -oP '\d+' | head -1)
+    if [ -z "$val" ]; then
+      echo "FAIL: NOTSET"
+    elif [ "$val" -eq 0 ] || [ "$val" -gt 600 ]; then
+      echo "FAIL: $val seconds (raw: $raw)"
+    else
+      echo "PASS: $val seconds (raw: $raw)"
+    fi
+  register: _271065_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-271065 | record idle-delay status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-271065': {
+        'status':
+          'not_applicable' if 'NA:' in _271065_result.stdout
+          else ('not_a_finding' if 'PASS:' in _271065_result.stdout
+          else 'open'),
+        'finding_details': _271065_result.stdout | trim,
+        'comments':
+          'Set idle-delay=uint32 600 in a dconf keyfile under /etc/dconf/db/local.d/ '
+          ~ 'in the [org/gnome/desktop/session] section. Value must be 1-600 '
+          ~ '(0 disables locking; > 600 exceeds 10-minute maximum). Run dconf update.'
+      }
+    }) }}"
+  tags: [validate]

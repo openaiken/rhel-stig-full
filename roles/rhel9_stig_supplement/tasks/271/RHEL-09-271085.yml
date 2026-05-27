@@ -1,0 +1,37 @@
+---
+# RHEL-09-271085 | V-258203
+# RHEL 9 must conceal, via the session lock, information previously visible
+# on the display with a publicly viewable image.
+# CAT II (Medium) | CCI-000060
+
+# Not Applicable if GDM is not installed.
+# Compliant when picture-uri is locked so users cannot set a custom image.
+# The STIG check verifies the setting is not user-overridable (writable=false).
+
+- name: RHEL-09-271085 | check screensaver picture-uri is locked in dconf
+  shell: |
+    rpm -q gdm &>/dev/null || { echo "NA: gdm not installed"; exit 0; }
+    result=$(grep -r '/screensaver/picture-uri' \
+             /etc/dconf/db/local.d/locks/ 2>/dev/null | head -1)
+    if [ -n "$result" ]; then echo "LOCKED: $result"
+    else echo "NOT_LOCKED"
+    fi
+  register: _271085_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-271085 | record screensaver picture-uri lock status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-271085': {
+        'status':
+          'not_applicable' if 'NA:' in _271085_result.stdout
+          else ('not_a_finding' if 'LOCKED:' in _271085_result.stdout
+          else 'open'),
+        'finding_details': _271085_result.stdout | trim,
+        'comments':
+          'Add /org/gnome/desktop/screensaver/picture-uri to a lock file '
+          ~ 'under /etc/dconf/db/local.d/locks/. Run dconf update.'
+      }
+    }) }}"
+  tags: [validate]

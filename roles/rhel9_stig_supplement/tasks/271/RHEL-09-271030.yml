@@ -1,0 +1,34 @@
+---
+# RHEL-09-271030 | V-258192
+# RHEL 9 must disable the graphical user interface autorun function unless
+# required.
+# CAT II (Medium) | CCI-000366
+
+# Not Applicable if GDM is not installed.
+# Compliant when autorun-never=true in dconf keyfiles.
+
+- name: RHEL-09-271030 | check autorun-never in dconf keyfiles
+  shell: |
+    rpm -q gdm &>/dev/null || { echo "NA: gdm not installed"; exit 0; }
+    val=$(grep -rh '^autorun-never=' /etc/dconf/db/local.d/ 2>/dev/null \
+          | grep -v '/locks/' | head -1 | cut -d= -f2- | xargs)
+    echo "${val:-NOTSET}"
+  register: _271030_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-271030 | record autorun-never status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-271030': {
+        'status':
+          'not_applicable' if 'NA:' in _271030_result.stdout
+          else ('not_a_finding' if _271030_result.stdout | trim == 'true'
+          else 'open'),
+        'finding_details': _271030_result.stdout | trim,
+        'comments':
+          'Set autorun-never=true in a dconf keyfile under /etc/dconf/db/local.d/ '
+          ~ 'in the [org/gnome/desktop/media-handling] section. Run dconf update.'
+      }
+    }) }}"
+  tags: [validate]

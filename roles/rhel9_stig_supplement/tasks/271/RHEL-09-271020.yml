@@ -1,0 +1,34 @@
+---
+# RHEL-09-271020 | V-258190
+# RHEL 9 must disable the graphical user interface automount function unless
+# required.
+# CAT II (Medium) | CCI-000366
+
+# Not Applicable if GDM is not installed.
+# Compliant when automount-open=false in dconf keyfiles.
+
+- name: RHEL-09-271020 | check automount-open in dconf keyfiles
+  shell: |
+    rpm -q gdm &>/dev/null || { echo "NA: gdm not installed"; exit 0; }
+    val=$(grep -rh '^automount-open=' /etc/dconf/db/local.d/ 2>/dev/null \
+          | grep -v '/locks/' | head -1 | cut -d= -f2- | xargs)
+    echo "${val:-NOTSET}"
+  register: _271020_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-271020 | record automount-open status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-271020': {
+        'status':
+          'not_applicable' if 'NA:' in _271020_result.stdout
+          else ('not_a_finding' if _271020_result.stdout | trim == 'false'
+          else 'open'),
+        'finding_details': _271020_result.stdout | trim,
+        'comments':
+          'Set automount-open=false in a dconf keyfile under /etc/dconf/db/local.d/ '
+          ~ 'in the [org/gnome/desktop/media-handling] section. Run dconf update.'
+      }
+    }) }}"
+  tags: [validate]

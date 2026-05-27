@@ -1,0 +1,35 @@
+---
+# RHEL-09-271025 | V-258191
+# RHEL 9 must prevent a user from overriding the disabling of the graphical
+# user interface automount function.
+# CAT II (Medium) | CCI-000366
+
+# Not Applicable if GDM is not installed.
+
+- name: RHEL-09-271025 | check automount-open is locked in dconf
+  shell: |
+    rpm -q gdm &>/dev/null || { echo "NA: gdm not installed"; exit 0; }
+    result=$(grep -r '/media-handling/automount-open' \
+             /etc/dconf/db/local.d/locks/ 2>/dev/null | head -1)
+    if [ -n "$result" ]; then echo "LOCKED: $result"
+    else echo "NOT_LOCKED"
+    fi
+  register: _271025_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-271025 | record automount-open lock status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-271025': {
+        'status':
+          'not_applicable' if 'NA:' in _271025_result.stdout
+          else ('not_a_finding' if 'LOCKED:' in _271025_result.stdout
+          else 'open'),
+        'finding_details': _271025_result.stdout | trim,
+        'comments':
+          'Add /org/gnome/desktop/media-handling/automount-open to a lock file '
+          ~ 'under /etc/dconf/db/local.d/locks/. Run dconf update.'
+      }
+    }) }}"
+  tags: [validate]

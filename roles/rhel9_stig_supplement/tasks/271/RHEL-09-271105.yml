@@ -1,0 +1,39 @@
+---
+# RHEL-09-271105 | V-258207
+# RHEL 9 must disable the ability of a user to accidentally press
+# Ctrl-Alt-Del and cause a system to shut down or reboot.
+# CAT II (Medium) | CCI-000366
+
+# Not Applicable if GDM is not installed.
+# Compliant when the logout key is empty ([''] or @as []).
+
+- name: RHEL-09-271105 | check Ctrl-Alt-Del logout key in dconf keyfiles
+  shell: |
+    rpm -q gdm &>/dev/null || { echo "NA: gdm not installed"; exit 0; }
+    val=$(grep -rh '^logout=' /etc/dconf/db/local.d/ 2>/dev/null \
+          | grep -v '/locks/' | head -1 | cut -d= -f2- | xargs)
+    if [ -z "$val" ] || [ "$val" = "['']" ] || [ "$val" = "@as []" ]; then
+      echo "PASS: ${val:-NOTSET (default, no action)}"
+    else
+      echo "FAIL: $val"
+    fi
+  register: _271105_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-271105 | record Ctrl-Alt-Del logout key status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-271105': {
+        'status':
+          'not_applicable' if 'NA:' in _271105_result.stdout
+          else ('not_a_finding' if 'PASS:' in _271105_result.stdout
+          else 'open'),
+        'finding_details': _271105_result.stdout | trim,
+        'comments':
+          'Set logout=[''''] in a dconf keyfile under /etc/dconf/db/local.d/ '
+          ~ 'in the [org/gnome/settings-daemon/plugins/media-keys] section. '
+          ~ 'Run dconf update.'
+      }
+    }) }}"
+  tags: [validate]

@@ -1,0 +1,33 @@
+---
+# RHEL-09-271115 | V-258209
+# RHEL 9 must disable the user list at logon for graphical user interfaces.
+# CAT II (Medium) | CCI-000366
+
+# Not Applicable if GDM is not installed.
+# Compliant when disable-user-list=true in dconf keyfiles.
+
+- name: RHEL-09-271115 | check disable-user-list in dconf keyfiles
+  shell: |
+    rpm -q gdm &>/dev/null || { echo "NA: gdm not installed"; exit 0; }
+    val=$(grep -rh '^disable-user-list=' /etc/dconf/db/local.d/ 2>/dev/null \
+          | grep -v '/locks/' | head -1 | cut -d= -f2- | xargs)
+    echo "${val:-NOTSET}"
+  register: _271115_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-271115 | record disable-user-list status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-271115': {
+        'status':
+          'not_applicable' if 'NA:' in _271115_result.stdout
+          else ('not_a_finding' if _271115_result.stdout | trim == 'true'
+          else 'open'),
+        'finding_details': _271115_result.stdout | trim,
+        'comments':
+          'Set disable-user-list=true in a dconf keyfile under /etc/dconf/db/local.d/ '
+          ~ 'in the [org/gnome/login-screen] section. Run dconf update.'
+      }
+    }) }}"
+  tags: [validate]

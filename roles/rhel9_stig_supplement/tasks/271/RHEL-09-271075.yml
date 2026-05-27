@@ -1,0 +1,41 @@
+---
+# RHEL-09-271075 | V-258201
+# RHEL 9 must initiate a session lock for graphical user interfaces when the
+# screensaver is activated.
+# CAT II (Medium) | CCI-000057
+
+# Not Applicable if GDM is not installed.
+# Compliant when lock-delay is 0–5 seconds. Stored as uint32 in dconf.
+
+- name: RHEL-09-271075 | check screensaver lock-delay in dconf keyfiles
+  shell: |
+    rpm -q gdm &>/dev/null || { echo "NA: gdm not installed"; exit 0; }
+    raw=$(grep -rh '^lock-delay=' /etc/dconf/db/local.d/ 2>/dev/null \
+          | grep -v '/locks/' | head -1 | cut -d= -f2-)
+    val=$(echo "$raw" | grep -oP '\d+' | head -1)
+    if [ -z "$val" ]; then
+      echo "FAIL: NOTSET"
+    elif [ "$val" -le 5 ]; then
+      echo "PASS: $val seconds (raw: $raw)"
+    else
+      echo "FAIL: $val seconds exceeds maximum of 5 (raw: $raw)"
+    fi
+  register: _271075_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-271075 | record screensaver lock-delay status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-271075': {
+        'status':
+          'not_applicable' if 'NA:' in _271075_result.stdout
+          else ('not_a_finding' if 'PASS:' in _271075_result.stdout
+          else 'open'),
+        'finding_details': _271075_result.stdout | trim,
+        'comments':
+          'Set lock-delay=uint32 5 in a dconf keyfile under /etc/dconf/db/local.d/ '
+          ~ 'in the [org/gnome/desktop/screensaver] section. Run dconf update.'
+      }
+    }) }}"
+  tags: [validate]

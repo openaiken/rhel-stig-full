@@ -1,0 +1,36 @@
+---
+# RHEL-09-271045 | V-258195
+# RHEL 9 must be able to initiate a session lock for all connection types
+# using smart card when the smart card is removed.
+# CAT II (Medium) | CCI-000056
+
+# Not Applicable if GDM is not installed.
+# Compliant when removal-action='lock-screen' in dconf keyfiles.
+
+- name: RHEL-09-271045 | check smartcard removal-action in dconf keyfiles
+  shell: |
+    rpm -q gdm &>/dev/null || { echo "NA: gdm not installed"; exit 0; }
+    val=$(grep -rh '^removal-action=' /etc/dconf/db/local.d/ 2>/dev/null \
+          | grep -v '/locks/' | head -1 | cut -d= -f2- | xargs)
+    echo "${val:-NOTSET}"
+  register: _271045_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-271045 | record smartcard removal-action status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-271045': {
+        'status':
+          'not_applicable' if 'NA:' in _271045_result.stdout
+          else ('not_a_finding'
+                if _271045_result.stdout | trim in ['lock-screen', \"'lock-screen'\"]
+          else 'open'),
+        'finding_details': _271045_result.stdout | trim,
+        'comments':
+          'Set removal-action=lock-screen in a dconf keyfile under /etc/dconf/db/local.d/ '
+          ~ 'in the [org/gnome/settings-daemon/peripherals/smartcard] section. '
+          ~ 'Run dconf update.'
+      }
+    }) }}"
+  tags: [validate]

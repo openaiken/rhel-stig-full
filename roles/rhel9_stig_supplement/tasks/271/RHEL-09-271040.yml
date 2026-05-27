@@ -1,0 +1,39 @@
+---
+# RHEL-09-271040 | V-258194
+# RHEL 9 must not allow unattended or automatic logon via the graphical user
+# interface.
+# CAT I (High) | CCI-000366
+
+# Not Applicable if GDM is not installed.
+# Checks /etc/gdm/custom.conf for AutomaticLoginEnable=false.
+
+- name: RHEL-09-271040 | check GDM automatic login setting
+  shell: |
+    rpm -q gdm &>/dev/null || { echo "NA: gdm not installed"; exit 0; }
+    result=$(grep -i 'AutomaticLogin' /etc/gdm/custom.conf 2>/dev/null)
+    if [ -z "$result" ]; then
+      echo "FAIL: AutomaticLoginEnable line not found in /etc/gdm/custom.conf"
+    elif echo "$result" | grep -qi 'AutomaticLoginEnable=false'; then
+      echo "PASS: $result"
+    else
+      echo "FAIL: $result"
+    fi
+  register: _271040_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-271040 | record automatic login status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-271040': {
+        'status':
+          'not_applicable' if 'NA:' in _271040_result.stdout
+          else ('not_a_finding' if 'PASS:' in _271040_result.stdout
+          else 'open'),
+        'finding_details': _271040_result.stdout | trim,
+        'comments':
+          'Set AutomaticLoginEnable=false in the [daemon] section of '
+          ~ '/etc/gdm/custom.conf.'
+      }
+    }) }}"
+  tags: [validate]

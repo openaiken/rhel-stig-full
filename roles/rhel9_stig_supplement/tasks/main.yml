@@ -407,6 +407,98 @@
   tags: [RHEL-09-255125]
   when: supp_rules['RHEL-09-255125'] | default(true) | bool
 
+- import_tasks: 271/RHEL-09-271010.yml
+  tags: [RHEL-09-271010]
+  when: supp_rules['RHEL-09-271010'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271015.yml
+  tags: [RHEL-09-271015]
+  when: supp_rules['RHEL-09-271015'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271020.yml
+  tags: [RHEL-09-271020]
+  when: supp_rules['RHEL-09-271020'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271025.yml
+  tags: [RHEL-09-271025]
+  when: supp_rules['RHEL-09-271025'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271030.yml
+  tags: [RHEL-09-271030]
+  when: supp_rules['RHEL-09-271030'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271035.yml
+  tags: [RHEL-09-271035]
+  when: supp_rules['RHEL-09-271035'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271040.yml
+  tags: [RHEL-09-271040]
+  when: supp_rules['RHEL-09-271040'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271045.yml
+  tags: [RHEL-09-271045]
+  when: supp_rules['RHEL-09-271045'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271050.yml
+  tags: [RHEL-09-271050]
+  when: supp_rules['RHEL-09-271050'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271055.yml
+  tags: [RHEL-09-271055]
+  when: supp_rules['RHEL-09-271055'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271060.yml
+  tags: [RHEL-09-271060]
+  when: supp_rules['RHEL-09-271060'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271065.yml
+  tags: [RHEL-09-271065]
+  when: supp_rules['RHEL-09-271065'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271070.yml
+  tags: [RHEL-09-271070]
+  when: supp_rules['RHEL-09-271070'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271075.yml
+  tags: [RHEL-09-271075]
+  when: supp_rules['RHEL-09-271075'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271080.yml
+  tags: [RHEL-09-271080]
+  when: supp_rules['RHEL-09-271080'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271085.yml
+  tags: [RHEL-09-271085]
+  when: supp_rules['RHEL-09-271085'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271090.yml
+  tags: [RHEL-09-271090]
+  when: supp_rules['RHEL-09-271090'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271095.yml
+  tags: [RHEL-09-271095]
+  when: supp_rules['RHEL-09-271095'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271100.yml
+  tags: [RHEL-09-271100]
+  when: supp_rules['RHEL-09-271100'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271105.yml
+  tags: [RHEL-09-271105]
+  when: supp_rules['RHEL-09-271105'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271110.yml
+  tags: [RHEL-09-271110]
+  when: supp_rules['RHEL-09-271110'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271115.yml
+  tags: [RHEL-09-271115]
+  when: supp_rules['RHEL-09-271115'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-171011.yml
+  tags: [RHEL-09-171011]
+  when: supp_rules['RHEL-09-171011'] | default(true) | bool
+
 - name: write supplement facts to disk
   copy:
     content: "{{ supp_facts | to_nice_json(indent=2) }}"

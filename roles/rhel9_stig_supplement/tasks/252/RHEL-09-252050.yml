@@ -24,7 +24,7 @@
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-252050': {
         'status':
-          'not_a_finding' if (_252050_postfix.stdout | trim) == 'not_installed'
+          'not_applicable' if (_252050_postfix.stdout | trim) == 'not_installed'
           else ('not_a_finding'
                 if 'permit_mynetworks' in (_252050_restriction.stdout | default(''))
                    and 'reject' in (_252050_restriction.stdout | default(''))

@@ -1,0 +1,46 @@
+---
+# RHEL-09-171011 | (misidentified STIG ID — should be RHEL-09-271011)
+# RHEL 9 must display the Standard Mandatory DOD Notice and Consent Banner
+# text before granting local or remote access via a graphical user logon.
+# CAT II (Medium) | CCI-000048
+
+# Not Applicable if GDM is not installed.
+# Checks that banner-message-text is set and contains key DOD consent phrases.
+# The full configured text is captured in finding_details for manual comparison
+# against the exact required text, since whitespace/encoding may differ.
+
+- name: RHEL-09-171011 | collect configured banner message text
+  shell: |
+    rpm -q gdm &>/dev/null || { echo "NA: gdm not installed"; exit 0; }
+    val=$(grep -rh '^banner-message-text=' /etc/dconf/db/local.d/ 2>/dev/null \
+          | grep -v '/locks/' | head -1 | cut -d= -f2-)
+    if [ -z "$val" ]; then
+      echo "FAIL: banner-message-text not configured"
+    elif echo "$val" | grep -q 'USG-authorized use only'; then
+      echo "PASS"
+      echo "TEXT: $val"
+    else
+      echo "FAIL: banner text does not contain required DOD consent language"
+      echo "TEXT: $val"
+    fi
+  register: _171011_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-171011 | record banner message text status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-171011': {
+        'status':
+          'not_applicable' if 'NA:' in _171011_result.stdout
+          else ('not_a_finding' if _171011_result.stdout | trim | regex_search('^PASS')
+          else 'open'),
+        'finding_details': _171011_result.stdout | trim,
+        'comments':
+          'Set banner-message-text to the exact Standard Mandatory DOD Notice '
+          ~ 'and Consent Banner in a dconf keyfile under /etc/dconf/db/local.d/ '
+          ~ 'in the [org/gnome/login-screen] section. Run dconf update. '
+          ~ 'Verify the configured text matches the required banner exactly.'
+      }
+    }) }}"
+  tags: [validate]

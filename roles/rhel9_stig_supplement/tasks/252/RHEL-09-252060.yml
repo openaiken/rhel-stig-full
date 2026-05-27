@@ -32,7 +32,7 @@
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-252060': {
         'status':
-          'not_a_finding' if (_252060_postfix.stdout | trim) == 'not_installed'
+          'not_applicable' if (_252060_postfix.stdout | trim) == 'not_installed'
           else ('not_a_finding' if (_252060_alias.stdout | default('') | trim)
           else 'open'),
         'finding_details':
