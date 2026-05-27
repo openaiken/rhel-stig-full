@@ -499,6 +499,14 @@
   tags: [RHEL-09-171011]
   when: supp_rules['RHEL-09-171011'] | default(true) | bool
 
+- import_tasks: 291/RHEL-09-291030.yml
+  tags: [RHEL-09-291030]
+  when: supp_rules['RHEL-09-291030'] | default(true) | bool
+
+- import_tasks: 291/RHEL-09-291040.yml
+  tags: [RHEL-09-291040]
+  when: supp_rules['RHEL-09-291040'] | default(true) | bool
+
 - name: write supplement facts to disk
   copy:
     content: "{{ supp_facts | to_nice_json(indent=2) }}"

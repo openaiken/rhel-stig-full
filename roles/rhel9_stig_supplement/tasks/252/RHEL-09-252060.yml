@@ -34,7 +34,8 @@
         'status':
           'not_applicable' if (_252060_postfix.stdout | trim) == 'not_installed'
           else ('not_a_finding' if (_252060_alias.stdout | default('') | trim)
-          else 'open'),
+          else ('not_a_finding' if rhel9_attest_audit_notification_compliant | bool
+          else 'open')),
         'finding_details':
           'Postfix installed: ' ~ (_252060_postfix.stdout | trim)
           ~ '\npostmaster alias match (postmaster: root):\n'
@@ -44,9 +45,16 @@
           ~ '\nCurrent postmaster entries in /etc/aliases:\n'
           ~ (_252060_current.stdout | default('') | trim
              if (_252060_current.stdout | default('') | trim)
-             else '(none)'),
+             else '(none)')
+          ~ '\nAttestation (rhel9_attest_audit_notification_compliant): '
+          ~ (rhel9_attest_audit_notification_compliant | bool | string | lower)
+          ~ '\nSA documented notification method: '
+          ~ (rhel9_attest_audit_notification_method if rhel9_attest_audit_notification_method else '(not provided)'),
         'comments':
-          'Add to /etc/aliases: postmaster: root — then run: sudo newaliases'
+          'Add to /etc/aliases: postmaster: root — then run: sudo newaliases. '
+          ~ 'If an alternative audit failure notification mechanism is in place, '
+          ~ 'set rhel9_attest_audit_notification_compliant: true and document '
+          ~ 'the mechanism in rhel9_attest_audit_notification_method.'
       }
     }) }}"
   tags: [validate]

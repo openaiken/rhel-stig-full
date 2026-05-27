@@ -22,8 +22,11 @@ rhel9_gui_approved: false
 # Local disk partitions must use LUKS encryption unless encryption is provided
 # at the hypervisor or storage array level with documented organizational
 # approval. Set true only when that documented exception applies; the check
-# will auto-detect LUKS otherwise via lsblk.
+# will auto-detect LUKS otherwise via lsblk. Document the encryption method
+# (e.g. "VMware vSphere VM encryption at the datastore level") in
+# rhel9_attest_disk_encryption_method so the checklist reviewer has context.
 rhel9_attest_disk_encryption_na: false
+rhel9_attest_disk_encryption_method: ""
 #
 # ┄┄ RHEL-09-212020 | V-257789 | RHEL 9 V2R8 | CAT I ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 # The grub2 superuser account name configured on this system. Must not be a
@@ -55,3 +58,31 @@ rhel9_attest_ntp_source_approved: false
 # is active. Leave false if ipsec is inactive (supplement check auto-detects
 # that and marks not_a_finding regardless of this value).
 rhel9_attest_ipsec_tunnels_approved: false
+#
+# ┄┄ RHEL-09-291030 | V-258168 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# Set rhel9_attest_usbguard_na: true if this system is a VM with no virtual
+# or physical USB peripherals attached (Not Applicable per STIG check note).
+# If usbguard is not in use but unauthorized peripherals are blocked by another
+# mechanism, set rhel9_attest_usbguard_compliant: true and document the
+# mechanism in rhel9_attest_usbguard_method. If usbguard list-rules returns
+# output, the check passes automatically without these attestations.
+rhel9_attest_usbguard_na: false
+rhel9_attest_usbguard_compliant: false
+rhel9_attest_usbguard_method: ""
+#
+# ┄┄ RHEL-09-291040 | V-258171 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# Systems with no wifi-type devices detected are marked Not Applicable
+# automatically. If wireless adapters are present and have been approved by
+# the ISSO as an operational requirement, set rhel9_attest_wifi_approved: true
+# and record the ISSO approval details in rhel9_attest_wifi_comment.
+rhel9_attest_wifi_approved: false
+rhel9_attest_wifi_comment: ""
+#
+# ┄┄ RHEL-09-252060 | V-257959 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# If postfix is installed but the postmaster: root alias is not configured,
+# the SA must document the alternative mechanism by which the SA and ISSO are
+# notified of audit processing failures. Set compliant: true and describe the
+# mechanism in rhel9_attest_audit_notification_method (e.g. monitoring system,
+# different alias, external alerting).
+rhel9_attest_audit_notification_compliant: false
+rhel9_attest_audit_notification_method: ""

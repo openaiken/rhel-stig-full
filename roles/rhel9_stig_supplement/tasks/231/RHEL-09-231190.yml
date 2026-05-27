@@ -26,15 +26,12 @@
           'Attestation N/A (rhel9_attest_disk_encryption_na): '
           ~ (rhel9_attest_disk_encryption_na | bool | string | lower)
           ~ '\nLUKS crypt block devices found: ' ~ (_231190_result.stdout | trim)
-          ~ '\nResult: '
-          ~ ('not_applicable - encryption provided at hypervisor or storage layer per org approval'
-             if rhel9_attest_disk_encryption_na | bool
-             else ('not_a_finding - LUKS crypt block device(s) present'
-                   if (_231190_result.stdout | trim | int) > 0
-                   else 'OPEN - no LUKS crypt block devices detected')),
+          ~ '\nSA documented encryption method: '
+          ~ (rhel9_attest_disk_encryption_method if rhel9_attest_disk_encryption_method else '(not provided)'),
         'comments':
-          'Set rhel9_attest_disk_encryption_na: true in group_vars/all/stig_controls.yml '
-          ~ 'if encryption is provided by a hypervisor or storage array per org approval. '
+          'Set rhel9_attest_disk_encryption_na: true in stig_attestation.yml '
+          ~ 'if encryption is provided by a hypervisor or storage array per org approval, '
+          ~ 'and document the method in rhel9_attest_disk_encryption_method. '
           ~ 'Otherwise configure LUKS full-disk encryption at installation time.'
       }
     }) }}"
