@@ -1,0 +1,35 @@
+---
+# RHEL-09-432025 | V-258026
+# RHEL 9 must require users to reauthenticate for privilege escalation.
+# CAT II (Medium) | CCI-002038
+
+# Any occurrence of !authenticate in sudoers (local or drop-in) is a finding.
+# No exceptions — NOPASSWD is the correct mechanism if passwordless sudo is
+# approved, but !authenticate bypasses PAM entirely and is never acceptable.
+
+- name: RHEL-09-432025 | check sudoers for !authenticate
+  shell: |
+    hits=$(grep -irn '!authenticate' /etc/sudoers /etc/sudoers.d/ 2>/dev/null \
+           | grep -v '^\s*#' || true)
+    if [ -z "$hits" ]; then
+      echo "STATUS: PASS"
+      echo "RAW: No occurrences of !authenticate found"
+    else
+      echo "STATUS: FAIL"
+      echo "RAW: !authenticate found:"
+      echo "$hits"
+    fi
+  register: _432025_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-432025 | record !authenticate check status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-432025': {
+        'status': 'not_a_finding' if 'STATUS: PASS' in _432025_result.stdout else 'open',
+        'finding_details': _432025_result.stdout | trim,
+        'comments': 'Remove all !authenticate entries from sudoers files. Use NOPASSWD if passwordless sudo is required.'
+      }
+    }) }}"
+  tags: [validate]

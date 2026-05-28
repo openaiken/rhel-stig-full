@@ -579,6 +579,22 @@
   tags: [RHEL-09-431020]
   when: supp_rules['RHEL-09-431020'] | default(true) | bool
 
+- import_tasks: 432/RHEL-09-432020.yml
+  tags: [RHEL-09-432020]
+  when: supp_rules['RHEL-09-432020'] | default(true) | bool
+
+- import_tasks: 432/RHEL-09-432025.yml
+  tags: [RHEL-09-432025]
+  when: supp_rules['RHEL-09-432025'] | default(true) | bool
+
+- import_tasks: 432/RHEL-09-432030.yml
+  tags: [RHEL-09-432030]
+  when: supp_rules['RHEL-09-432030'] | default(true) | bool
+
+- import_tasks: 432/RHEL-09-432035.yml
+  tags: [RHEL-09-432035]
+  when: supp_rules['RHEL-09-432035'] | default(true) | bool
+
 - name: write supplement facts to disk
   copy:
     content: "{{ supp_facts | to_nice_json(indent=2) }}"
