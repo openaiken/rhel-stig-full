@@ -1,6 +1,6 @@
 ---
 - name: Generate CKLB checklist from scan results
-  hosts: "{{ my_host | default('default-host-group') }}"
+  hosts: "{{ my_host | default('default_host_group') }}"
   gather_facts: false
   become: false
 

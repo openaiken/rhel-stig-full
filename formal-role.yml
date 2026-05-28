@@ -1,6 +1,6 @@
 ---
 - name: Configure RHEL 9 Host with DISA STIG
-  hosts: "{{ my_host | default('default-host-group') }}"
+  hosts: "{{ my_host | default('default_host_group') }}"
   become: true
   check_mode: "{{ 'validate' in ansible_run_tags or ansible_check_mode }}"
   ignore_errors: "{{ 'validate' in ansible_run_tags or ansible_check_mode }}"

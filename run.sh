@@ -8,7 +8,7 @@ export XML_PATH="$HOME/oss/rhel-stig-full/reports"
 
 # ── defaults ──────────────────────────────────────────────────────────────────
 TAG=""
-HOST="default-host-group"
+HOST="default_host_group"
 SKIP_FORMAL=false
 SKIP_SUPPLEMENT=false
 SKIP_CKLB=false
@@ -36,7 +36,7 @@ Modes (required):
 Target:
   -H HOST_OR_GROUP, --host HOST_OR_GROUP
               Ansible inventory host name or group name to target
-              (default: default-host-group)
+              (default: default_host_group)
 
 Auth (mutually exclusive — choose one):
   (default)                 Prompt for become (sudo) password once
