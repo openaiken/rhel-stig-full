@@ -1,0 +1,50 @@
+---
+# RHEL-09-651030 | V-258240
+# RHEL 9 must be configured so that the file integrity tool verifies
+# Access Control Lists (ACLs).
+# CAT III (Low) | CCI-000366
+
+# Checks that 'acl' appears in an active rule definition. Typically set via
+# a macro: NORMAL = p+i+n+u+g+s+m+S+sha512+acl+xattrs+selinux
+
+- name: RHEL-09-651030 | check AIDE ACL verification configuration
+  shell: |
+    if ! rpm -q aide &>/dev/null; then
+      echo "NA: aide not installed"
+      exit 0
+    fi
+
+    conf=/etc/aide.conf
+    if [ ! -f "$conf" ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: $conf not found"
+      exit 0
+    fi
+
+    matches=$(grep -v '^\s*#' "$conf" | grep '\bacl\b' || true)
+    if [ -n "$matches" ]; then
+      echo "STATUS: PASS"
+      echo "PASS: acl found in active rule definitions:"
+      echo "$matches"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: acl not found in any active rule definition in $conf"
+    fi
+  register: _651030_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-651030 | record AIDE ACL verification status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-651030': {
+        'status':
+          'not_applicable' if (_651030_result.stdout is search('^NA:')
+                              or (rhel9_attest_alt_fim_tool | bool))
+          else ('not_a_finding' if 'STATUS: PASS' in _651030_result.stdout
+          else 'open'),
+        'finding_details': _651030_result.stdout | trim,
+        'comments': 'Add acl to the rule macro in /etc/aide.conf, e.g.: NORMAL = ...+acl+...'
+      }
+    }) }}"
+  tags: [validate]

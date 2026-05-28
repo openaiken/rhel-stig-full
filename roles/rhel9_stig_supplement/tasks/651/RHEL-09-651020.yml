@@ -1,0 +1,57 @@
+---
+# RHEL-09-651020 | V-258234
+# RHEL 9 must use a file integrity tool that is configured to use FIPS
+# 140-3-approved cryptographic hashes for validating file contents and
+# directories.
+# CAT II (Medium) | CCI-000366
+
+# Checks that sha512 appears in an active (non-commented) rule definition in
+# aide.conf. RHEL 9's default aide.conf typically defines a macro such as
+# CONTENT_EX = sha512+ftype+p+... which is then referenced by path selection
+# lines. Verifying sha512 is present in the active config is consistent with
+# the STIG check procedure.
+
+- name: RHEL-09-651020 | check AIDE sha512 configuration
+  shell: |
+    if ! rpm -q aide &>/dev/null; then
+      echo "NA: aide not installed"
+      exit 0
+    fi
+
+    conf=/etc/aide.conf
+    if [ ! -f "$conf" ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: $conf not found"
+      exit 0
+    fi
+
+    # Look for sha512 in non-commented rule definitions (macro defs and path lines)
+    matches=$(grep -v '^\s*#' "$conf" | grep 'sha512' || true)
+    if [ -n "$matches" ]; then
+      echo "STATUS: PASS"
+      echo "PASS: sha512 found in active rule definitions:"
+      echo "$matches"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: sha512 not found in any active rule definition in $conf"
+    fi
+  register: _651020_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-651020 | record AIDE sha512 status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-651020': {
+        'status':
+          'not_applicable' if (_651020_result.stdout is search('^NA:')
+                              or (rhel9_attest_alt_fim_tool | bool))
+          else ('not_a_finding' if 'STATUS: PASS' in _651020_result.stdout
+          else 'open'),
+        'finding_details': _651020_result.stdout | trim,
+        'comments':
+          'Add sha512 to the rule macro used by all selection lines in /etc/aide.conf, '
+          ~ 'e.g.: NORMAL = p+i+n+u+g+s+m+S+sha512+acl+xattrs+selinux'
+      }
+    }) }}"
+  tags: [validate]

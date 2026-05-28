@@ -1,0 +1,49 @@
+---
+# RHEL-09-651010 | V-258228
+# RHEL 9 must have the AIDE package installed.
+# CAT II (Medium) | CCI-002696, CCI-002699
+
+# If AIDE is not installed but an alternate file integrity monitoring (FIM) tool
+# is in use (e.g. Tripwire, OSSEC/Wazuh, Qualys FIM), set
+# rhel9_attest_alt_fim_tool: true and document the tool in
+# rhel9_attest_alt_fim_tool_name. The remaining 651 checks (aide.conf content,
+# scheduling) will also be marked not_applicable in that case.
+
+- name: RHEL-09-651010 | check AIDE installation
+  shell: |
+    if rpm -q aide &>/dev/null; then
+      echo "STATUS: PASS"
+      echo "PASS: $(rpm -q aide)"
+      conf=$(find /etc -name aide.conf 2>/dev/null | head -1)
+      if [ -n "$conf" ]; then
+        echo "INFO: config found at $conf"
+      else
+        echo "WARN: aide installed but aide.conf not found under /etc"
+      fi
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: aide package not installed"
+    fi
+  register: _651010_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-651010 | record AIDE installation status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-651010': {
+        'status':
+          'not_applicable' if (rhel9_attest_alt_fim_tool | bool)
+          else ('not_a_finding' if 'STATUS: PASS' in _651010_result.stdout
+          else 'open'),
+        'finding_details':
+          _651010_result.stdout | trim
+          ~ '\nAlternate FIM tool (rhel9_attest_alt_fim_tool): '
+          ~ (rhel9_attest_alt_fim_tool | bool | string | lower)
+          ~ '\nTool name: '
+          ~ (rhel9_attest_alt_fim_tool_name
+             if rhel9_attest_alt_fim_tool_name else '(not provided)'),
+        'comments': 'Install aide: dnf install aide; then aide --init && mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz'
+      }
+    }) }}"
+  tags: [validate]

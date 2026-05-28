@@ -1,0 +1,49 @@
+---
+# RHEL-09-651035 | V-258243
+# RHEL 9 must be configured so that the file integrity tool verifies
+# extended attributes.
+# CAT III (Low) | CCI-000366
+
+# Checks that 'xattrs' appears in an active rule definition.
+
+- name: RHEL-09-651035 | check AIDE extended attributes configuration
+  shell: |
+    if ! rpm -q aide &>/dev/null; then
+      echo "NA: aide not installed"
+      exit 0
+    fi
+
+    conf=/etc/aide.conf
+    if [ ! -f "$conf" ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: $conf not found"
+      exit 0
+    fi
+
+    matches=$(grep -v '^\s*#' "$conf" | grep '\bxattrs\b' || true)
+    if [ -n "$matches" ]; then
+      echo "STATUS: PASS"
+      echo "PASS: xattrs found in active rule definitions:"
+      echo "$matches"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: xattrs not found in any active rule definition in $conf"
+    fi
+  register: _651035_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-651035 | record AIDE xattrs verification status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-651035': {
+        'status':
+          'not_applicable' if (_651035_result.stdout is search('^NA:')
+                              or (rhel9_attest_alt_fim_tool | bool))
+          else ('not_a_finding' if 'STATUS: PASS' in _651035_result.stdout
+          else 'open'),
+        'finding_details': _651035_result.stdout | trim,
+        'comments': 'Add xattrs to the rule macro in /etc/aide.conf, e.g.: NORMAL = ...+xattrs+...'
+      }
+    }) }}"
+  tags: [validate]
