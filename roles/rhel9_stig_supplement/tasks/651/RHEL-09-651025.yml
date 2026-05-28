@@ -25,14 +25,16 @@
       exit 0
     fi
 
-    # Build a simple macro lookup from the active config (one level only)
-    declare -A macros
-    while IFS='=' read -r name value; do
-      # strip leading/trailing whitespace
-      name=$(echo "$name" | xargs)
-      value=$(echo "$value" | xargs)
-      macros["$name"]="$value"
-    done < <(grep -v '^\s*#' "$conf" | grep -E '^\s*[A-Za-z_][A-Za-z0-9_]*\s*=' | grep -v '^/')
+    # Look up an AIDE macro value by name (one level, no recursive expansion).
+    # Using a function avoids bash associative arrays (declare -A), which are
+    # not reliable when the shell resolves to sh POSIX mode.
+    aide_macro() {
+      grep -v '^\s*#' "$conf" \
+        | grep -E "^\s*${1}\s*=" \
+        | head -1 \
+        | awk -F'=' '{$1=""; print $0}' \
+        | xargs
+    }
 
     findings=""
     for tool in auditctl auditd ausearch aureport autrace augenrules; do
@@ -44,8 +46,9 @@
       fi
       rule_ref=$(echo "$line" | awk '{print $2}')
       # expand one level of macro if applicable
-      if [ -n "${macros[$rule_ref]}" ]; then
-        effective="${macros[$rule_ref]}"
+      expanded=$(aide_macro "$rule_ref")
+      if [ -n "$expanded" ]; then
+        effective="$expanded"
         src="macro $rule_ref"
       else
         effective="$rule_ref"
@@ -54,7 +57,7 @@
       if echo "$effective" | grep -q 'sha512'; then
         findings="${findings}PASS: $path -> $rule_ref ($src, sha512 present)\n"
       elif echo "$effective" | grep -qE '^[A-Za-z_]'; then
-        # looks like another macro ref we didn't expand — warn rather than fail
+        # looks like another macro ref not yet expanded — warn rather than fail
         findings="${findings}WARN: $path -> $rule_ref -> $effective (nested macro, verify sha512 manually)\n"
       else
         findings="${findings}FAIL: $path -> $rule_ref (sha512 NOT in effective rule: $effective)\n"
