@@ -189,3 +189,19 @@ rhel9_attest_alt_mfa_no_pki_method: ""
 # policy in rhel9_attest_ipa_certmap_method for the checklist reviewer.
 rhel9_attest_ipa_certmap: false
 rhel9_attest_ipa_certmap_method: ""
+#
+# ┄┄ RHEL-09-651010 through 651035 | RHEL 9 V2R8 | CAT II/III ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# All 651 rules assume AIDE is the FIM tool. If an alternate file integrity
+# monitoring solution is deployed (e.g. Tripwire, OSSEC/Wazuh, Qualys FIM),
+# set rhel9_attest_alt_fim_tool: true — all 651 checks will be marked
+# not_applicable. Document the tool name/version for the checklist reviewer.
+rhel9_attest_alt_fim_tool: false
+rhel9_attest_alt_fim_tool_name: ""
+#
+# ┄┄ RHEL-09-651015 | V-258231 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# Name of the systemd timer unit used to schedule periodic AIDE checks
+# (e.g. "aide-check.timer"). The check verifies the timer is enabled/active
+# and that the corresponding .service ExecStart invokes aide. Leave empty
+# to check cron only. Cron and systemd timer are both accepted; either found
+# passes the rule.
+rhel9_aide_timer_unit: ""
