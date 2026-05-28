@@ -1,0 +1,75 @@
+---
+# RHEL-09-631015 | V-258225
+# RHEL 9 must map the authenticated identity to the user or group account
+# for PKI-based authentication.
+# CAT II (Medium) | CCI-000187
+
+# Checks for a [certmap/...] section in /etc/sssd/sssd.conf or any conf.d file.
+# Not applicable if an approved non-PKI MFA method is in use.
+#
+# IMPORTANT — IPA/FreeIPA-managed certmap:
+# In IPA-integrated environments, certificate mapping rules are typically
+# configured centrally on the IPA server using `ipa certmaprule-add` and are
+# NOT stored in local sssd.conf — SSSD retrieves them from the IPA server at
+# runtime via LDAP. A local certmap section in sssd.conf is therefore absent by
+# design. This is a valid configuration but requires attestation since the STIG
+# check only inspects the local config file.
+# To verify IPA-managed rules: `ipa certmaprule-find` on the IPA server or client.
+# Set rhel9_attest_ipa_certmap: true only after confirming active certmap rules
+# exist on the IPA server and describe them in rhel9_attest_ipa_certmap_method.
+#
+# REMEDIATION NOTE: If not using IPA-managed certmap, add a [certmap] section
+# to any file under /etc/sssd/conf.d/ (not sssd.conf directly, to survive sssd
+# package updates). matchrule and maprule syntax are site-specific. Then:
+# systemctl restart sssd
+
+- name: RHEL-09-631015 | check SSSD certificate identity mapping
+  shell: |
+    if ! rpm -q sssd &>/dev/null; then
+      echo "NA: sssd not installed"
+      exit 0
+    fi
+
+    # Search all sssd config locations for a [certmap/...] section
+    certmap=$(grep -sir '^\[certmap/' \
+                /etc/sssd/sssd.conf /etc/sssd/conf.d/ 2>/dev/null \
+              | grep -v '^\s*#' || true)
+
+    if [ -n "$certmap" ]; then
+      echo "STATUS: PASS"
+      echo "PASS: certmap section found:"
+      echo "$certmap"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: no [certmap/...] section found in /etc/sssd/sssd.conf or /etc/sssd/conf.d/"
+      echo "INFO: if IPA-managed certmap is in use, set rhel9_attest_ipa_certmap: true"
+    fi
+  register: _631015_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-631015 | record SSSD certmap status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-631015': {
+        'status':
+          'not_applicable' if _631015_result.stdout is search('^NA:')
+          else ('not_applicable' if (rhel9_attest_alt_mfa_no_pki | bool)
+          else ('not_a_finding' if 'STATUS: PASS' in _631015_result.stdout
+          else ('not_a_finding' if (rhel9_attest_ipa_certmap | bool)
+          else 'open'))),
+        'finding_details':
+          _631015_result.stdout | trim
+          ~ '\nAttestation (rhel9_attest_alt_mfa_no_pki): '
+          ~ (rhel9_attest_alt_mfa_no_pki | bool | string | lower)
+          ~ '\nAttestation (rhel9_attest_ipa_certmap): '
+          ~ (rhel9_attest_ipa_certmap | bool | string | lower)
+          ~ '\nIPA certmap rule(s): '
+          ~ (rhel9_attest_ipa_certmap_method
+             if rhel9_attest_ipa_certmap_method else '(not provided)'),
+        'comments':
+          'Add [certmap/<domain>/<rulename>] section to /etc/sssd/conf.d/certmap.conf, '
+          ~ 'or verify IPA certmap rules exist with: ipa certmaprule-find'
+      }
+    }) }}"
+  tags: [validate]
