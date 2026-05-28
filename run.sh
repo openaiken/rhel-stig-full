@@ -146,15 +146,7 @@ fi
 
 if [[ "$SKIP_SUPPLEMENT" == false ]]; then
   info "Supplement ($TAG) → $HOST"
-  # In remediate mode pass both tags so remediation tasks run first, then
-  # validation tasks confirm the resulting state. In validate mode,
-  # only validation tasks exist (and remediate tasks are a no-op until added).
-  if [[ "$TAG" == "remediate" ]]; then
-    SUPP_TAGS="remediate,validate"
-  else
-    SUPP_TAGS="validate"
-  fi
-  ansible-playbook ./supplement.yml --tags "$SUPP_TAGS" "${COMMON[@]}"
+  ansible-playbook ./supplement.yml --tags "$TAG" "${COMMON[@]}"
 fi
 
 if [[ "$SKIP_CKLB" == false && "$TAG" == "validate" ]]; then
