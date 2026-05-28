@@ -142,3 +142,29 @@ rhel9_temporary_accounts: []
 # Document the IdM sudo rule name(s) or HBAC policy in the method field.
 rhel9_attest_sel_sudo_context_compliant: false
 rhel9_attest_sel_sudo_context_method: ""
+#
+# ┄┄ RHEL-09-611085 | V-258139 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# NOPASSWD found in local sudoers files. The STIG allows this only when the
+# ISSO has documented that the affected account(s) use an approved MFA method
+# (e.g. PIV/CAC, FIDO2 hardware token) making a password prompt redundant.
+# Note: sudo rules managed via IdM/SSSD do not appear in local sudoers — this
+# attestation applies only to NOPASSWD entries in /etc/sudoers or sudoers.d/.
+# Set true only after obtaining documented ISSO approval.
+rhel9_attest_nopasswd_isso_approved: false
+#
+# ┄┄ RHEL-09-611170 | V-258206 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# If SSSD is not the MFA mechanism on this system (e.g. direct GSSAPI Kerberos
+# with hardware token, pam_pkcs11 without sssd), the SA must demonstrate that
+# certificate status checking (OCSP or equivalent) is implemented by the
+# alternate method. Set true only after confirming certificate revocation
+# checking is enforced. Document the mechanism below.
+rhel9_attest_alt_mfa_cert_verification: false
+rhel9_attest_alt_mfa_cert_verification_method: ""
+#
+# ┄┄ RHEL-09-611190 | V-258212 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# If an approved alternate MFA mechanism is in use that does not rely on SSH
+# private key files for authentication (e.g. PIV/CAC via PKCS#11, FIDO2
+# hardware tokens, certificate-based Kerberos), set true and document below.
+# This makes the SSH private key passphrase check not applicable.
+rhel9_attest_alt_mfa_pki: false
+rhel9_attest_alt_mfa_pki_method: ""
