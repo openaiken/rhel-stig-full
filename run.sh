@@ -13,9 +13,10 @@ SKIP_FORMAL=false
 SKIP_SUPPLEMENT=false
 SKIP_CKLB=false
 VERBOSITY="-v"
-VAULT_MODE=""      # "file" or "prompt"
-VAULT_FILE=""      # path supplied with --vault-file
-VAULT_TMPFILE=""   # temp file created when using --vault
+VAULT_MODE=""        # "file" or "prompt"
+VAULT_FILE=""        # path supplied with --vault-file
+VAULT_TMPFILE=""     # temp file created when using --vault
+BECOME_TMPFILE=""    # temp file for become password
 PASSTHROUGH=()
 
 # ── helpers ───────────────────────────────────────────────────────────────────
@@ -112,8 +113,8 @@ done
 
 # ── credential setup ──────────────────────────────────────────────────────────
 _cleanup() {
-  unset ANSIBLE_BECOME_PASSWORD 2>/dev/null || true
-  [[ -n "$VAULT_TMPFILE" ]] && rm -f "$VAULT_TMPFILE"
+  [[ -n "$BECOME_TMPFILE" ]] && rm -f "$BECOME_TMPFILE"
+  [[ -n "$VAULT_TMPFILE" ]]  && rm -f "$VAULT_TMPFILE"
 }
 trap _cleanup EXIT
 
@@ -125,17 +126,20 @@ if [[ "$VAULT_MODE" == "prompt" ]]; then
   unset _vp
   VAULT_FILE="$VAULT_TMPFILE"
 elif [[ -z "$VAULT_MODE" ]]; then
-  # no vault — prompt for become password directly
+  # no vault — prompt for become password and write to a temp file
   if [[ "$SKIP_FORMAL" == false || "$SKIP_SUPPLEMENT" == false ]]; then
     read -rsp "BECOME password for $HOST: " _bp; echo
-    export ANSIBLE_BECOME_PASSWORD="$_bp"
+    BECOME_TMPFILE=$(mktemp)
+    chmod 600 "$BECOME_TMPFILE"
+    printf '%s' "$_bp" > "$BECOME_TMPFILE"
     unset _bp
   fi
 fi
 
 # ── build common args ─────────────────────────────────────────────────────────
 COMMON=("$VERBOSITY" -e "my_host=$HOST")
-[[ -n "$VAULT_MODE" ]] && COMMON+=(--vault-password-file "$VAULT_FILE")
+[[ -n "$BECOME_TMPFILE" ]] && COMMON+=(--become-password-file "$BECOME_TMPFILE")
+[[ -n "$VAULT_MODE" ]]     && COMMON+=(--vault-password-file "$VAULT_FILE")
 [[ ${#PASSTHROUGH[@]} -gt 0 ]] && COMMON+=("${PASSTHROUGH[@]}")
 
 # ── run plays ─────────────────────────────────────────────────────────────────
