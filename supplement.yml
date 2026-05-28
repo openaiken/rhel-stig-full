@@ -1,6 +1,6 @@
 ---
 - name: RHEL 9 STIG supplement checks
-  hosts: "{{ my_host | default('stigging-sandbox') }}"
+  hosts: "{{ my_host | default('default-host-group') }}"
   become: true
   ignore_errors: "{{ ignore_task_failures | default('no') | bool }}"
 

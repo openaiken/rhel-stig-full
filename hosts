@@ -1,3 +1,6 @@
+[default-host-group]
+stigging-sandbox ansible_host=192.168.122.254
+
 [demoserver]
 stigging-sandbox ansible_host=192.168.122.254
 stigging-sandbox2 ansible_host=192.168.1.65
