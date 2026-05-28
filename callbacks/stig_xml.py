@@ -2,6 +2,19 @@ from __future__ import absolute_import, division, print_function
 
 __metaclass__ = type
 
+DOCUMENTATION = """
+    name: stig_xml
+    type: notification
+    short_description: Write XCCDF test-result XML for DISA STIG formal role runs
+    description:
+      - Collects pass/fail results from tasks named with the stigrule_<id> convention
+        and writes a per-host XCCDF TestResult XML file at the end of each play.
+      - Output directory is controlled by the XML_PATH environment variable.
+    requirements:
+      - Set XML_PATH environment variable to the desired output directory.
+      - Enable via callbacks_enabled = stig_xml in ansible.cfg.
+"""
+
 import os
 import re
 import tempfile
@@ -14,10 +27,10 @@ from ansible.plugins.callback import CallbackBase
 
 class CallbackModule(CallbackBase):
     CALLBACK_VERSION = 2.0
-    CALLBACK_TYPE = "xml"
+    CALLBACK_TYPE = "notification"
     CALLBACK_NAME = "stig_xml"
 
-    CALLBACK_NEEDS_WHITELIST = True
+    CALLBACK_NEEDS_ENABLED = True
 
     def _get_stig_path(self):
         search_dir = os.path.join(os.path.abspath("."), "roles", "rhel9STIG", "files")
