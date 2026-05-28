@@ -1,0 +1,41 @@
+---
+# RHEL-09-611025 | V-258094
+# RHEL 9 must not allow blank or null passwords.
+# CAT I (High) | CCI-000366
+
+# Checks system-auth and password-auth for the nullok option.
+# The STIG also accepts "SA can demonstrate required config is in a PAM file
+# included or substacked from system-auth" — if authselect manages these files
+# via symlinks to /etc/authselect/, grepping the symlink target is still valid.
+# REMEDIATION NOTE: if authselect is in use, use:
+#   authselect enable-feature without-nullok
+# Do NOT edit pam.d files directly under authselect — they will be overwritten
+# on the next authselect apply/update.
+
+- name: RHEL-09-611025 | check for nullok in pam.d auth files
+  shell: |
+    findings=$(grep -in 'nullok' /etc/pam.d/system-auth /etc/pam.d/password-auth 2>/dev/null \
+               | grep -v '^\s*#' || true)
+    if [ -n "$findings" ]; then
+      echo "STATUS: FAIL"
+      echo "$findings"
+    else
+      echo "STATUS: PASS"
+      echo "PASS: nullok not present in system-auth or password-auth"
+    fi
+  register: _611025_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-611025 | record nullok status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-611025': {
+        'status': 'not_a_finding' if 'STATUS: PASS' in _611025_result.stdout else 'open',
+        'finding_details': _611025_result.stdout | trim,
+        'comments':
+          'Run: authselect enable-feature without-nullok  '
+          ~ '(or remove nullok manually if not using authselect)'
+      }
+    }) }}"
+  tags: [validate]

@@ -1,0 +1,77 @@
+---
+# RHEL-09-611190 | V-258212
+# RHEL 9, for PKI-based authentication, must enforce authorized access to
+# the corresponding private key.
+# CAT II (Medium) | CCI-000186
+
+# SSH private keys used for user authentication must be passphrase-protected.
+# Checks user .ssh/ dirs for private key files and tests each with
+# ssh-keygen -y -P '' (empty passphrase) — success means unencrypted (finding).
+#
+# SSH HOST keys (/etc/ssh/ssh_host_*) are intentionally unencrypted because
+# sshd reads them without a passphrase at startup. They are excluded here.
+# Service/automation keys that are intentionally unencrypted by design need
+# ISSO approval and are operationally nuanced; list them for review, don't
+# auto-remediate.
+#
+# If an approved alternate MFA mechanism is in use that does not rely on SSH
+# private key files (e.g. PIV/CAC via PKCS#11, FIDO2 hardware tokens),
+# set rhel9_attest_alt_mfa_pki: true and document the method.
+#
+# REMEDIATION NOTE: ssh-keygen -p -f <keyfile> to add a passphrase to an
+# existing key. For service/automation accounts, evaluate whether SSH key auth
+# is the right mechanism vs certificate-based auth or GSSAPI Kerberos.
+
+- name: RHEL-09-611190 | check SSH private key passphrase protection
+  shell: |
+    unencrypted=""
+
+    # Check interactive user home dirs and root
+    while IFS=: read -r user pw uid gid gecos homedir shell; do
+      # skip accounts with no login shell or uid < 0
+      [[ "$shell" == "/sbin/nologin" || "$shell" == "/bin/false" \
+         || "$shell" == "/usr/sbin/nologin" ]] && continue
+      [ ! -d "$homedir/.ssh" ] && continue
+
+      while IFS= read -r keyfile; do
+        # identify private key files by header
+        head -1 "$keyfile" 2>/dev/null | grep -q 'PRIVATE KEY' || continue
+        # try with empty passphrase; exit 0 = unencrypted
+        if ssh-keygen -y -P '' -f "$keyfile" &>/dev/null; then
+          unencrypted="${unencrypted}FAIL: $keyfile (${user}) has no passphrase\n"
+        fi
+      done < <(find "$homedir/.ssh" -maxdepth 1 -type f 2>/dev/null)
+    done < /etc/passwd
+
+    if [ -n "$unencrypted" ]; then
+      echo "STATUS: FAIL"
+      echo -e "$unencrypted" | sed '/^$/d'
+    else
+      echo "STATUS: PASS"
+      echo "PASS: no unencrypted SSH private keys found in user .ssh/ directories"
+    fi
+  register: _611190_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-611190 | record SSH private key passphrase status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-611190': {
+        'status':
+          'not_a_finding' if 'STATUS: PASS' in _611190_result.stdout
+          else ('not_a_finding' if (rhel9_attest_alt_mfa_pki | bool)
+          else 'open'),
+        'finding_details':
+          _611190_result.stdout | trim
+          ~ '\nAttestation (rhel9_attest_alt_mfa_pki): '
+          ~ (rhel9_attest_alt_mfa_pki | bool | string | lower)
+          ~ '\nAlternate PKI method: '
+          ~ (rhel9_attest_alt_mfa_pki_method
+             if rhel9_attest_alt_mfa_pki_method else '(not provided)'),
+        'comments':
+          'Add passphrase: ssh-keygen -p -f <keyfile>  '
+          ~ 'or document alternate MFA method in rhel9_attest_alt_mfa_pki_method'
+      }
+    }) }}"
+  tags: [validate]

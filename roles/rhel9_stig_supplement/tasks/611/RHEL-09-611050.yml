@@ -1,0 +1,53 @@
+---
+# RHEL-09-611050 | V-258109
+# RHEL 9 password-auth must be configured to use a sufficient number of
+# hashing rounds.
+# CAT II (Medium) | CCI-004062, CCI-000803, CCI-000196
+
+# pam_unix.so must include rounds=100000 (or higher) on its password line.
+# REMEDIATION NOTE: authselect does NOT manage the rounds parameter — it must
+# be added directly to the pam_unix.so line in password-auth. However, authselect
+# apply/update WILL overwrite manual edits, so this must be re-applied after
+# any authselect profile change. Consider creating a custom authselect profile
+# that includes rounds=100000 as the durable fix.
+# In SSSD/IdM environments pam_unix.so still handles password hashing for
+# local accounts even when pam_sss.so handles network authentication.
+
+- name: RHEL-09-611050 | check hashing rounds in password-auth
+  shell: |
+    file=/etc/pam.d/password-auth
+    line=$(grep -v '^\s*#' "$file" 2>/dev/null | grep 'pam_unix\.so' | grep -i 'password' | head -1)
+    if [ -z "$line" ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: no active pam_unix.so password line found in $file"
+      exit 0
+    fi
+
+    rounds=$(echo "$line" | grep -oP 'rounds=\K\d+' || true)
+    if [ -z "$rounds" ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: rounds not set on pam_unix.so line: $line"
+    elif [ "$rounds" -lt 100000 ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: rounds=$rounds (must be >= 100000): $line"
+    else
+      echo "STATUS: PASS"
+      echo "PASS: rounds=$rounds"
+    fi
+  register: _611050_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-611050 | record hashing rounds password-auth status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-611050': {
+        'status': 'not_a_finding' if 'STATUS: PASS' in _611050_result.stdout else 'open',
+        'finding_details': _611050_result.stdout | trim,
+        'comments':
+          'Add rounds=100000 to the pam_unix.so password line in /etc/pam.d/password-auth. '
+          ~ 'Note: this must be re-applied after any authselect profile update. '
+          ~ 'A custom authselect profile is the durable solution.'
+      }
+    }) }}"
+  tags: [validate]

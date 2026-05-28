@@ -1,0 +1,39 @@
+---
+# RHEL-09-611040 | V-258103
+# RHEL 9 must ensure the password complexity module is enabled in the
+# password-auth file.
+# CAT II (Medium) | CCI-004066, CCI-000192, CCI-000193
+
+# Check for an uncommented pam_pwquality.so line in password-auth.
+# REMEDIATION NOTE: in SSSD/IdM environments, pam_pwquality still applies
+# to local password changes even when pam_sss.so handles daily auth.
+# If authselect is in use, this should already be present in the selected
+# profile; confirm with: authselect current
+
+- name: RHEL-09-611040 | check pam_pwquality in password-auth
+  shell: |
+    found=$(grep -v '^\s*#' /etc/pam.d/password-auth 2>/dev/null \
+            | grep 'pam_pwquality\.so' || true)
+    if [ -n "$found" ]; then
+      echo "STATUS: PASS"
+      echo "PASS: $found"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: no active pam_pwquality.so line in /etc/pam.d/password-auth"
+    fi
+  register: _611040_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-611040 | record pam_pwquality password-auth status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-611040': {
+        'status': 'not_a_finding' if 'STATUS: PASS' in _611040_result.stdout else 'open',
+        'finding_details': _611040_result.stdout | trim,
+        'comments':
+          'Add: password required pam_pwquality.so  to /etc/pam.d/password-auth  '
+          ~ '(prefer authselect profile update over direct file edit)'
+      }
+    }) }}"
+  tags: [validate]

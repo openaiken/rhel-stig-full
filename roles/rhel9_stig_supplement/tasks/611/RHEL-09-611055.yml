@@ -1,0 +1,45 @@
+---
+# RHEL-09-611055 | V-258112
+# RHEL 9 system-auth must be configured to use a sufficient number of
+# hashing rounds.
+# CAT II (Medium) | CCI-004062, CCI-000803, CCI-000196
+
+# Mirror of 611050 for system-auth. Same authselect / rounds persistence caveat.
+
+- name: RHEL-09-611055 | check hashing rounds in system-auth
+  shell: |
+    file=/etc/pam.d/system-auth
+    line=$(grep -v '^\s*#' "$file" 2>/dev/null | grep 'pam_unix\.so' | grep -i 'password' | head -1)
+    if [ -z "$line" ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: no active pam_unix.so password line found in $file"
+      exit 0
+    fi
+
+    rounds=$(echo "$line" | grep -oP 'rounds=\K\d+' || true)
+    if [ -z "$rounds" ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: rounds not set on pam_unix.so line: $line"
+    elif [ "$rounds" -lt 100000 ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: rounds=$rounds (must be >= 100000): $line"
+    else
+      echo "STATUS: PASS"
+      echo "PASS: rounds=$rounds"
+    fi
+  register: _611055_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-611055 | record hashing rounds system-auth status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-611055': {
+        'status': 'not_a_finding' if 'STATUS: PASS' in _611055_result.stdout else 'open',
+        'finding_details': _611055_result.stdout | trim,
+        'comments':
+          'Add rounds=100000 to the pam_unix.so password line in /etc/pam.d/system-auth. '
+          ~ 'Note: this must be re-applied after any authselect profile update.'
+      }
+    }) }}"
+  tags: [validate]

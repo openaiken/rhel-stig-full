@@ -599,6 +599,66 @@
   tags: [RHEL-09-433016]
   when: supp_rules['RHEL-09-433016'] | default(true) | bool
 
+- import_tasks: 611/RHEL-09-611010.yml
+  tags: [RHEL-09-611010]
+  when: supp_rules['RHEL-09-611010'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611025.yml
+  tags: [RHEL-09-611025]
+  when: supp_rules['RHEL-09-611025'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611030.yml
+  tags: [RHEL-09-611030]
+  when: supp_rules['RHEL-09-611030'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611035.yml
+  tags: [RHEL-09-611035]
+  when: supp_rules['RHEL-09-611035'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611040.yml
+  tags: [RHEL-09-611040]
+  when: supp_rules['RHEL-09-611040'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611045.yml
+  tags: [RHEL-09-611045]
+  when: supp_rules['RHEL-09-611045'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611050.yml
+  tags: [RHEL-09-611050]
+  when: supp_rules['RHEL-09-611050'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611055.yml
+  tags: [RHEL-09-611055]
+  when: supp_rules['RHEL-09-611055'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611080.yml
+  tags: [RHEL-09-611080]
+  when: supp_rules['RHEL-09-611080'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611085.yml
+  tags: [RHEL-09-611085]
+  when: supp_rules['RHEL-09-611085'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611145.yml
+  tags: [RHEL-09-611145]
+  when: supp_rules['RHEL-09-611145'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611155.yml
+  tags: [RHEL-09-611155]
+  when: supp_rules['RHEL-09-611155'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611170.yml
+  tags: [RHEL-09-611170]
+  when: supp_rules['RHEL-09-611170'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611190.yml
+  tags: [RHEL-09-611190]
+  when: supp_rules['RHEL-09-611190'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611200.yml
+  tags: [RHEL-09-611200]
+  when: supp_rules['RHEL-09-611200'] | default(true) | bool
+
 - name: write supplement facts to disk
   copy:
     content: "{{ supp_facts | to_nice_json(indent=2) }}"

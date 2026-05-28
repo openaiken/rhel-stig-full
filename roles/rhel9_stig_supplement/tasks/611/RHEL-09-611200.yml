@@ -1,0 +1,48 @@
+---
+# RHEL-09-611200 | V-258215
+# RHEL 9 must require authentication to access single-user mode.
+# CAT II (Medium) | CCI-000213
+
+# sulogin must be present in the rescue.service ExecStart line.
+# Config can be in the default systemd-shipped location OR in a drop-in
+# under /etc/systemd/system/rescue.service.d/ — but NOT both (systemd
+# applies only the drop-in ExecStart if one exists).
+
+- name: RHEL-09-611200 | check single-user mode authentication
+  shell: |
+    default_file=/usr/lib/systemd/system/rescue.service
+    dropin_dir=/etc/systemd/system/rescue.service.d
+
+    # Prefer drop-in override if present; otherwise check default
+    dropin_match=$(grep -rh 'sulogin' "$dropin_dir"/*.conf 2>/dev/null | grep -v '^\s*#' || true)
+    default_match=$(grep -h 'sulogin' "$default_file" 2>/dev/null | grep -v '^\s*#' || true)
+
+    if [ -n "$dropin_match" ]; then
+      echo "STATUS: PASS"
+      echo "PASS: sulogin found in drop-in: $dropin_dir/"
+      echo "$dropin_match"
+    elif [ -n "$default_match" ]; then
+      echo "STATUS: PASS"
+      echo "PASS: sulogin found in default: $default_file"
+      echo "$default_match"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: sulogin not found in $default_file or $dropin_dir/*.conf"
+    fi
+  register: _611200_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-611200 | record single-user mode auth status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-611200': {
+        'status': 'not_a_finding' if 'STATUS: PASS' in _611200_result.stdout else 'open',
+        'finding_details': _611200_result.stdout | trim,
+        'comments':
+          'Create /etc/systemd/system/rescue.service.d/sulogin.conf with: '
+          ~ 'ExecStart=-/usr/lib/systemd/systemd-sulogin-shell rescue  '
+          ~ 'then: systemctl daemon-reload'
+      }
+    }) }}"
+  tags: [validate]
