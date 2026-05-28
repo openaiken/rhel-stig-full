@@ -83,13 +83,13 @@ supp_rules:
 - **`run.sh`** — runs all three playbooks in order. Adds a `-vv` argument by default but passes all CLI arguments to all 3 playbooks.
 
 ### Roles
-- **`roles/rhel9STIG/`** — unmodified DISA formal role. Do not edit.
+- **`roles/rhel9STIG/`** — unmodified DISA formal role. Do not edit. When updating to a new role version, delete `roles/rhel9STIG/callback_plugins/` if it is present — the role ships a stale, buggy `stig_xml` callback that conflicts with ours and will cause XCCDF output to silently stop working.
 - **`roles/rhel9_stig_supplement/`** — custom checks for the 187 rules the formal role does not cover. One task file per STIG ID (e.g. `tasks/RHEL-09-211010.yml`).
 - **`roles/cklb_renderer/`** — reads `reports/` and `reports/supp-facts/` for the target host and renders a CKLB file. Can be run independently against existing results without re-running remediation.
 
 ### Supporting Files
 - **`files/rules.json`** — all 446 RHEL 9 STIG V2R8 rules extracted from the XCCDF benchmark, keyed by STIG ID. Includes `formal_role_covered` flag derived from the latest XCCDF results file in `reports/`. Regenerate with `python3 scripts/parse_xccdf_benchmark.py` after a new scan or a new benchmark version.
-- **`callbacks/stig_xml.py`** — Ansible callback plugin that writes per-host XCCDF results to `reports/`. It is a refactor of the stig_xml callback plugin included with the official DISA role.
+- **`callbacks/rhel9_xccdf_results.py`** — Ansible callback plugin that writes per-host XCCDF results to `reports/`. It is a refactor of the `stig_xml` callback plugin included with the official DISA role, renamed to avoid collisions when the role is updated (see note below).
 - **`files/empty-checklist-rhel9v2r8.cklb`** — CKLB template used by the renderer. This should be replaced when new revisions are dropped.
 
 ### Notes
