@@ -112,7 +112,7 @@ done
 
 # ── credential setup ──────────────────────────────────────────────────────────
 _cleanup() {
-  unset ANSIBLE_BECOME_PASSWORD ANSIBLE_BECOME_ASK_PASS 2>/dev/null || true
+  unset ANSIBLE_BECOME_PASSWORD 2>/dev/null || true
   [[ -n "$VAULT_TMPFILE" ]] && rm -f "$VAULT_TMPFILE"
 }
 trap _cleanup EXIT
@@ -129,7 +129,6 @@ elif [[ -z "$VAULT_MODE" ]]; then
   if [[ "$SKIP_FORMAL" == false || "$SKIP_SUPPLEMENT" == false ]]; then
     read -rsp "BECOME password for $HOST: " _bp; echo
     export ANSIBLE_BECOME_PASSWORD="$_bp"
-    export ANSIBLE_BECOME_ASK_PASS=false
     unset _bp
   fi
 fi
@@ -152,7 +151,7 @@ fi
 
 if [[ "$SKIP_CKLB" == false && "$TAG" == "validate" ]]; then
   info "CKLB renderer → $HOST"
-  ANSIBLE_BECOME_ASK_PASS=false ansible-playbook ./cklb.yml --tags validate "${COMMON[@]}"
+  ansible-playbook ./cklb.yml --tags validate "${COMMON[@]}"
 fi
 
 info "Done."
