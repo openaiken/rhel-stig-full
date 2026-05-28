@@ -3,7 +3,7 @@ from __future__ import absolute_import, division, print_function
 __metaclass__ = type
 
 DOCUMENTATION = """
-    name: stig_xml
+    name: rhel9_xccdf_results
     type: notification
     short_description: Write XCCDF test-result XML for DISA STIG formal role runs
     description:
@@ -12,7 +12,7 @@ DOCUMENTATION = """
       - Output directory is controlled by the XML_PATH environment variable.
     requirements:
       - Set XML_PATH environment variable to the desired output directory.
-      - Enable via callbacks_enabled = stig_xml in ansible.cfg.
+      - Enable via callbacks_enabled = rhel9_xccdf_results in ansible.cfg.
 """
 
 import os
@@ -28,7 +28,7 @@ from ansible.plugins.callback import CallbackBase
 class CallbackModule(CallbackBase):
     CALLBACK_VERSION = 2.0
     CALLBACK_TYPE = "notification"
-    CALLBACK_NAME = "stig_xml"
+    CALLBACK_NAME = "rhel9_xccdf_results"
 
     CALLBACK_NEEDS_ENABLED = True
 
