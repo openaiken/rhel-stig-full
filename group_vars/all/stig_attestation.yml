@@ -166,5 +166,26 @@ rhel9_attest_alt_mfa_cert_verification_method: ""
 # private key files for authentication (e.g. PIV/CAC via PKCS#11, FIDO2
 # hardware tokens, certificate-based Kerberos), set true and document below.
 # This makes the SSH private key passphrase check not applicable.
-rhel9_attest_alt_mfa_pki: false
-rhel9_attest_alt_mfa_pki_method: ""
+rhel9_attest_no_ssh_key_auth: false
+rhel9_attest_no_ssh_key_auth_method: ""
+#
+# ┄┄ RHEL-09-631010, 631015 | V-258222, V-258225 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄
+# Both 631 rules are not applicable if the system uses an approved non-PKI MFA
+# method entirely (e.g. FIDO2/WebAuthn hardware token, OTP without certificates).
+# If PKI is in use but via IPA/FreeIPA, the DOD CA chain still needs to be
+# present in sssd_auth_ca_db.pem (631010) — do not set rhel9_attest_alt_mfa_no_pki
+# true for IPA PKI environments; only set it if PKI certificate auth is not used
+# at all. Document the alternate method below.
+rhel9_attest_alt_mfa_no_pki: false
+rhel9_attest_alt_mfa_no_pki_method: ""
+#
+# ┄┄ RHEL-09-631015 | V-258225 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# In IPA/FreeIPA-integrated environments, certificate identity mapping rules
+# are managed centrally on the IPA server (ipa certmaprule-add) and are NOT
+# stored in local sssd.conf — SSSD retrieves them from IPA at runtime via LDAP.
+# The local sssd.conf will have no [certmap/...] section by design.
+# Set rhel9_attest_ipa_certmap: true only after confirming active certmap rules
+# exist on the IPA server (ipa certmaprule-find). Document the rule name(s) or
+# policy in rhel9_attest_ipa_certmap_method for the checklist reviewer.
+rhel9_attest_ipa_certmap: false
+rhel9_attest_ipa_certmap_method: ""
