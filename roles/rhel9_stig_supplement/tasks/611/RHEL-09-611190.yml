@@ -16,7 +16,7 @@
 #
 # If an approved alternate MFA mechanism is in use that does not rely on SSH
 # private key files (e.g. PIV/CAC via PKCS#11, FIDO2 hardware tokens),
-# set rhel9_attest_alt_mfa_pki: true and document the method.
+# set rhel9_attest_no_ssh_key_auth: true and document the method.
 #
 # REMEDIATION NOTE: ssh-keygen -p -f <keyfile> to add a passphrase to an
 # existing key. For service/automation accounts, evaluate whether SSH key auth
@@ -60,18 +60,18 @@
       'RHEL-09-611190': {
         'status':
           'not_a_finding' if 'STATUS: PASS' in _611190_result.stdout
-          else ('not_a_finding' if (rhel9_attest_alt_mfa_pki | bool)
+          else ('not_a_finding' if (rhel9_attest_no_ssh_key_auth | bool)
           else 'open'),
         'finding_details':
           _611190_result.stdout | trim
-          ~ '\nAttestation (rhel9_attest_alt_mfa_pki): '
-          ~ (rhel9_attest_alt_mfa_pki | bool | string | lower)
+          ~ '\nAttestation (rhel9_attest_no_ssh_key_auth): '
+          ~ (rhel9_attest_no_ssh_key_auth | bool | string | lower)
           ~ '\nAlternate PKI method: '
-          ~ (rhel9_attest_alt_mfa_pki_method
-             if rhel9_attest_alt_mfa_pki_method else '(not provided)'),
+          ~ (rhel9_attest_no_ssh_key_auth_method
+             if rhel9_attest_no_ssh_key_auth_method else '(not provided)'),
         'comments':
           'Add passphrase: ssh-keygen -p -f <keyfile>  '
-          ~ 'or document alternate MFA method in rhel9_attest_alt_mfa_pki_method'
+          ~ 'or document alternate MFA method in rhel9_attest_no_ssh_key_auth_method'
       }
     }) }}"
   tags: [validate]
