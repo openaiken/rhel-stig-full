@@ -1,0 +1,73 @@
+---
+# RHEL-09-652055 | V-258261
+# RHEL 9 must be configured to forward audit records via TCP to a different
+# system or media from the system being audited via rsyslog.
+# CAT II (Medium) | CCI-001851
+
+# Checks for either forwarding syntax in rsyslog config:
+# - Legacy: @@ prefix (TCP) on a forwarding rule
+# - Rainer script: action with type="omfwd"
+# Single @ (UDP) is not TCP and would not satisfy this rule.
+#
+# If another tool handles log off-loading (SPLUNK, Elastic/Filebeat, Fluentd,
+# auditd audisp-remote, etc.), rsyslog forwarding may not be configured and
+# that is acceptable with attestation. Set rhel9_attest_alt_log_offload: true
+# and describe the mechanism in rhel9_attest_alt_log_offload_method.
+# Unlike 652025 (which is not_applicable with an alt tool), this rule IS
+# being met by the alt tool, so the status is not_a_finding.
+#
+# Note: this check verifies a forwarding rule EXISTS; it does not verify
+# the destination is reachable or that TLS is configured. Those are
+# operational concerns validated separately.
+
+- name: RHEL-09-652055 | check rsyslog is forwarding audit records via TCP
+  shell: |
+    if ! rpm -q rsyslog &>/dev/null; then
+      echo "STATUS: FAIL"
+      echo "FAIL: rsyslog not installed and no forwarding configured"
+      exit 0
+    fi
+
+    # Legacy TCP forwarding: @@ prefix (double-@ = TCP, single-@ = UDP)
+    legacy=$(grep -rh '@@' /etc/rsyslog.conf /etc/rsyslog.d/ 2>/dev/null \
+             | grep -v '^\s*#' || true)
+
+    # Rainer script omfwd action
+    rainer=$(grep -rh 'type="omfwd"' /etc/rsyslog.conf /etc/rsyslog.d/ 2>/dev/null \
+             | grep -v '^\s*#' || true)
+
+    if [ -n "$legacy" ] || [ -n "$rainer" ]; then
+      echo "STATUS: PASS"
+      [ -n "$legacy" ] && echo "LEGACY (@@): $legacy"
+      [ -n "$rainer" ] && echo "RAINER (omfwd): $rainer"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: no TCP remote forwarding found in rsyslog configuration"
+      echo "INFO: checked /etc/rsyslog.conf and /etc/rsyslog.d/"
+    fi
+  register: _652055_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-652055 | record rsyslog TCP forwarding status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-652055': {
+        'status':
+          'not_a_finding' if 'STATUS: PASS' in _652055_result.stdout
+          else ('not_a_finding' if (rhel9_attest_alt_log_offload | bool)
+          else 'open'),
+        'finding_details':
+          _652055_result.stdout | trim
+          ~ '\nAttestation (rhel9_attest_alt_log_offload): '
+          ~ (rhel9_attest_alt_log_offload | bool | string | lower)
+          ~ '\nAlt offload method: '
+          ~ (rhel9_attest_alt_log_offload_method
+             if rhel9_attest_alt_log_offload_method else '(not provided)'),
+        'comments':
+          'Add TCP forwarding to /etc/rsyslog.d/forward.conf. '
+          ~ 'Legacy syntax: *.* @@logserver.example.com:514  '
+          ~ 'Rainer script: action(type="omfwd" target="..." port="514" protocol="tcp")'
+      }
+    }) }}"
+  tags: [validate]

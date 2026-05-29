@@ -1,0 +1,71 @@
+---
+# RHEL-09-652025 | V-258249
+# RHEL 9 must be configured so that the rsyslog daemon does not accept log
+# messages from other servers unless the server is being used for log
+# aggregation.
+# CAT II (Medium) | CCI-000366
+
+# Two-part check: (1) rsyslog is not actively listening on network sockets,
+# (2) no listener modules are enabled in the rsyslog configuration.
+# A system receives remote logs only if BOTH a listener module is configured
+# AND the socket is open; checking both gives complete coverage.
+#
+# Not applicable if another tool (SPLUNK, Elastic/Filebeat, etc.) manages
+# all log aggregation in lieu of rsyslog — set rhel9_attest_alt_log_offload.
+# If this system IS an authorized log aggregation server, receiving remote
+# logs is intentional — set rhel9_attest_log_aggregation_server: true and
+# document the authorization. That makes this not_a_finding, not not_applicable,
+# because the rule applies and the system is compliant with documented approval.
+
+- name: RHEL-09-652025 | check rsyslog is not receiving remote logs
+  shell: |
+    if ! rpm -q rsyslog &>/dev/null; then
+      echo "NA: rsyslog not installed"
+      exit 0
+    fi
+
+    # Check 1: active network listeners attributed to rsyslog
+    listening=$(ss -tulnp 2>/dev/null | grep rsyslog || true)
+
+    # Check 2: listener module directives in rsyslog config (uncommented)
+    listener_conf=$(grep -rEh \
+      'InputTCPServerRun|UDPServerRun|RELPServerRun|imtcp|imudp|imrelp' \
+      /etc/rsyslog.conf /etc/rsyslog.d/ 2>/dev/null \
+      | grep -v '^\s*#' || true)
+
+    if [ -z "$listening" ] && [ -z "$listener_conf" ]; then
+      echo "STATUS: PASS"
+      echo "PASS: rsyslog has no active listeners and no listener modules configured"
+    else
+      echo "STATUS: FAIL"
+      [ -n "$listening" ] && echo "ACTIVE LISTENERS: $listening"
+      [ -n "$listener_conf" ] && echo "LISTENER CONFIG: $listener_conf"
+    fi
+  register: _652025_result
+  changed_when: false
+  tags: [validate]
+
+- name: RHEL-09-652025 | record rsyslog remote-receive status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-652025': {
+        'status':
+          'not_applicable' if (_652025_result.stdout is search('^NA:')
+                              or (rhel9_attest_alt_log_offload | bool))
+          else ('not_a_finding' if 'STATUS: PASS' in _652025_result.stdout
+          else ('not_a_finding' if (rhel9_attest_log_aggregation_server | bool)
+          else 'open')),
+        'finding_details':
+          _652025_result.stdout | trim
+          ~ '\nAttestation (rhel9_attest_alt_log_offload): '
+          ~ (rhel9_attest_alt_log_offload | bool | string | lower)
+          ~ '\nAttestation (rhel9_attest_log_aggregation_server): '
+          ~ (rhel9_attest_log_aggregation_server | bool | string | lower),
+        'comments':
+          'Remove imtcp/imudp/imrelp listener directives from /etc/rsyslog.conf '
+          ~ 'and /etc/rsyslog.d/, then restart rsyslog. '
+          ~ 'If this is an authorized aggregation server, set '
+          ~ 'rhel9_attest_log_aggregation_server: true.'
+      }
+    }) }}"
+  tags: [validate]
