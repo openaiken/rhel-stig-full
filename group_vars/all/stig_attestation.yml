@@ -205,3 +205,25 @@ rhel9_attest_alt_fim_tool_name: ""
 # to check cron only. Cron and systemd timer are both accepted; either found
 # passes the rule.
 rhel9_aide_timer_unit: ""
+#
+# ┄┄ RHEL-09-652025, 652055 | V-258249, V-258261 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄
+# If an alternate tool (SPLUNK, Elastic/Filebeat, Fluentd, auditd audisp-remote,
+# etc.) manages all log off-loading in lieu of rsyslog:
+#   - 652025 becomes not_applicable (rsyslog listener check irrelevant)
+#   - 652055 becomes not_a_finding (requirement is met by the alt tool)
+# Document the tool name, destination, and protocol in the method field.
+rhel9_attest_alt_log_offload: false
+rhel9_attest_alt_log_offload_method: ""
+#
+# ┄┄ RHEL-09-652025 | V-258249 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# WARNING: SET THIS IN host_vars/<hostname>/, NOT HERE IN group_vars/all/.
+# Setting it here would mark EVERY managed host as an authorized log
+# aggregation server, hiding a real finding on all non-collector systems.
+# !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Set true ONLY on a host that is documented and authorized by the ISSO to
+# receive remote syslog from other systems. When true, rsyslog actively
+# listening for remote connections is treated as not_a_finding rather than open.
+# Example: create host_vars/logsrv01.example.com/stig_attestation.yml with:
+#   rhel9_attest_log_aggregation_server: true
+rhel9_attest_log_aggregation_server: false
