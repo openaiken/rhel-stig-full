@@ -227,3 +227,25 @@ rhel9_attest_alt_log_offload_method: ""
 # Example: create host_vars/logsrv01.example.com/stig_attestation.yml with:
 #   rhel9_attest_log_aggregation_server: true
 rhel9_attest_log_aggregation_server: false
+#
+# ┄┄ RHEL-09-653030 | V-258155 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# Minimum available storage (in GB) on the partition hosting audit logs.
+# The STIG cites 10GB as "typically sufficient" for high-activity systems;
+# 2GB is appropriate for low-activity systems or those with remote offload.
+# Adjust upward for high-volume environments (many users, verbose syscall rules).
+rhel9_audit_min_storage_gb: 2
+#
+# Set true if audit records are forwarded immediately to a remote facility
+# (audisp-remote, SPLUNK heavy forwarder, etc.) such that extended local
+# storage is not required. Document the mechanism below.
+rhel9_attest_audit_immediate_offload: false
+rhel9_attest_audit_immediate_offload_method: ""
+#
+# ┄┄ RHEL-09-672020 | V-258236 | RHEL 9 V2R8 | CAT I ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# The STIG treats any backend symlink pointing outside the FIPS policy path as
+# a finding, but allows AO-approved subpolicy exceptions with documented ISSO
+# approval. Set true only after obtaining that formal documentation. This does
+# NOT clear a policy mismatch from update-crypto-policies --check — that
+# requires resolving the underlying override regardless of AO approval.
+rhel9_attest_crypto_subpolicy_approved: false
+rhel9_attest_crypto_subpolicy_approved_method: ""
