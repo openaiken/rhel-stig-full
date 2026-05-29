@@ -1,0 +1,73 @@
+---
+# RHEL-09-654210 | V-258216
+# Successful/unsuccessful uses of the umount2 system call in RHEL 9 must
+# generate an audit record.
+# CAT II (Medium) | CCI-000130, CCI-000135, CCI-000172, CCI-002884
+
+# umount2 is the primary unmount syscall on 64-bit systems; both b64 and b32
+# rules are required (the b32 rule covers 32-bit binaries running on x86_64).
+# Required rules:
+#   -a always,exit -F arch=b64 -S umount2 -F auid>=1000 -F auid!=-1 -F key=privileged-umount
+#   -a always,exit -F arch=b32 -S umount2 -F auid>=1000 -F auid!=-1 -F key=privileged-umount
+
+- name: RHEL-09-654210 | check audit rules for umount2 syscall (b64 + b32)
+  shell: |
+    if ! command -v auditctl &>/dev/null; then
+      echo "STATUS: FAIL"
+      echo "FAIL: auditctl not available - audit package may not be installed"
+      exit 0
+    fi
+
+    check_rule() {
+      local arch="$1"
+      local rule
+      rule=$(auditctl -l 2>/dev/null | grep "arch=${arch}" | grep 'umount2' || true)
+      if [ -z "$rule" ]; then
+        echo "FAIL: no ${arch} audit rule found for umount2"
+        return
+      fi
+      local missing=""
+      echo "$rule" | grep -q '\-S umount2'          || missing="${missing} -S umount2"
+      echo "$rule" | grep -q 'auid>=1000'            || missing="${missing} auid>=1000"
+      echo "$rule" | grep -q 'auid!=-1'              || missing="${missing} auid!=-1"
+      echo "$rule" | grep -q 'key=privileged-umount' || missing="${missing} key=privileged-umount"
+      if [ -z "$missing" ]; then
+        echo "PASS: ${arch}: $rule"
+      else
+        echo "FAIL: ${arch} rule missing fields:${missing} | RULE: $rule"
+      fi
+    }
+
+    out_b64=$(check_rule b64)
+    out_b32=$(check_rule b32)
+
+    if echo "${out_b64}${out_b32}" | grep -q '^FAIL:'; then
+      echo "STATUS: FAIL"
+    else
+      echo "STATUS: PASS"
+    fi
+    echo "$out_b64"
+    echo "$out_b32"
+  register: _654210_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-654210 | record umount2 audit rule status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-654210': {
+        'status':
+          'not_a_finding' if 'STATUS: PASS' in _654210_result.stdout
+          else 'open',
+        'finding_details': _654210_result.stdout | trim,
+        'comments':
+          'Add to /etc/audit/rules.d/privileged-umount.rules: '
+          ~ '-a always,exit -F arch=b64 -S umount2 -F auid>=1000 -F auid!=-1 '
+          ~ '-F key=privileged-umount\n'
+          ~ '-a always,exit -F arch=b32 -S umount2 -F auid>=1000 -F auid!=-1 '
+          ~ '-F key=privileged-umount\n'
+          ~ 'Run augenrules --load to apply.'
+      }
+    }) }}"
+  tags: [validate]
