@@ -47,6 +47,7 @@
     fi
   register: _652055_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-652055 | record rsyslog TCP forwarding status
@@ -66,8 +67,8 @@
              if rhel9_attest_alt_log_offload_method else '(not provided)'),
         'comments':
           'Add TCP forwarding to /etc/rsyslog.d/forward.conf. '
-          ~ 'Legacy syntax: *.* @@logserver.example.com:514  '
-          ~ 'Rainer script: action(type="omfwd" target="..." port="514" protocol="tcp")'
+          ~ 'Legacy syntax: *.* @@logserver.example.com:514 '
+          ~ '| Rainer script: action(type=omfwd target=logserver port=514 protocol=tcp)'
       }
     }) }}"
   tags: [validate]
