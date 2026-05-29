@@ -1,0 +1,66 @@
+---
+# RHEL-09-653090 | V-258167
+# RHEL 9 audit logs file must have mode 0600 or less permissive to prevent
+# unauthorized access to the audit log.
+# CAT II (Medium) | CCI-000162
+
+# Checks all files in the audit log directory. Mode converted to decimal via
+# printf '%d' "0NNN" so octal comparison works portably in sh arithmetic.
+# 0600 octal = 384 decimal; anything higher (more permissive) fails.
+
+- name: RHEL-09-653090 | check audit log file permissions
+  shell: |
+    conf=/etc/audit/auditd.conf
+    if [ ! -f "$conf" ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: $conf not found"
+      exit 0
+    fi
+
+    log_file=$(grep -E '^\s*log_file\s*=' "$conf" | awk -F'=' '{print $2}' | xargs)
+    log_file=${log_file:-/var/log/audit/audit.log}
+    log_dir=$(dirname "$log_file")
+
+    if [ ! -d "$log_dir" ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: log directory $log_dir does not exist"
+      exit 0
+    fi
+
+    findings=""
+    while IFS= read -r f; do
+      mode=$(stat -c '%a' "$f" 2>/dev/null)
+      mode_dec=$(printf '%d' "0${mode}")
+      if [ "$mode_dec" -le 384 ]; then
+        findings="${findings}PASS: $f ($mode)\n"
+      else
+        findings="${findings}FAIL: $f ($mode) - must be 0600 or less permissive\n"
+      fi
+    done < <(find "$log_dir" -maxdepth 1 -type f 2>/dev/null)
+
+    if [ -z "$findings" ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: no audit log files found in $log_dir"
+    elif echo -e "$findings" | grep -q '^FAIL:'; then
+      echo "STATUS: FAIL"
+    else
+      echo "STATUS: PASS"
+    fi
+    echo -e "$findings" | sed '/^$/d'
+  register: _653090_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-653090 | record audit log file permissions status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-653090': {
+        'status':
+          'not_a_finding' if 'STATUS: PASS' in _653090_result.stdout
+          else 'open',
+        'finding_details': _653090_result.stdout | trim,
+        'comments': 'Run: chmod 0600 /var/log/audit/audit.log*'
+      }
+    }) }}"
+  tags: [validate]

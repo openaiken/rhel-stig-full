@@ -1,0 +1,62 @@
+---
+# RHEL-09-653110 | V-258171
+# RHEL 9 must allow only the ISSM to select which auditable events are to
+# be audited.
+# CAT II (Medium) | CCI-000171
+
+# Checks that audit configuration files have mode 0640 or less permissive.
+# Covers: /etc/audit/auditd.conf, /etc/audit/audit.rules, and all *.rules
+# files under /etc/audit/rules.d/.
+# 0640 octal = 416 decimal; anything higher (more permissive) fails.
+
+- name: RHEL-09-653110 | check audit configuration file permissions
+  shell: |
+    check_mode() {
+      local f="$1"
+      [ -f "$f" ] || return 0
+      local mode
+      mode=$(stat -c '%a' "$f" 2>/dev/null)
+      local mode_dec
+      mode_dec=$(printf '%d' "0${mode}")
+      if [ "$mode_dec" -le 416 ]; then
+        findings="${findings}PASS: $f ($mode)\n"
+      else
+        findings="${findings}FAIL: $f ($mode) - must be 0640 or less permissive\n"
+      fi
+    }
+
+    findings=""
+    check_mode /etc/audit/auditd.conf
+    check_mode /etc/audit/audit.rules
+    while IFS= read -r f; do
+      check_mode "$f"
+    done < <(find /etc/audit/rules.d/ -type f -name '*.rules' 2>/dev/null)
+
+    if [ -z "$findings" ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: no audit configuration files found"
+    elif echo -e "$findings" | grep -q '^FAIL:'; then
+      echo "STATUS: FAIL"
+    else
+      echo "STATUS: PASS"
+    fi
+    echo -e "$findings" | sed '/^$/d'
+  register: _653110_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-653110 | record audit config file permissions status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-653110': {
+        'status':
+          'not_a_finding' if 'STATUS: PASS' in _653110_result.stdout
+          else 'open',
+        'finding_details': _653110_result.stdout | trim,
+        'comments':
+          'Run: chmod 0640 /etc/audit/auditd.conf /etc/audit/audit.rules; '
+          ~ 'find /etc/audit/rules.d/ -type f -name *.rules -exec chmod 0640 {} +'
+      }
+    }) }}"
+  tags: [validate]
