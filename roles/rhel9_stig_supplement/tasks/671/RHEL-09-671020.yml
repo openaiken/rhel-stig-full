@@ -1,0 +1,54 @@
+---
+# RHEL-09-671020 | V-258232
+# RHEL 9 IP tunnels must use FIPS 140-3 approved cryptographic algorithms.
+# CAT I (High) | CCI-002450
+
+# Not applicable if the ipsec service is not installed.
+# The check looks for the crypto policy backend include in ipsec configuration.
+# Without the include line, libreswan uses its own default algorithms which
+# may not be restricted to FIPS-approved suites.
+
+- name: RHEL-09-671020 | check IPsec uses system crypto policy
+  shell: |
+    if ! rpm -q libreswan &>/dev/null && [ ! -f /etc/ipsec.conf ]; then
+      echo "NA: IPsec (libreswan) not installed"
+      exit 0
+    fi
+
+    target="include /etc/crypto-policies/back-ends/libreswan.config"
+
+    # Check primary config and any conf.d files
+    found=$(grep -rh "$target" /etc/ipsec.conf /etc/ipsec.d/*.conf 2>/dev/null || true)
+
+    if [ -n "$found" ]; then
+      echo "STATUS: PASS"
+      echo "PASS: crypto policy include found"
+      echo "$found"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: ipsec config does not contain:"
+      echo "  $target"
+      echo "FILES CHECKED: /etc/ipsec.conf, /etc/ipsec.d/*.conf"
+    fi
+  register: _671020_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-671020 | record IPsec crypto policy status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-671020': {
+        'status':
+          'not_applicable' if _671020_result.stdout is search('^NA:')
+          else ('not_a_finding' if 'STATUS: PASS' in _671020_result.stdout
+          else 'open'),
+        'finding_details': _671020_result.stdout | trim,
+        'comments':
+          'Add to /etc/ipsec.conf: '
+          ~ 'include /etc/crypto-policies/back-ends/libreswan.config. '
+          ~ 'Restart ipsec service to apply. '
+          ~ 'Ensure system crypto policy is set to FIPS: update-crypto-policies --set FIPS'
+      }
+    }) }}"
+  tags: [validate]

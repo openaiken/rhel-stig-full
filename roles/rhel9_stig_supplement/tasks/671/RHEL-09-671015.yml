@@ -1,0 +1,61 @@
+---
+# RHEL-09-671015 | V-258231
+# RHEL 9 must employ FIPS 140-3 approved cryptographic hashing algorithms for
+# all stored passwords.
+# CAT II (Medium) | CCI-000196
+
+# FIPS-approved hash for stored passwords is sha512 ($6$). Hashes starting
+# with ! or * are locked/inactive accounts and are not evaluated per the STIG.
+# On IdM/SSSD-joined systems most users will have no local password hash and
+# will be skipped; root and local service accounts still require $6$.
+
+- name: RHEL-09-671015 | check password hash algorithms in /etc/shadow
+  shell: |
+    if [ ! -f /etc/shadow ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: /etc/shadow not found"
+      exit 0
+    fi
+
+    findings=""
+    while IFS=: read -r user hash _; do
+      case "$hash" in
+        ''|'!'*|'*') continue ;;
+      esac
+      if echo "$hash" | grep -qE '^\$6\$'; then
+        findings="${findings}PASS: $user (sha512/\$6\$)\n"
+      else
+        algo=$(echo "$hash" | grep -oE '^\$[^$]+\$' | head -1 || echo "unknown")
+        findings="${findings}FAIL: $user uses hash algo ${algo} (not sha512/\$6\$)\n"
+      fi
+    done < /etc/shadow
+
+    if [ -z "$findings" ]; then
+      echo "STATUS: PASS"
+      echo "PASS: no active local password hashes found (all locked or inactive)"
+    elif echo -e "$findings" | grep -q '^FAIL:'; then
+      echo "STATUS: FAIL"
+    else
+      echo "STATUS: PASS"
+    fi
+    echo -e "$findings" | sed '/^$/d'
+  register: _671015_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-671015 | record password hash algorithm status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-671015': {
+        'status':
+          'not_a_finding' if 'STATUS: PASS' in _671015_result.stdout
+          else 'open',
+        'finding_details': _671015_result.stdout | trim,
+        'comments':
+          'Ensure ENCRYPT_METHOD SHA512 is set in /etc/login.defs. '
+          ~ 'Existing password hashes are not automatically re-hashed; affected '
+          ~ 'users must reset their passwords after the algorithm is changed.'
+      }
+    }) }}"
+  tags: [validate]
