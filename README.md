@@ -44,9 +44,10 @@ Target:
 
 Auth (mutually exclusive):
   (default)                 Prompt for become (sudo) password once
-  --vault-file FILE         Read become credentials from an ansible-vault file
-  --vault                   Prompt for vault password; reads become credentials
-                            from the vault for the duration of the run
+  --vault-pass-file FILE    Path to the ansible-vault password file; become
+                            credentials are read from the decrypted vault
+  --vault                   Prompt for vault password interactively; become
+                            credentials are read from the decrypted vault
 
 Skip plays:
   --skip-formal             Skip the rhel9STIG formal role play
@@ -62,7 +63,7 @@ Other:
 **Examples:**
 ```bash
 ./run.sh validate --host myserver.example.com
-./run.sh remediate --host prod-servers --vault-file ~/.vault_pass
+./run.sh remediate --host prod-servers --vault-pass-file ~/.vault_pass
 ./run.sh validate --skip-formal -vvv
 ./run.sh validate --host myserver -- -e "supp_rules={'RHEL-09-671010': false}"
 ```

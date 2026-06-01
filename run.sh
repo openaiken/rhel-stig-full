@@ -14,7 +14,7 @@ SKIP_SUPPLEMENT=false
 SKIP_CKLB=false
 VERBOSITY="-v"
 VAULT_MODE=""        # "file" or "prompt"
-VAULT_FILE=""        # path supplied with --vault-file
+VAULT_FILE=""        # path supplied with --vault-pass-file
 VAULT_TMPFILE=""     # temp file created when using --vault
 BECOME_TMPFILE=""    # temp file for become password
 PASSTHROUGH=()
@@ -41,7 +41,7 @@ Target:
 
 Auth (mutually exclusive — choose one):
   (default)                 Prompt for become (sudo) password once
-  --vault-file FILE         Use FILE as the ansible-vault password file;
+  --vault-pass-file FILE    Use FILE as the ansible-vault password file;
                             become credentials are read from the vault
   --vault                   Prompt for vault password (stored in a temp
                             file for the duration of the run); become
@@ -61,7 +61,7 @@ Arguments after -- are forwarded verbatim to every ansible-playbook call.
 Examples:
   ./run.sh validate
   ./run.sh validate --host stigging-sandbox2
-  ./run.sh remediate --host prod-servers --vault-file ~/.vault_pass
+  ./run.sh remediate --host prod-servers --vault-pass-file ~/.vault_pass
   ./run.sh validate --skip-formal -vvv
   ./run.sh validate --vault -- -e "extra_var=foo"
 EOF
@@ -86,11 +86,11 @@ while [[ $# -gt 0 ]]; do
       SKIP_SUPPLEMENT=true; shift ;;
     --skip-cklb)
       SKIP_CKLB=true; shift ;;
-    --vault-file)
-      [[ $# -lt 2 ]] && die "--vault-file requires a path argument"
+    --vault-pass-file)
+      [[ $# -lt 2 ]] && die "--vault-pass-file requires a path argument"
       [[ -f "$2" ]] || die "Vault password file not found: $2"
       VAULT_MODE="file"; VAULT_FILE="$2"; shift 2 ;;
-    --vault-file=*)
+    --vault-pass-file=*)
       VAULT_FILE="${1#*=}"
       [[ -f "$VAULT_FILE" ]] || die "Vault password file not found: $VAULT_FILE"
       VAULT_MODE="file"; shift ;;
@@ -108,8 +108,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ -z "$TAG" ]] && die "Mode is required: validate or remediate"
-[[ -n "$VAULT_MODE" && -n "$ANSIBLE_BECOME_PASSWORD" ]] && \
-  die "Cannot combine --vault/--vault-file with ANSIBLE_BECOME_PASSWORD env var"
+[[ -n "$VAULT_MODE" && -n "${ANSIBLE_BECOME_PASSWORD:-}" ]] && \
+  die "Cannot combine --vault/--vault-pass-file with ANSIBLE_BECOME_PASSWORD env var"
 
 # ── credential setup ──────────────────────────────────────────────────────────
 _cleanup() {
