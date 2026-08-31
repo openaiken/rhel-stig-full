@@ -1,5 +1,5 @@
 ---
-# RHEL-09-611050 | V-258109
+# RHEL-09-611050 | V-258099
 # RHEL 9 password-auth must be configured to use a sufficient number of
 # hashing rounds.
 # CAT II (Medium) | CCI-004062, CCI-000803, CCI-000196

@@ -1,5 +1,5 @@
 ---
-# RHEL-09-432025 | V-258026
+# RHEL-09-432025 | V-258086
 # RHEL 9 must require users to reauthenticate for privilege escalation.
 # CAT II (Medium) | CCI-002038
 

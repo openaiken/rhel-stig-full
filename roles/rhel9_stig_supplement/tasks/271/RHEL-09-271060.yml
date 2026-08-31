@@ -1,5 +1,5 @@
 ---
-# RHEL-09-271060 | V-258198
+# RHEL-09-271060 | V-258022
 # RHEL 9 must prevent a user from overriding the screensaver lock-enabled
 # setting for the graphical user interface.
 # CAT II (Medium) | CCI-000056

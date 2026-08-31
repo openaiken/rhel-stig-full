@@ -1,5 +1,5 @@
 ---
-# RHEL-09-271065 | V-258199
+# RHEL-09-271065 | V-258023
 # RHEL 9 must automatically lock graphical user sessions after 10 minutes of
 # inactivity.
 # CAT II (Medium) | CCI-000057

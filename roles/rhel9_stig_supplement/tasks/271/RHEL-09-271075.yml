@@ -1,5 +1,5 @@
 ---
-# RHEL-09-271075 | V-258201
+# RHEL-09-271075 | V-258025
 # RHEL 9 must initiate a session lock for graphical user interfaces when the
 # screensaver is activated.
 # CAT II (Medium) | CCI-000057

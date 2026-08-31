@@ -1,5 +1,5 @@
 ---
-# RHEL-09-271070 | V-258200
+# RHEL-09-271070 | V-258024
 # RHEL 9 must prevent a user from overriding the session idle-delay setting
 # for the graphical user interface.
 # CAT II (Medium) | CCI-000057

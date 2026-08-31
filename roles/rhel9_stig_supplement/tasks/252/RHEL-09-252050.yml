@@ -1,5 +1,5 @@
 ---
-# RHEL-09-252050 | V-257957
+# RHEL-09-252050 | V-257951
 # RHEL 9 must be configured to prevent unrestricted mail relaying.
 # CAT II (Medium) | CCI-000366
 

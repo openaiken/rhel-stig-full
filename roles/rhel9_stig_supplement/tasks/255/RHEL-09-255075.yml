@@ -1,5 +1,5 @@
 ---
-# RHEL-09-255075 | V-258109
+# RHEL-09-255075 | V-257991
 # The RHEL 9 SSH server must be configured to use only MACs employing
 # FIPS 140-3 validated cryptographic hash algorithms.
 # CAT I (High) | CCI-000877

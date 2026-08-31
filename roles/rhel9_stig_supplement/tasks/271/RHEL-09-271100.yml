@@ -1,5 +1,5 @@
 ---
-# RHEL-09-271100 | V-258206
+# RHEL-09-271100 | V-258030
 # RHEL 9 must prevent a user from overriding the disable-restart-buttons
 # setting for the graphical user interface.
 # CAT II (Medium) | CCI-000366

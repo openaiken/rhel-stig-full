@@ -1,5 +1,5 @@
 ---
-# RHEL-09-271015 | V-258189
+# RHEL-09-271015 | V-258013
 # RHEL 9 must prevent a user from overriding the banner-message-enable setting
 # for the graphical user interface.
 # CAT II (Medium) | CCI-000048

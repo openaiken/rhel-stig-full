@@ -1,5 +1,5 @@
 ---
-# RHEL-09-255125 | V-258159
+# RHEL-09-255125 | V-258001
 # RHEL 9 SSH public host key files must have mode 0644 or less permissive.
 # CAT II (Medium) | CCI-000366
 

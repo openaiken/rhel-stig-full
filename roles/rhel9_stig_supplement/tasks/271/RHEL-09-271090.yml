@@ -1,5 +1,5 @@
 ---
-# RHEL-09-271090 | V-258204
+# RHEL-09-271090 | V-258028
 # RHEL 9 effective dconf policy must match the policy keyfiles.
 # CAT II (Medium) | CCI-000366
 

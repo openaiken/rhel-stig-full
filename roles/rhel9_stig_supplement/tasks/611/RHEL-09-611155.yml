@@ -1,5 +1,5 @@
 ---
-# RHEL-09-611155 | V-258197
+# RHEL-09-611155 | V-258120
 # RHEL 9 must not have accounts configured with blank or null passwords.
 # CAT II (Medium) | CCI-000366
 

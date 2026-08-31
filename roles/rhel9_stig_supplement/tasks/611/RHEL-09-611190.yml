@@ -1,5 +1,5 @@
 ---
-# RHEL-09-611190 | V-258212
+# RHEL-09-611190 | V-258127
 # RHEL 9, for PKI-based authentication, must enforce authorized access to
 # the corresponding private key.
 # CAT II (Medium) | CCI-000186

@@ -1,5 +1,5 @@
 ---
-# RHEL-09-411030 | V-257991
+# RHEL-09-411030 | V-258045
 # RHEL 9 duplicate User IDs (UIDs) must not exist for interactive users.
 # CAT II (Medium) | CCI-000135
 

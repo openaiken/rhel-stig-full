@@ -1,5 +1,5 @@
 ---
-# RHEL-09-412035 | V-258008
+# RHEL-09-412035 | V-258068
 # RHEL 9 must automatically exit interactive command shell user sessions after
 # 10 minutes of inactivity.
 # CAT II (Medium) | CCI-002361

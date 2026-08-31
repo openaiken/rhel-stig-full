@@ -1,5 +1,5 @@
 ---
-# RHEL-09-291030 | V-258168
+# RHEL-09-291030 | V-258038
 # RHEL 9 must block unauthorized peripherals before establishing a connection.
 # CAT II (Medium) | CCI-001544
 

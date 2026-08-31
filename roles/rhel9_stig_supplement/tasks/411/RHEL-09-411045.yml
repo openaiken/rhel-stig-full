@@ -1,5 +1,5 @@
 ---
-# RHEL-09-411045 | V-257994
+# RHEL-09-411045 | V-258048
 # All RHEL 9 interactive users must have a primary group that exists.
 # CAT II (Medium) | CCI-000764
 

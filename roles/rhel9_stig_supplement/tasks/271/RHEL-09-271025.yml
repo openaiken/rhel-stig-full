@@ -1,5 +1,5 @@
 ---
-# RHEL-09-271025 | V-258191
+# RHEL-09-271025 | V-258015
 # RHEL 9 must prevent a user from overriding the disabling of the graphical
 # user interface automount function.
 # CAT II (Medium) | CCI-000366

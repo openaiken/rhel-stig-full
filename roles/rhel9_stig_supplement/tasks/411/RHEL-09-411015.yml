@@ -1,5 +1,5 @@
 ---
-# RHEL-09-411015 | V-257988
+# RHEL-09-411015 | V-258042
 # RHEL 9 user account passwords must have a 60-day maximum password lifetime
 # restriction.
 # CAT II (Medium) | CCI-000199

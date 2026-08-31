@@ -1,5 +1,5 @@
 ---
-# RHEL-09-271030 | V-258192
+# RHEL-09-271030 | V-258016
 # RHEL 9 must disable the graphical user interface autorun function unless
 # required.
 # CAT II (Medium) | CCI-000366

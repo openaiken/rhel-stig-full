@@ -1,5 +1,5 @@
 ---
-# RHEL-09-611055 | V-258112
+# RHEL-09-611055 | V-258100
 # RHEL 9 system-auth must be configured to use a sufficient number of
 # hashing rounds.
 # CAT II (Medium) | CCI-004062, CCI-000803, CCI-000196

@@ -1,5 +1,5 @@
 ---
-# RHEL-09-651015 | V-258231
+# RHEL-09-651015 | V-258135
 # RHEL 9 must routinely check the baseline configuration for unauthorized
 # changes and notify the system administrator when anomalies in the
 # operation of any security functions are discovered.

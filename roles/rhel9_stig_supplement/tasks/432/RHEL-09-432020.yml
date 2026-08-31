@@ -1,5 +1,5 @@
 ---
-# RHEL-09-432020 | V-258025
+# RHEL-09-432020 | V-258085
 # RHEL 9 must use the invoking user's password for privilege escalation when
 # using "sudo".
 # CAT II (Medium) | CCI-002227

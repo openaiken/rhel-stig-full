@@ -1,5 +1,5 @@
 ---
-# RHEL-09-411110 | V-258063
+# RHEL-09-411110 | V-258061
 # RHEL 9 groups must have unique Group ID (GID).
 # CAT II (Medium) | CCI-000764
 

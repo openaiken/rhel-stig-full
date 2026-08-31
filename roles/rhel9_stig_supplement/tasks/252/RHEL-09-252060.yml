@@ -1,5 +1,5 @@
 ---
-# RHEL-09-252060 | V-257959
+# RHEL-09-252060 | V-257953
 # RHEL 9 must forward mail from postmaster to the root account using a
 # postfix alias.
 # CAT II (Medium) | CCI-000139

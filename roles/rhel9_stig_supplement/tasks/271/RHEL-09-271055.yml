@@ -1,5 +1,5 @@
 ---
-# RHEL-09-271055 | V-258197
+# RHEL-09-271055 | V-258021
 # RHEL 9 must enable a user session lock until that user re-establishes
 # access using established identification and authentication procedures for
 # graphical user sessions.

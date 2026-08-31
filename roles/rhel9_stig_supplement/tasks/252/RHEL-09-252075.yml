@@ -1,5 +1,5 @@
 ---
-# RHEL-09-252075 | V-257963
+# RHEL-09-252075 | V-257956
 # There must be no .shosts files on RHEL 9.
 # CAT I (High) | CCI-000366
 

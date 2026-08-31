@@ -1,5 +1,5 @@
 ---
-# RHEL-09-252020 | V-257950
+# RHEL-09-252020 | V-257945
 # RHEL 9 must securely compare internal information system clocks at least
 # every 24 hours with an authoritative time source.
 # CAT II (Medium) | CCI-004923

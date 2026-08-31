@@ -1,5 +1,5 @@
 ---
-# RHEL-09-611045 | V-258106
+# RHEL-09-611045 | V-258098
 # RHEL 9 must ensure the password complexity module is enabled in the
 # system-auth file.
 # CAT II (Medium) | CCI-000366

@@ -1,5 +1,5 @@
 ---
-# RHEL-09-252045 | V-257956
+# RHEL-09-252045 | V-257950
 # RHEL 9 must not have unauthorized IP tunnels configured.
 # CAT II (Medium) | CCI-000382
 

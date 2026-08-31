@@ -1,5 +1,5 @@
 ---
-# RHEL-09-252070 | V-257962
+# RHEL-09-252070 | V-257955
 # There must be no shosts.equiv files on RHEL 9.
 # CAT I (High) | CCI-000366
 

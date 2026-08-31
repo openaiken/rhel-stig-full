@@ -1,5 +1,5 @@
 ---
-# RHEL-09-651030 | V-258240
+# RHEL-09-651030 | V-258138
 # RHEL 9 must be configured so that the file integrity tool verifies
 # Access Control Lists (ACLs).
 # CAT III (Low) | CCI-000366

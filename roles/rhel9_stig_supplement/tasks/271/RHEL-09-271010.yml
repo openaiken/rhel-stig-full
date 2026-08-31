@@ -1,5 +1,5 @@
 ---
-# RHEL-09-271010 | V-258188
+# RHEL-09-271010 | V-258012
 # RHEL 9 must display the Standard Mandatory DOD Notice and Consent Banner
 # before granting local or remote access via a graphical user logon.
 # CAT II (Medium) | CCI-000048

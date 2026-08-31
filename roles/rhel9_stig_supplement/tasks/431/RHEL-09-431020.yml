@@ -1,5 +1,5 @@
 ---
-# RHEL-09-431020 | V-258039
+# RHEL-09-431020 | V-258080
 # RHEL 9 must configure SELinux context type to allow the use of a nondefault
 # faillock tally directory.
 # CAT II (Medium) | CCI-000366

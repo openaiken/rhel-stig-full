@@ -1,5 +1,5 @@
 ---
-# RHEL-09-271105 | V-258207
+# RHEL-09-271105 | V-258031
 # RHEL 9 must disable the ability of a user to accidentally press
 # Ctrl-Alt-Del and cause a system to shut down or reboot.
 # CAT II (Medium) | CCI-000366

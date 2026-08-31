@@ -1,5 +1,5 @@
 ---
-# RHEL-09-271080 | V-258202
+# RHEL-09-271080 | V-258026
 # RHEL 9 must prevent a user from overriding the session lock-delay setting
 # for the graphical user interface.
 # CAT II (Medium) | CCI-000057
