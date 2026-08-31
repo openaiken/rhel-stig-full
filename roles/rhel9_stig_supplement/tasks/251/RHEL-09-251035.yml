@@ -22,7 +22,7 @@
       'RHEL-09-251035': {
         'status':
           'not_a_finding' if rhel9_attest_ppsm_compliant | bool
-          else 'not_reviewed',
+          else 'open',
         'finding_details':
           'Attestation (rhel9_attest_ppsm_compliant): '
           ~ (rhel9_attest_ppsm_compliant | bool | string | lower)

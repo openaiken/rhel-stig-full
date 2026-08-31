@@ -35,7 +35,7 @@
         'status':
           'open' if (_252020_maxpoll.stdout | trim)
           else ('not_a_finding' if rhel9_attest_ntp_source_approved | bool
-          else 'not_reviewed'),
+          else 'open'),
         'finding_details':
           'Configured NTP server/pool lines:\n'
           ~ (_252020_servers.stdout | trim if _252020_servers.stdout | trim else '(none found)')

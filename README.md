@@ -178,6 +178,8 @@ At the end of the play, `supp_facts` is written to `reports/supp-facts/` as a JS
 - `open` — check failed and no clearing attestation is set
 - `not_applicable` — rule does not apply to this system
 
+The supplement never writes `not_reviewed`. A rule awaiting an operator decision is `open` until the relevant attestation variable is set, and a check that cannot determine the system's state is also `open`, since an unverifiable control is conservatively a finding. A `not_reviewed` entry in a rendered checklist therefore means the rule was covered by neither the supplement nor the formal role's callback — a coverage gap to fix, not an assessment outcome. Reviewers routinely reject a submitted checklist containing `not_reviewed`.
+
 **Coverage:**
 
 | Category range | Domain |

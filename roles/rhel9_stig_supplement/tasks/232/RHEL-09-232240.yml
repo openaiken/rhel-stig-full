@@ -22,7 +22,7 @@
       'RHEL-09-232240': {
         'status':
           'not_a_finding' if not (_232240_result.stdout | trim)
-          else 'not_reviewed',
+          else 'open',
         'finding_details':
           'World-writable directories not owned by root, sys, or bin:\n'
           ~ (_232240_result.stdout | trim if _232240_result.stdout | trim else '(none)'),
