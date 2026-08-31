@@ -36,12 +36,12 @@
     - rhel9STIG_stigrule_257783_Manage
     - result.rc == 0
 # R-257784 RHEL-09-211045
-- name: stigrule_257784__etc_systemd_system_conf_d_55_CtrlAltDel_BurstAction
+- name: stigrule_257784__etc_systemd_system_conf_d_55_CtrlAltDel_BurstAction_conf
   ini_file:
-    path: /etc/systemd/system.conf.d/55-CtrlAltDel-BurstAction
+    path: /etc/systemd/system.conf.d/55-CtrlAltDel-BurstAction.conf
     section: Manager
     option: CtrlAltDelBurstAction
-    value: "{{ rhel9STIG_stigrule_257784__etc_systemd_system_conf_d_55_CtrlAltDel_BurstAction_Value }}"
+    value: "{{ rhel9STIG_stigrule_257784__etc_systemd_system_conf_d_55_CtrlAltDel_BurstAction_conf_Value }}"
     no_extra_spaces: yes
   notify: dconf_update
   when:
@@ -1289,16 +1289,6 @@
     owner: "{{ rhel9STIG_stigrule_257998__etc_ssh_sshd_config_owner_Owner }}"
   when:
     - rhel9STIG_stigrule_257998_Manage
-# R-258002 RHEL-09-255130
-- name: stigrule_258002_Compression
-  lineinfile:
-    path: /etc/ssh/sshd_config
-    regexp: '(?i)^\s*Compression\s+'
-    line: "{{ rhel9STIG_stigrule_258002_Compression_Line }}"
-  notify: ssh_restart
-  when:
-    - rhel9STIG_stigrule_258002_Manage
-    - packages['openssh-server'] is defined
 # R-258003 RHEL-09-255135
 - name: stigrule_258003_GSSAPIAuthentication
   lineinfile:
@@ -2847,73 +2837,73 @@
 - name: stigrule_258217__etc_audit_rules_d_audit_rules__etc_sudoers
   lineinfile:
     path: /etc/audit/rules.d/audit.rules
-    regexp: '^-w /etc/sudoers -p wa -k identity$'
+    regexp: '^-a always,exit -F arch=b64 -F path=/etc/sudoers -F perm=wa -k identity$'
     line: "{{ rhel9STIG_stigrule_258217__etc_audit_rules_d_audit_rules__etc_sudoers_Line }}"
-  notify: auditd_restart
+  notify: augenrules_load
   when: rhel9STIG_stigrule_258217_Manage
 # R-258218 RHEL-09-654220
 - name: stigrule_258218__etc_audit_rules_d_audit_rules__etc_sudoers_d_
   lineinfile:
     path: /etc/audit/rules.d/audit.rules
-    regexp: '^-w /etc/sudoers.d/ -p wa -k identity$'
+    regexp: '^-a always,exit -F arch=b64 -F path=/etc/sudoers.d -F perm=wa -k identity$'
     line: "{{ rhel9STIG_stigrule_258218__etc_audit_rules_d_audit_rules__etc_sudoers_d__Line }}"
-  notify: auditd_restart
+  notify: augenrules_load
   when: rhel9STIG_stigrule_258218_Manage
 # R-258219 RHEL-09-654225
 - name: stigrule_258219__etc_audit_rules_d_audit_rules__etc_group
   lineinfile:
     path: /etc/audit/rules.d/audit.rules
-    regexp: '^-w /etc/group -p wa -k identity$'
+    regexp: '^-a always,exit -F arch=b64 -F path=/etc/group -F perm=wa -k identity$'
     line: "{{ rhel9STIG_stigrule_258219__etc_audit_rules_d_audit_rules__etc_group_Line }}"
-  notify: auditd_restart
+  notify: augenrules_load
   when: rhel9STIG_stigrule_258219_Manage
 # R-258220 RHEL-09-654230
 - name: stigrule_258220__etc_audit_rules_d_audit_rules__etc_gshadow
   lineinfile:
     path: /etc/audit/rules.d/audit.rules
-    regexp: '^-w /etc/gshadow -p wa -k identity$'
+    regexp: '^-a always,exit -F arch=b64 -F path=/etc/gshadow -F perm=wa -k identity$'
     line: "{{ rhel9STIG_stigrule_258220__etc_audit_rules_d_audit_rules__etc_gshadow_Line }}"
-  notify: auditd_restart
+  notify: augenrules_load
   when: rhel9STIG_stigrule_258220_Manage
 # R-258221 RHEL-09-654235
 - name: stigrule_258221__etc_audit_rules_d_audit_rules__etc_security_opasswd
   lineinfile:
     path: /etc/audit/rules.d/audit.rules
-    regexp: '^-w /etc/security/opasswd -p wa -k identity$'
+    regexp: '^-a always,exit -F arch=b64 -F path=/etc/opasswd -F perm=wa -k identity$'
     line: "{{ rhel9STIG_stigrule_258221__etc_audit_rules_d_audit_rules__etc_security_opasswd_Line }}"
-  notify: auditd_restart
+  notify: augenrules_load
   when: rhel9STIG_stigrule_258221_Manage
 # R-258222 RHEL-09-654240
 - name: stigrule_258222__etc_audit_rules_d_audit_rules__etc_passwd
   lineinfile:
     path: /etc/audit/rules.d/audit.rules
-    regexp: '^-w /etc/passwd -p wa -k identity$'
+    regexp: '^-a always,exit -F arch=b64 -F path=/etc/passwd -F perm=wa -k identity$'
     line: "{{ rhel9STIG_stigrule_258222__etc_audit_rules_d_audit_rules__etc_passwd_Line }}"
-  notify: auditd_restart
+  notify: augenrules_load
   when: rhel9STIG_stigrule_258222_Manage
 # R-258223 RHEL-09-654245
 - name: stigrule_258223__etc_audit_rules_d_audit_rules__etc_shadow
   lineinfile:
     path: /etc/audit/rules.d/audit.rules
-    regexp: '^-w /etc/shadow -p wa -k identity$'
+    regexp: '^-a always,exit -F arch=b64 -F path=/etc/shadow -F perm=wa -k identity$'
     line: "{{ rhel9STIG_stigrule_258223__etc_audit_rules_d_audit_rules__etc_shadow_Line }}"
-  notify: auditd_restart
+  notify: augenrules_load
   when: rhel9STIG_stigrule_258223_Manage
 # R-258224 RHEL-09-654250
 - name: stigrule_258224__etc_audit_rules_d_audit_rules__var_log_faillock
   lineinfile:
     path: /etc/audit/rules.d/audit.rules
-    regexp: '^-w /var/log/faillock -p wa -k logins$'
+    regexp: '^-a always,exit -F arch=b64 -F path=/var/log/faillock -F perm=wa -F auid>=1000 -F auid!=unset -k logins$'
     line: "{{ rhel9STIG_stigrule_258224__etc_audit_rules_d_audit_rules__var_log_faillock_Line }}"
-  notify: auditd_restart
+  notify: augenrules_load
   when: rhel9STIG_stigrule_258224_Manage
 # R-258225 RHEL-09-654255
 - name: stigrule_258225__etc_audit_rules_d_audit_rules__var_log_lastlog
   lineinfile:
     path: /etc/audit/rules.d/audit.rules
-    regexp: '^-w /var/log/lastlog -p wa -k logins$'
+    regexp: '^-a always,exit -F arch=b64 -F path=/var/log/lastlog -F perm=wa -F auid>=1000 -F auid!=unset -k logins$'
     line: "{{ rhel9STIG_stigrule_258225__etc_audit_rules_d_audit_rules__var_log_lastlog_Line }}"
-  notify: auditd_restart
+  notify: augenrules_load
   when: rhel9STIG_stigrule_258225_Manage
 # R-258227 RHEL-09-654265
 - name: stigrule_258227__etc_audit_rules_d_audit_rules_f2
@@ -2952,18 +2942,18 @@
     state: "{{ rhel9STIG_stigrule_272488_postfix_State }}"
   when: rhel9STIG_stigrule_272488_Manage
 # R-279936 RHEL-09-654097
-- name: stigrule_279936__etc_audit_rules_d_audit_rules__etc_cron_d_
+- name: stigrule_279936__etc_audit_rules_d_audit_rules_euid
   lineinfile:
     path: /etc/audit/rules.d/audit.rules
-    regexp: '^-w /etc/cron.d/ -p wa -k cronjobs$'
-    line: "{{ rhel9STIG_stigrule_279936__etc_audit_rules_d_audit_rules__etc_cron_d__Line }}"
-  notify: auditd_restart
+    regexp: '^-a always,exit -F arch=b32 -S execve -F subj_type=crond_t -F euid=0 -k cron_exec$'
+    line: "{{ rhel9STIG_stigrule_279936__etc_audit_rules_d_audit_rules_euid_Line }}"
+  notify: augenrules_load
   when: rhel9STIG_stigrule_279936_Manage
 # R-279936 RHEL-09-654097
-- name: stigrule_279936__etc_audit_rules_d_audit_rules__var_spool_cron_
+- name: stigrule_279936__etc_audit_rules_d_audit_rules_auid
   lineinfile:
     path: /etc/audit/rules.d/audit.rules
-    regexp: '^-w /var/spool/cron/ -p wa -k cronjobs$'
-    line: "{{ rhel9STIG_stigrule_279936__etc_audit_rules_d_audit_rules__var_spool_cron__Line }}"
-  notify: auditd_restart
+    regexp: '^-a always,exit -F arch=b32 -S execve -F subj_type=crond_t -F auid>=1000 -F auid!=unset -k cron_exec$'
+    line: "{{ rhel9STIG_stigrule_279936__etc_audit_rules_d_audit_rules_auid_Line }}"
+  notify: augenrules_load
   when: rhel9STIG_stigrule_279936_Manage

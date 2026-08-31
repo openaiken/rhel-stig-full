@@ -1,3 +1,5 @@
+- name: augenrules_load
+  command: augenrules --load
 - name: dconf_update
   command: dconf update
 - name: auditd_restart
@@ -25,6 +27,7 @@
     state: restarted
 - name: with_faillock_enable
   command: authselect enable-feature with-faillock
+  failed_when: false
 - name: do_reboot
   reboot:
     pre_reboot_delay: 60
