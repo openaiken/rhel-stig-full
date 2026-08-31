@@ -10,13 +10,16 @@
 # These Defaults apply to local sudo policy regardless of whether user/group
 # rules are managed via IdM/SSSD.
 
+# NOTE: grep -n prefixes every output line with "file:lineno:", so a comment
+# filter must anchor past that prefix. A bare '^\s*#' never matches and lets
+# commented-out lines through as findings.
 - name: RHEL-09-432020 | check sudo Defaults for invoking-user password requirement
   shell: |
     findings=""
 
     for token in '!targetpw' '!rootpw' '!runaspw'; do
       matches=$(grep -irn "Defaults.*${token}" /etc/sudoers /etc/sudoers.d/ 2>/dev/null \
-                | grep -v '^\s*#')
+                | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#')
       count=$(echo "$matches" | grep -c '.' || true)
       files=$(echo "$matches" | awk -F: '{print $1}' | sort -u | tr '\n' ' ')
 

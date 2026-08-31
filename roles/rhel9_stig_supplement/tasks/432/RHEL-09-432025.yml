@@ -7,10 +7,13 @@
 # No exceptions — NOPASSWD is the correct mechanism if passwordless sudo is
 # approved, but !authenticate bypasses PAM entirely and is never acceptable.
 
+# NOTE: grep -n prefixes every output line with "file:lineno:", so a comment
+# filter must anchor past that prefix. A bare '^\s*#' never matches and lets
+# commented-out lines through as findings.
 - name: RHEL-09-432025 | check sudoers for !authenticate
   shell: |
     hits=$(grep -irn '!authenticate' /etc/sudoers /etc/sudoers.d/ 2>/dev/null \
-           | grep -v '^\s*#' || true)
+           | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' || true)
     if [ -z "$hits" ]; then
       echo "STATUS: PASS"
       echo "RAW: No occurrences of !authenticate found"
