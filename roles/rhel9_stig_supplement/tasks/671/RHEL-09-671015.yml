@@ -1,7 +1,7 @@
 ---
 # RHEL-09-671015 | V-258231
-# RHEL 9 must employ FIPS 140-3 approved cryptographic hashing algorithms for
-# all stored passwords.
+# RHEL 9 must employ FIPS 140-3-approved cryptographic hashing algorithms
+# for all stored passwords.
 # CAT II (Medium) | CCI-000196
 
 # FIPS-approved hash for stored passwords is sha512 ($6$). Hashes starting

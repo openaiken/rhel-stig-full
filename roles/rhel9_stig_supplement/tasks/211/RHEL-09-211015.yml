@@ -17,7 +17,7 @@
              if rhel9_attest_patching_current | bool
              else 'FAIL - patch currency has not been attested'),
         'comments':
-          'Patching frequency is org-defined per RHEL 9 V2R8. '
+          'Patching frequency is org-defined per RHEL 9 V2R9. '
           ~ 'Verify currency via: sudo dnf history list | more '
           ~ 'Set rhel9_attest_patching_current: true in group_vars/all/stig_controls.yml '
           ~ 'after confirming patches are current per your policy cadence.'

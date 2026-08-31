@@ -3,11 +3,17 @@
 # Uncomment and set to false to prevent the formal role from remediating a rule.
 # Key format: rhel9STIG_stigrule_{V-number}_Manage: false
 #
+# Generated from roles/rhel9STIG/defaults/main.yml (RHEL 9 V2R9).
+# Lists every rule the role can manage, independent of what any one scan
+# recorded -- role tasks are often gated on conditionals (e.g. dconf present).
+#
 # STIG ID           Group      Sev      Title
 # RHEL-09-211020     V-257779   CAT II   RHEL 9 must display the Standard Mandatory DOD Notice and Consent Bann
 # rhel9STIG_stigrule_257779_Manage: true
 # RHEL-09-211040     V-257783   CAT II   RHEL 9 systemd-journald service must be enabled.
 # rhel9STIG_stigrule_257783_Manage: true
+# RHEL-09-211045     V-257784   CAT I    The systemd Ctrl-Alt-Delete burst key sequence in RHEL 9 must be disab
+# rhel9STIG_stigrule_257784_Manage: true
 # RHEL-09-211050     V-257785   CAT I    The x86 Ctrl-Alt-Delete key sequence must be disabled on RHEL 9.
 # rhel9STIG_stigrule_257785_Manage: true
 # RHEL-09-211055     V-257786   CAT II   RHEL 9 debug-shell systemd service must be disabled.
@@ -94,10 +100,8 @@
 # rhel9STIG_stigrule_257841_Manage: true
 # RHEL-09-215095     V-257842   CAT II   RHEL 9 must have the s-nail package installed.
 # rhel9STIG_stigrule_257842_Manage: true
-# RHEL-09-215100     V-258234   CAT I    RHEL 9 must have the crypto-policies package installed.
-# rhel9STIG_stigrule_258234_Manage: true
-# RHEL-09-215101     V-272488   CAT II   RHEL 9 must have the Postfix package installed.
-# rhel9STIG_stigrule_272488_Manage: true
+# RHEL-09-231040     V-257849   CAT II   RHEL 9 file system automount function must be disabled unless required
+# rhel9STIG_stigrule_257849_Manage: true
 # RHEL-09-231195     V-257880   CAT III  RHEL 9 must disable mounting of cramfs.
 # rhel9STIG_stigrule_257880_Manage: true
 # RHEL-09-232025     V-257885   CAT II   RHEL 9 /var/log directory must have mode 0755 or less permissive.
@@ -164,7 +168,7 @@
 # rhel9STIG_stigrule_257935_Manage: true
 # RHEL-09-251015     V-257936   CAT II   The firewalld service on RHEL 9 must be active.
 # rhel9STIG_stigrule_257936_Manage: true
-# RHEL-09-251030     V-257939   CAT II   RHEL 9 must protect against or limit the effects of denial-of-service
+# RHEL-09-251030     V-257939   CAT II   RHEL 9 must protect against or limit the effects of denial-of-service 
 # rhel9STIG_stigrule_257939_Manage: true
 # RHEL-09-251045     V-257942   CAT II   RHEL 9 must enable hardening for the Berkeley Packet Filter just-in-ti
 # rhel9STIG_stigrule_257942_Manage: true
@@ -236,7 +240,7 @@
 # rhel9STIG_stigrule_257983_Manage: true
 # RHEL-09-255040     V-257984   CAT I    RHEL 9 SSHD must not allow blank passwords.
 # rhel9STIG_stigrule_257984_Manage: true
-# RHEL-09-255045     V-257985   CAT II   RHEL 9 must not permit direct logons to the root account using remote
+# RHEL-09-255045     V-257985   CAT II   RHEL 9 must not permit direct logons to the root account using remote 
 # rhel9STIG_stigrule_257985_Manage: true
 # RHEL-09-255050     V-257986   CAT I    RHEL 9 must enable the Pluggable Authentication Module (PAM) interface
 # rhel9STIG_stigrule_257986_Manage: true
@@ -254,8 +258,6 @@
 # rhel9STIG_stigrule_257997_Manage: true
 # RHEL-09-255110     V-257998   CAT II   The RHEL 9 SSH server configuration file must be owned by root.
 # rhel9STIG_stigrule_257998_Manage: true
-# RHEL-09-255130     V-258002   CAT II   RHEL 9 SSH daemon must not allow compression or must only allow compre
-# rhel9STIG_stigrule_258002_Manage: true
 # RHEL-09-255135     V-258003   CAT II   RHEL 9 SSH daemon must not allow GSSAPI authentication.
 # rhel9STIG_stigrule_258003_Manage: true
 # RHEL-09-255140     V-258004   CAT II   RHEL 9 SSH daemon must not allow Kerberos authentication.
@@ -266,12 +268,50 @@
 # rhel9STIG_stigrule_258006_Manage: true
 # RHEL-09-255155     V-258007   CAT II   RHEL 9 SSH daemon must disable remote X connections for interactive us
 # rhel9STIG_stigrule_258007_Manage: true
-# RHEL-09-255160     V-258008   CAT II   RHEL 9 SSH daemon must perform strict mode checking of home directory
+# RHEL-09-255160     V-258008   CAT II   RHEL 9 SSH daemon must perform strict mode checking of home directory 
 # rhel9STIG_stigrule_258008_Manage: true
 # RHEL-09-255165     V-258009   CAT II   RHEL 9 SSH daemon must display the date and time of the last successfu
 # rhel9STIG_stigrule_258009_Manage: true
 # RHEL-09-255175     V-258011   CAT II   RHEL 9 SSH daemon must prevent remote hosts from connecting to the pro
 # rhel9STIG_stigrule_258011_Manage: true
+# RHEL-09-271010     V-258012   CAT II   RHEL 9 must display the Standard Mandatory DOD Notice and Consent Bann
+# rhel9STIG_stigrule_258012_Manage: true
+# RHEL-09-271015     V-258013   CAT II   RHEL 9 must prevent a user from overriding the banner-message-enable s
+# rhel9STIG_stigrule_258013_Manage: true
+# RHEL-09-271020     V-258014   CAT II   RHEL 9 must disable the graphical user interface automount function un
+# rhel9STIG_stigrule_258014_Manage: true
+# RHEL-09-271025     V-258015   CAT II   RHEL 9 must prevent a user from overriding the disabling of the graphi
+# rhel9STIG_stigrule_258015_Manage: true
+# RHEL-09-271030     V-258016   CAT II   RHEL 9 must disable the graphical user interface autorun function unle
+# rhel9STIG_stigrule_258016_Manage: true
+# RHEL-09-271035     V-258017   CAT II   RHEL 9 must prevent a user from overriding the disabling of the graphi
+# rhel9STIG_stigrule_258017_Manage: true
+# RHEL-09-271045     V-258019   CAT II   RHEL 9 must be able to initiate directly a session lock for all connec
+# rhel9STIG_stigrule_258019_Manage: true
+# RHEL-09-271050     V-258020   CAT II   RHEL 9 must prevent a user from overriding the disabling of the graphi
+# rhel9STIG_stigrule_258020_Manage: true
+# RHEL-09-271055     V-258021   CAT II   RHEL 9 must enable a user session lock until that user re-establishes 
+# rhel9STIG_stigrule_258021_Manage: true
+# RHEL-09-271060     V-258022   CAT II   RHEL 9 must prevent a user from overriding the screensaver lock-enable
+# rhel9STIG_stigrule_258022_Manage: true
+# RHEL-09-271065     V-258023   CAT II   RHEL 9 must automatically lock graphical user sessions after 10 minute
+# rhel9STIG_stigrule_258023_Manage: true
+# RHEL-09-271070     V-258024   CAT II   RHEL 9 must prevent a user from overriding the session idle-delay sett
+# rhel9STIG_stigrule_258024_Manage: true
+# RHEL-09-271075     V-258025   CAT II   RHEL 9 must initiate a session lock for graphical user interfaces when
+# rhel9STIG_stigrule_258025_Manage: true
+# RHEL-09-271080     V-258026   CAT II   RHEL 9 must prevent a user from overriding the session lock-delay sett
+# rhel9STIG_stigrule_258026_Manage: true
+# RHEL-09-271085     V-258027   CAT II   RHEL 9 must conceal, via the session lock, information previously visi
+# rhel9STIG_stigrule_258027_Manage: true
+# RHEL-09-271100     V-258030   CAT II   RHEL 9 must prevent a user from overriding the disable-restart-buttons
+# rhel9STIG_stigrule_258030_Manage: true
+# RHEL-09-271105     V-258031   CAT II   RHEL 9 must disable the ability of a user to accidentally press Ctrl-A
+# rhel9STIG_stigrule_258031_Manage: true
+# RHEL-09-271110     V-258032   CAT II   RHEL 9 must prevent a user from overriding the Ctrl-Alt-Del sequence s
+# rhel9STIG_stigrule_258032_Manage: true
+# RHEL-09-271115     V-258033   CAT II   RHEL 9 must disable the user list at logon for graphical user interfac
+# rhel9STIG_stigrule_258033_Manage: true
 # RHEL-09-291010     V-258034   CAT II   RHEL 9 must be configured to disable USB mass storage.
 # rhel9STIG_stigrule_258034_Manage: true
 # RHEL-09-291015     V-258035   CAT II   RHEL 9 must have the USBGuard package installed.
@@ -282,10 +322,14 @@
 # rhel9STIG_stigrule_258037_Manage: true
 # RHEL-09-291035     V-258039   CAT II   RHEL 9 Bluetooth must be disabled.
 # rhel9STIG_stigrule_258039_Manage: true
+# RHEL-09-291040     V-258040   CAT II   RHEL 9 wireless network adapters must be disabled.
+# rhel9STIG_stigrule_258040_Manage: true
 # RHEL-09-411010     V-258041   CAT II   RHEL 9 user account passwords for new users or password changes must h
 # rhel9STIG_stigrule_258041_Manage: true
 # RHEL-09-411020     V-258043   CAT II   All RHEL 9 local interactive user accounts must be assigned a home dir
 # rhel9STIG_stigrule_258043_Manage: true
+# RHEL-09-411050     V-258049   CAT II   RHEL 9 must disable account identifiers (individuals, groups, roles, a
+# rhel9STIG_stigrule_258049_Manage: true
 # RHEL-09-411075     V-258054   CAT II   RHEL 9 must automatically lock an account when three unsuccessful logo
 # rhel9STIG_stigrule_258054_Manage: true
 # RHEL-09-411080     V-258055   CAT II   RHEL 9 must automatically lock the root account until the root account
@@ -298,7 +342,7 @@
 # rhel9STIG_stigrule_258060_Manage: true
 # RHEL-09-412040     V-258069   CAT III  RHEL 9 must limit the number of concurrent sessions to ten for all acc
 # rhel9STIG_stigrule_258069_Manage: true
-# RHEL-09-412045     V-258070   CAT II   RHEL 9 must log username information when unsuccessful logon attempts
+# RHEL-09-412045     V-258070   CAT II   RHEL 9 must log username information when unsuccessful logon attempts 
 # rhel9STIG_stigrule_258070_Manage: true
 # RHEL-09-412050     V-258071   CAT II   RHEL 9 must enforce a delay of at least four seconds between logon pro
 # rhel9STIG_stigrule_258071_Manage: true
@@ -306,7 +350,7 @@
 # rhel9STIG_stigrule_258072_Manage: true
 # RHEL-09-412060     V-258073   CAT II   RHEL 9 must define default permissions for the c shell.
 # rhel9STIG_stigrule_258073_Manage: true
-# RHEL-09-412065     V-258074   CAT II   RHEL 9 must define default permissions for all authenticated users in
+# RHEL-09-412065     V-258074   CAT II   RHEL 9 must define default permissions for all authenticated users in 
 # rhel9STIG_stigrule_258074_Manage: true
 # RHEL-09-412070     V-258075   CAT II   RHEL 9 must define default permissions for the system default profile.
 # rhel9STIG_stigrule_258075_Manage: true
@@ -344,7 +388,7 @@
 # rhel9STIG_stigrule_258111_Manage: true
 # RHEL-09-611115     V-258112   CAT II   RHEL 9 must require the change of at least eight characters when passw
 # rhel9STIG_stigrule_258112_Manage: true
-# RHEL-09-611120     V-258113   CAT II   RHEL 9 must require the maximum number of repeating characters of the
+# RHEL-09-611120     V-258113   CAT II   RHEL 9 must require the maximum number of repeating characters of the 
 # rhel9STIG_stigrule_258113_Manage: true
 # RHEL-09-611125     V-258114   CAT II   RHEL 9 must require the maximum number of repeating characters be limi
 # rhel9STIG_stigrule_258114_Manage: true
@@ -360,7 +404,7 @@
 # rhel9STIG_stigrule_258122_Manage: true
 # RHEL-09-611175     V-258124   CAT II   RHEL 9 must have the pcsc-lite package installed.
 # rhel9STIG_stigrule_258124_Manage: true
-# RHEL-09-611180     V-258125   CAT II   The pcscd service on RHEL 9 must be active.
+# RHEL-09-611180     V-258125   CAT II   The pcscd socket on RHEL 9 must be active.
 # rhel9STIG_stigrule_258125_Manage: true
 # RHEL-09-611185     V-258126   CAT II   RHEL 9 must have the opensc package installed.
 # rhel9STIG_stigrule_258126_Manage: true
@@ -370,7 +414,7 @@
 # rhel9STIG_stigrule_258133_Manage: true
 # RHEL-09-652010     V-258140   CAT II   RHEL 9 must have the rsyslog package installed.
 # rhel9STIG_stigrule_258140_Manage: true
-# RHEL-09-652015     V-258141   CAT II   RHEL 9 must have the packages required for encrypting offloaded audit
+# RHEL-09-652015     V-258141   CAT II   RHEL 9 must have the packages required for encrypting offloaded audit 
 # rhel9STIG_stigrule_258141_Manage: true
 # RHEL-09-652020     V-258142   CAT II   The rsyslog service on RHEL 9 must be active.
 # rhel9STIG_stigrule_258142_Manage: true
@@ -380,7 +424,7 @@
 # rhel9STIG_stigrule_258146_Manage: true
 # RHEL-09-652045     V-258147   CAT II   RHEL 9 must encrypt the transfer of audit records offloaded onto a dif
 # rhel9STIG_stigrule_258147_Manage: true
-# RHEL-09-652050     V-258148   CAT II   RHEL 9 must encrypt via the gtls driver the transfer of audit records
+# RHEL-09-652050     V-258148   CAT II   RHEL 9 must encrypt via the gtls driver the transfer of audit records 
 # rhel9STIG_stigrule_258148_Manage: true
 # RHEL-09-652060     V-258150   CAT II   RHEL 9 must use cron logging.
 # rhel9STIG_stigrule_258150_Manage: true
@@ -400,9 +444,9 @@
 # rhel9STIG_stigrule_258158_Manage: true
 # RHEL-09-653050     V-258159   CAT II   RHEL 9 must take action when allocated audit record storage volume rea
 # rhel9STIG_stigrule_258159_Manage: true
-# RHEL-09-653055     V-258160   CAT II   RHEL 9 audit system must take appropriate action when the audit files
+# RHEL-09-653055     V-258160   CAT II   RHEL 9 audit system must take appropriate action when the audit files 
 # rhel9STIG_stigrule_258160_Manage: true
-# RHEL-09-653060     V-258161   CAT II   RHEL 9 must label all offloaded audit logs before sending them to the
+# RHEL-09-653060     V-258161   CAT II   RHEL 9 must label all offloaded audit logs before sending them to the 
 # rhel9STIG_stigrule_258161_Manage: true
 # RHEL-09-653065     V-258162   CAT II   RHEL 9 must take appropriate action when the internal event queue is f
 # rhel9STIG_stigrule_258162_Manage: true
@@ -412,7 +456,7 @@
 # rhel9STIG_stigrule_258164_Manage: true
 # RHEL-09-653095     V-258168   CAT II   RHEL 9 must periodically flush audit records to disk to prevent the lo
 # rhel9STIG_stigrule_258168_Manage: true
-# RHEL-09-653100     V-258169   CAT II   RHEL 9 must produce audit records containing information to establish
+# RHEL-09-653100     V-258169   CAT II   RHEL 9 must produce audit records containing information to establish 
 # rhel9STIG_stigrule_258169_Manage: true
 # RHEL-09-653105     V-258170   CAT II   RHEL 9 must write audit records to disk.
 # rhel9STIG_stigrule_258170_Manage: true
@@ -422,7 +466,7 @@
 # rhel9STIG_stigrule_258176_Manage: true
 # RHEL-09-654015     V-258177   CAT II   RHEL 9 must audit all uses of the chmod, fchmod, and fchmodat system c
 # rhel9STIG_stigrule_258177_Manage: true
-# RHEL-09-654020     V-258178   CAT II   RHEL 9 must audit all uses of the chown, fchown, fchownat, and lchown
+# RHEL-09-654020     V-258178   CAT II   RHEL 9 must audit all uses of the chown, fchown, fchownat, and lchown 
 # rhel9STIG_stigrule_258178_Manage: true
 # RHEL-09-654025     V-258179   CAT II   RHEL 9 must audit all uses of the setxattr, fsetxattr, lsetxattr, remo
 # rhel9STIG_stigrule_258179_Manage: true
@@ -446,7 +490,7 @@
 # rhel9STIG_stigrule_258188_Manage: true
 # RHEL-09-654075     V-258189   CAT II   RHEL 9 must audit all uses of the delete_module system call.
 # rhel9STIG_stigrule_258189_Manage: true
-# RHEL-09-654080     V-258190   CAT II   RHEL 9 must audit all uses of the init_module and finit_module system
+# RHEL-09-654080     V-258190   CAT II   RHEL 9 must audit all uses of the init_module and finit_module system 
 # rhel9STIG_stigrule_258190_Manage: true
 # RHEL-09-654085     V-258191   CAT II   RHEL 9 must audit all uses of the chage command.
 # rhel9STIG_stigrule_258191_Manage: true
@@ -454,8 +498,6 @@
 # rhel9STIG_stigrule_258192_Manage: true
 # RHEL-09-654095     V-258193   CAT II   RHEL 9 must audit all uses of the crontab command.
 # rhel9STIG_stigrule_258193_Manage: true
-# RHEL-09-654097     V-279936   CAT II   RHEL 9 must audit any script or executable called by cron as root or b
-# rhel9STIG_stigrule_279936_Manage: true
 # RHEL-09-654100     V-258194   CAT II   RHEL 9 must audit all uses of the gpasswd command.
 # rhel9STIG_stigrule_258194_Manage: true
 # RHEL-09-654105     V-258195   CAT II   RHEL 9 must audit all uses of the kmod command.
@@ -522,3 +564,9 @@
 # rhel9STIG_stigrule_258228_Manage: true
 # RHEL-09-654275     V-258229   CAT II   RHEL 9 audit system must protect auditing rules from unauthorized chan
 # rhel9STIG_stigrule_258229_Manage: true
+# RHEL-09-215100     V-258234   CAT I    RHEL 9 must have the crypto-policies package installed.
+# rhel9STIG_stigrule_258234_Manage: true
+# RHEL-09-215101     V-272488   CAT II   RHEL 9 must have the Postfix package installed.
+# rhel9STIG_stigrule_272488_Manage: true
+# RHEL-09-654097     V-279936   CAT II   RHEL 9 must audit any script or executable called by cron as root or b
+# rhel9STIG_stigrule_279936_Manage: true

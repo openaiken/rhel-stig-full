@@ -6,7 +6,7 @@
 # Three conditions checked:
 #   1. Red Hat GPG keys "release key 2" and "auxiliary key 3" are installed in RPM keyring.
 #   2. Key file /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release exists.
-#   3. Key fingerprints match RHEL 9 V2R8 vendor values (hardcoded from STIG check text):
+#   3. Key fingerprints match RHEL 9 V2R9 vendor values (hardcoded from STIG check text):
 #        release key 2:   567E 347A D004 4ADE 55BA 8A5F 199E 2F91 FD43 1D51
 #        auxiliary key 3: 7E46 2425 8C40 6535 D56D 6F13 5054 E4A4 5A63 40B3
 
@@ -54,7 +54,7 @@
           ~ '\nauxiliary key 3 fingerprint (5A6340B3) matches: '
           ~ ('yes' if '5A6340B3' in (_214010_fingerprints.stdout | default('')) else 'NO'),
         'comments':
-          'Expected fingerprints per RHEL 9 V2R8: '
+          'Expected fingerprints per RHEL 9 V2R9: '
           ~ 'release key 2: 567E 347A D004 4ADE 55BA 8A5F 199E 2F91 FD43 1D51 | '
           ~ 'auxiliary key 3: 7E46 2425 8C40 6535 D56D 6F13 5054 E4A4 5A63 40B3. '
           ~ 'To remediate: sudo rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release'
