@@ -12,6 +12,7 @@ __pycache__/
 .vault_pass
 vault_pass.txt
 group_vars/all/vault.yml
+nohup.out
 
 # editors
 .vscode/
