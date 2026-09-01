@@ -94,6 +94,12 @@ report 0. Re-run it after touching any task.
 - If an attestation var follows the bool+`_method` pattern, the `_method` string
   must actually reach `finding_details`, or the operator's justification is
   silently discarded.
+- **A STIG check often states more than one finding condition, and all must
+  hold.** The four 212xxx kernel-argument rules each require both that every
+  running kernel carries the arg *and* that `/etc/default/grub` carries it so
+  it survives the next kernel install; only the first was implemented, so a
+  host passed while the setting was one `dnf update` from vanishing. The
+  linter lists multi-condition rules as INFO — re-read that list each bump.
 - `process substitution` (`done < <(...)`) is fine — the shell module gets bash.
 
 ## Verification loop

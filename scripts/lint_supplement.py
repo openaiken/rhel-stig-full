@@ -13,12 +13,36 @@ Usage:
 """
 
 import argparse
+import json
 import os
 import re
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TASKS = os.path.join(REPO, "roles", "rhel9_stig_supplement", "tasks")
+RULES_JSON = os.path.join(REPO, "files", "rules.json")
+
+
+def multi_condition_rules():
+    """STIG checks stating more than one finding condition.
+
+    Reported as information, not as findings. A task can legitimately evaluate
+    several conditions inside one shell block, so counting registers produces
+    about 50% false positives -- but a partially implemented multi-condition
+    check is a real and invisible false negative (it shipped in the four
+    212xxx kernel-argument rules), so the list is worth re-reading each bump.
+    """
+    try:
+        rules = json.load(open(RULES_JSON))
+    except OSError:
+        return {}
+    out = {}
+    for sid, r in rules.items():
+        cc = " ".join(r.get("check_content", "").split())
+        n = len(re.findall(r"this is a finding", cc, re.I))
+        if n >= 2:
+            out[sid] = n
+    return out
 
 CHECKS = {
     "NO-OPEN":      "status expression can never yield 'open' -- check cannot report a finding",
@@ -168,6 +192,18 @@ def main():
             for s, ln, d in rows:
                 loc = f":{ln}" if ln else ""
                 print(f"  {s}{loc}  {d}")
+
+    multi = multi_condition_rules()
+    ours = {s for s, _ in files}
+    rel = sorted((s, n) for s, n in multi.items() if s in ours)
+    if rel and not args.quiet:
+        print(f"\n{'-' * 72}")
+        print("INFO: supplement rules whose STIG check states multiple finding")
+        print("conditions. Not findings -- verify each is fully implemented on a")
+        print("revision bump; a partial implementation is a silent false negative.")
+        print("-" * 72)
+        for s_, n in rel:
+            print(f"  {s_}  ({n} stated conditions)")
 
     total = sum(counts.values())
     print(f"\ntotal findings: {total}")
