@@ -1,5 +1,5 @@
 ---
-# RHEL-09-611035 | V-258100
+# RHEL-09-611035 | V-258096
 # RHEL 9 must configure the use of the pam_faillock.so module in the
 # /etc/pam.d/password-auth file.
 # CAT II (Medium) | CCI-000044

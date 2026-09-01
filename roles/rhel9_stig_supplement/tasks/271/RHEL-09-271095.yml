@@ -1,5 +1,5 @@
 ---
-# RHEL-09-271095 | V-258205
+# RHEL-09-271095 | V-258029
 # RHEL 9 must disable the ability of a user to restart the system from the
 # login screen.
 # CAT II (Medium) | CCI-000366

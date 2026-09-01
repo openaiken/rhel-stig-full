@@ -1,10 +1,13 @@
 ---
-# RHEL-09-252045 | V-257956
+# RHEL-09-252045 | V-257950
 # RHEL 9 must not have unauthorized IP tunnels configured.
 # CAT II (Medium) | CCI-000382
 
 # If IPsec is inactive: not_a_finding.
-# If active with configured connections: not_reviewed — ISSO must verify approval.
+# If active with configured connections: open until the ISSO verifies approval
+# and rhel9_attest_ipsec_tunnels_approved is set true. A false attestation always
+# yields an open finding, never not_reviewed -- a submitted checklist must not
+# contain not_reviewed entries.
 
 - name: RHEL-09-252045 | check ipsec service state
   shell: systemctl is-active ipsec 2>/dev/null || echo inactive
@@ -27,7 +30,7 @@
           'not_a_finding' if (_252045_ipsec_state.stdout | trim) != 'active'
           else ('not_a_finding' if not (_252045_conns.stdout | default('') | trim)
           else ('not_a_finding' if rhel9_attest_ipsec_tunnels_approved | bool
-          else 'not_reviewed')),
+          else 'open')),
         'finding_details':
           'IPsec service state: ' ~ (_252045_ipsec_state.stdout | trim)
           ~ '\nConfigured conn entries:\n'

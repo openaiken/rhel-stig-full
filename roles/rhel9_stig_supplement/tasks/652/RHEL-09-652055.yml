@@ -1,5 +1,5 @@
 ---
-# RHEL-09-652055 | V-258261
+# RHEL-09-652055 | V-258149
 # RHEL 9 must be configured to forward audit records via TCP to a different
 # system or media from the system being audited via rsyslog.
 # CAT II (Medium) | CCI-001851

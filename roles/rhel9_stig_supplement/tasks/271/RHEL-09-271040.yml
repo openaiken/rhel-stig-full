@@ -1,5 +1,5 @@
 ---
-# RHEL-09-271040 | V-258194
+# RHEL-09-271040 | V-258018
 # RHEL 9 must not allow unattended or automatic logon via the graphical user
 # interface.
 # CAT I (High) | CCI-000366

@@ -5,20 +5,20 @@
 # condition on the system, and set to true only when the system is compliant.
 # A false value results in an open finding in the generated checklist.
 #
-# ┄┄ RHEL-09-211015 | V-257778 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# ┄┄ RHEL-09-211015 | V-257778 | RHEL 9 V2R9 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 # Vendor security patches are installed and up to date per the organizational
 # patching policy. Patching frequency is org-defined and cannot be verified
 # programmatically. Before setting true, confirm currency via:
 #   sudo dnf history list | more
 rhel9_attest_patching_current: false
 #
-# ┄┄ RHEL-09-211030 | V-257781 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# ┄┄ RHEL-09-211030 | V-257781 | RHEL 9 V2R9 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 # A graphical display manager is required for this system and has been approved
 # by the ISSO. If true, graphical.target as the default boot target is treated
 # as not_a_finding. Default false assumes server/headless use.
 rhel9_gui_approved: false
 #
-# ┄┄ RHEL-09-231190 | V-257879 | RHEL 9 V2R8 | CAT I ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# ┄┄ RHEL-09-231190 | V-257879 | RHEL 9 V2R9 | CAT I ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 # Local disk partitions must use LUKS encryption unless encryption is provided
 # at the hypervisor or storage array level with documented organizational
 # approval. Set true only when that documented exception applies; the check
@@ -28,7 +28,7 @@ rhel9_gui_approved: false
 rhel9_attest_disk_encryption_na: false
 rhel9_attest_disk_encryption_method: ""
 #
-# ┄┄ RHEL-09-212020 | V-257789 | RHEL 9 V2R8 | CAT I ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# ┄┄ RHEL-09-212020 | V-257789 | RHEL 9 V2R9 | CAT I ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 # The grub2 superuser account name configured on this system. Must not be a
 # common name (root, admin, administrator). The supplement check verifies that
 # /etc/grub2.cfg contains a superusers line matching this value. Leave blank
@@ -37,14 +37,14 @@ rhel9_attest_disk_encryption_method: ""
 # edit /etc/grub.d/01_users to define a custom non-default username.
 rhel9_grub_superuser: ""
 #
-# ┄┄ RHEL-09-251035 | V-257940 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# ┄┄ RHEL-09-251035 | V-257940 | RHEL 9 V2R9 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 # Ports, protocols, and services configured in the firewall comply with the
 # organizationally defined PPSM CAL and vulnerability assessments. Before
 # setting true, compare the output in the supplement facts for this rule
 # against the approved PPSM CAL for this system.
 rhel9_attest_ppsm_compliant: false
 #
-# ┄┄ RHEL-09-252020 | V-257950 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# ┄┄ RHEL-09-252020 | V-257945 | RHEL 9 V2R9 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 # Configured NTP server(s) in /etc/chrony.conf are organizationally approved
 # authoritative time sources. The STIG requires DoD NTP pool servers; sites
 # that cannot reach DoD NTP directly may use upstream-synchronized sources with
@@ -52,14 +52,14 @@ rhel9_attest_ppsm_compliant: false
 # automatically; set this true only after confirming the NTP source is approved.
 rhel9_attest_ntp_source_approved: false
 #
-# ┄┄ RHEL-09-252045 | V-257956 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# ┄┄ RHEL-09-252045 | V-257950 | RHEL 9 V2R9 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 # All IPsec tunnel connections configured in /etc/ipsec.conf and /etc/ipsec.d/
 # are documented and approved by the ISSO. Only relevant when the ipsec service
 # is active. Leave false if ipsec is inactive (supplement check auto-detects
 # that and marks not_a_finding regardless of this value).
 rhel9_attest_ipsec_tunnels_approved: false
 #
-# ┄┄ RHEL-09-291030 | V-258168 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# ┄┄ RHEL-09-291030 | V-258038 | RHEL 9 V2R9 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 # Set rhel9_attest_usbguard_na: true if this system is a VM with no virtual
 # or physical USB peripherals attached (Not Applicable per STIG check note).
 # If usbguard is not in use but unauthorized peripherals are blocked by another
@@ -70,7 +70,7 @@ rhel9_attest_usbguard_na: false
 rhel9_attest_usbguard_compliant: false
 rhel9_attest_usbguard_method: ""
 #
-# ┄┄ RHEL-09-291040 | V-258171 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# ┄┄ RHEL-09-291040 | V-258040 | RHEL 9 V2R9 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 # Systems with no wifi-type devices detected are marked Not Applicable
 # automatically. If wireless adapters are present and have been approved by
 # the ISSO as an operational requirement, set rhel9_attest_wifi_approved: true
@@ -78,7 +78,7 @@ rhel9_attest_usbguard_method: ""
 rhel9_attest_wifi_approved: false
 rhel9_attest_wifi_comment: ""
 #
-# ┄┄ RHEL-09-252060 | V-257959 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# ┄┄ RHEL-09-252060 | V-257953 | RHEL 9 V2R9 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 # If postfix is installed but the postmaster: root alias is not configured,
 # the SA must document the alternative mechanism by which the SA and ISSO are
 # notified of audit processing failures. Set compliant: true and describe the
@@ -87,7 +87,7 @@ rhel9_attest_wifi_comment: ""
 rhel9_attest_audit_notification_compliant: false
 rhel9_attest_audit_notification_method: ""
 #
-# ┄┄ RHEL-09-411095 | V-258058 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# ┄┄ RHEL-09-411095 | V-258058 | RHEL 9 V2R9 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 # Complete list of ALL account usernames (system and interactive) authorized to
 # exist in /etc/passwd on this system. Any account not on this list is flagged
 # as a finding. Populate by running on the target host:
@@ -125,7 +125,7 @@ rhel9_authorized_users:
   - tcpdump
   - locadmin
 #
-# ┄┄ RHEL-09-411040 | V-257993 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# ┄┄ RHEL-09-411040 | V-258047 | RHEL 9 V2R9 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 # List of temporary account usernames currently provisioned on this system.
 # Temporary accounts must have an expiration date set within 72 hours of
 # creation. Leave this list empty if no temporary accounts exist. The check
@@ -133,7 +133,7 @@ rhel9_authorized_users:
 # Set expiration: sudo chage -E $(date -d +72hours +%Y-%m-%d) <account>
 rhel9_temporary_accounts: []
 #
-# ┄┄ RHEL-09-431016 | V-258038 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# ┄┄ RHEL-09-431016 | V-272496 | RHEL 9 V2R9 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 # sudo rules must include TYPE=sysadm_t ROLE=sysadm_r for administrator
 # accounts. If sudo is managed via IdM/SSSD rather than local sudoers files,
 # the automated check will detect the SSSD provider and set status to CENTRALIZED
@@ -143,7 +143,7 @@ rhel9_temporary_accounts: []
 rhel9_attest_sel_sudo_context_compliant: false
 rhel9_attest_sel_sudo_context_method: ""
 #
-# ┄┄ RHEL-09-611085 | V-258139 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# ┄┄ RHEL-09-611085 | V-258106 | RHEL 9 V2R9 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 # NOPASSWD found in local sudoers files. The STIG allows this only when the
 # ISSO has documented that the affected account(s) use an approved MFA method
 # (e.g. PIV/CAC, FIDO2 hardware token) making a password prompt redundant.
@@ -152,7 +152,7 @@ rhel9_attest_sel_sudo_context_method: ""
 # Set true only after obtaining documented ISSO approval.
 rhel9_attest_nopasswd_isso_approved: false
 #
-# ┄┄ RHEL-09-611170 | V-258206 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# ┄┄ RHEL-09-611170 | V-258123 | RHEL 9 V2R9 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 # If SSSD is not the MFA mechanism on this system (e.g. direct GSSAPI Kerberos
 # with hardware token, pam_pkcs11 without sssd), the SA must demonstrate that
 # certificate status checking (OCSP or equivalent) is implemented by the
@@ -161,7 +161,7 @@ rhel9_attest_nopasswd_isso_approved: false
 rhel9_attest_alt_mfa_cert_verification: false
 rhel9_attest_alt_mfa_cert_verification_method: ""
 #
-# ┄┄ RHEL-09-611190 | V-258212 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# ┄┄ RHEL-09-611190 | V-258127 | RHEL 9 V2R9 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 # If an approved alternate MFA mechanism is in use that does not rely on SSH
 # private key files for authentication (e.g. PIV/CAC via PKCS#11, FIDO2
 # hardware tokens, certificate-based Kerberos), set true and document below.
@@ -169,7 +169,7 @@ rhel9_attest_alt_mfa_cert_verification_method: ""
 rhel9_attest_no_ssh_key_auth: false
 rhel9_attest_no_ssh_key_auth_method: ""
 #
-# ┄┄ RHEL-09-631010, 631015 | V-258222, V-258225 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄
+# ┄┄ RHEL-09-631010, 631015 | V-258131, V-258132 | RHEL 9 V2R9 | CAT II ┄┄┄┄┄
 # Both 631 rules are not applicable if the system uses an approved non-PKI MFA
 # method entirely (e.g. FIDO2/WebAuthn hardware token, OTP without certificates).
 # If PKI is in use but via IPA/FreeIPA, the DOD CA chain still needs to be
@@ -179,7 +179,7 @@ rhel9_attest_no_ssh_key_auth_method: ""
 rhel9_attest_alt_mfa_no_pki: false
 rhel9_attest_alt_mfa_no_pki_method: ""
 #
-# ┄┄ RHEL-09-631015 | V-258225 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# ┄┄ RHEL-09-631015 | V-258132 | RHEL 9 V2R9 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 # In IPA/FreeIPA-integrated environments, certificate identity mapping rules
 # are managed centrally on the IPA server (ipa certmaprule-add) and are NOT
 # stored in local sssd.conf — SSSD retrieves them from IPA at runtime via LDAP.
@@ -190,7 +190,7 @@ rhel9_attest_alt_mfa_no_pki_method: ""
 rhel9_attest_ipa_certmap: false
 rhel9_attest_ipa_certmap_method: ""
 #
-# ┄┄ RHEL-09-651010 through 651035 | RHEL 9 V2R8 | CAT II/III ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# ┄┄ RHEL-09-651010 through 651035 | RHEL 9 V2R9 | CAT II/III ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 # All 651 rules assume AIDE is the FIM tool. If an alternate file integrity
 # monitoring solution is deployed (e.g. Tripwire, OSSEC/Wazuh, Qualys FIM),
 # set rhel9_attest_alt_fim_tool: true — all 651 checks will be marked
@@ -198,7 +198,7 @@ rhel9_attest_ipa_certmap_method: ""
 rhel9_attest_alt_fim_tool: false
 rhel9_attest_alt_fim_tool_name: ""
 #
-# ┄┄ RHEL-09-651015 | V-258231 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# ┄┄ RHEL-09-651015 | V-258135 | RHEL 9 V2R9 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 # Name of the systemd timer unit used to schedule periodic AIDE checks
 # (e.g. "aide-check.timer"). The check verifies the timer is enabled/active
 # and that the corresponding .service ExecStart invokes aide. Leave empty
@@ -206,7 +206,7 @@ rhel9_attest_alt_fim_tool_name: ""
 # passes the rule.
 rhel9_aide_timer_unit: ""
 #
-# ┄┄ RHEL-09-652025, 652055 | V-258249, V-258261 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄
+# ┄┄ RHEL-09-652025, 652055 | V-258143, V-258149 | RHEL 9 V2R9 | CAT II ┄┄┄┄┄
 # If an alternate tool (SPLUNK, Elastic/Filebeat, Fluentd, auditd audisp-remote,
 # etc.) manages all log off-loading in lieu of rsyslog:
 #   - 652025 becomes not_applicable (rsyslog listener check irrelevant)
@@ -215,7 +215,7 @@ rhel9_aide_timer_unit: ""
 rhel9_attest_alt_log_offload: false
 rhel9_attest_alt_log_offload_method: ""
 #
-# ┄┄ RHEL-09-652025 | V-258249 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# ┄┄ RHEL-09-652025 | V-258143 | RHEL 9 V2R9 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # WARNING: SET THIS IN host_vars/<hostname>/, NOT HERE IN group_vars/all/.
 # Setting it here would mark EVERY managed host as an authorized log
@@ -228,7 +228,7 @@ rhel9_attest_alt_log_offload_method: ""
 #   rhel9_attest_log_aggregation_server: true
 rhel9_attest_log_aggregation_server: false
 #
-# ┄┄ RHEL-09-653030 | V-258155 | RHEL 9 V2R8 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# ┄┄ RHEL-09-653030 | V-258155 | RHEL 9 V2R9 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 # Minimum available storage (in GB) on the partition hosting audit logs.
 # The STIG cites 10GB as "typically sufficient" for high-activity systems;
 # 2GB is appropriate for low-activity systems or those with remote offload.
@@ -241,7 +241,7 @@ rhel9_audit_min_storage_gb: 2
 rhel9_attest_audit_immediate_offload: false
 rhel9_attest_audit_immediate_offload_method: ""
 #
-# ┄┄ RHEL-09-672020 | V-258236 | RHEL 9 V2R8 | CAT I ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# ┄┄ RHEL-09-672020 | V-258236 | RHEL 9 V2R9 | CAT I ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
 # The STIG treats any backend symlink pointing outside the FIPS policy path as
 # a finding, but allows AO-approved subpolicy exceptions with documented ISSO
 # approval. Set true only after obtaining that formal documentation. This does

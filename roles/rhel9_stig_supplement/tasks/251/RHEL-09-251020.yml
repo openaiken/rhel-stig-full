@@ -26,7 +26,7 @@
       'RHEL-09-251020': {
         'status':
           'open' if 'ACCEPT' in (_251020_result.stdout | upper)
-          else ('not_reviewed' if not (_251020_zone.stdout | trim)
+          else ('open' if not (_251020_zone.stdout | trim)
           else 'not_a_finding'),
         'finding_details':
           'Default zone: ' ~ (_251020_zone.stdout | trim if _251020_zone.stdout | trim else '(firewalld not running)')

@@ -1,5 +1,5 @@
 ---
-# RHEL-09-271085 | V-258203
+# RHEL-09-271085 | V-258027
 # RHEL 9 must conceal, via the session lock, information previously visible
 # on the display with a publicly viewable image.
 # CAT II (Medium) | CCI-000060

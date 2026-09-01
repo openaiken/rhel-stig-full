@@ -1,5 +1,5 @@
 ---
-# RHEL-09-432030 | V-258027
+# RHEL-09-432030 | V-258087
 # RHEL 9 must restrict privilege elevation to authorized personnel.
 # CAT II (Medium) | CCI-002114
 
@@ -14,16 +14,19 @@
 # IdM-managed rules are not in local files and are not checked here. Ensure
 # IdM sudo rules are scoped to named groups/users, not the ALL user spec.
 
+# NOTE: grep -hn prefixes every output line with "lineno:" (-h drops the
+# filename), so every anchor below must allow that prefix. Bare '^\s*' anchors
+# never match, which silently disables both the exclusions and the ALL match.
 - name: RHEL-09-432030 | check sudoers for unrestricted ALL user-spec entries
   shell: |
     # Match lines where the first non-whitespace token (user/group spec) is
     # the bare word ALL, followed by a host/runas/command spec.
     # Exclude comment lines and Defaults/alias definitions.
     hits=$(grep -irhn '' /etc/sudoers /etc/sudoers.d/ 2>/dev/null \
-           | grep -v '^\s*#' \
-           | grep -v '^\s*Defaults' \
-           | grep -v '^\s*\(User\|Runas\|Cmnd\|Host\)_Alias' \
-           | grep -P '^\s*ALL\s+' \
+           | grep -v '^[0-9]*:[[:space:]]*#' \
+           | grep -v '^[0-9]*:[[:space:]]*Defaults' \
+           | grep -v '^[0-9]*:[[:space:]]*\(User\|Runas\|Cmnd\|Host\)_Alias' \
+           | grep -P '^[0-9]*:\s*ALL\s+' \
            | grep -v '%ALL' \
            || true)
 
@@ -42,9 +45,9 @@
     echo ""
     echo "ALL LOCAL PRIVILEGE RULES (for review):"
     grep -irhn '' /etc/sudoers /etc/sudoers.d/ 2>/dev/null \
-      | grep -v '^\s*#' \
-      | grep -v '^\s*Defaults' \
-      | grep -v '^\s*\(User\|Runas\|Cmnd\|Host\)_Alias' \
+      | grep -v '^[0-9]*:[[:space:]]*#' \
+      | grep -v '^[0-9]*:[[:space:]]*Defaults' \
+      | grep -v '^[0-9]*:[[:space:]]*\(User\|Runas\|Cmnd\|Host\)_Alias' \
       | grep '=' \
       | sed '/^$/d' \
       || echo "(none)"

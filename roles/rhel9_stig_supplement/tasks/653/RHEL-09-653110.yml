@@ -4,10 +4,10 @@
 # be audited.
 # CAT II (Medium) | CCI-000171
 
-# Checks that audit configuration files have mode 0640 or less permissive.
+# Checks that audit configuration files have mode 0600 or less permissive.
 # Covers: /etc/audit/auditd.conf, /etc/audit/audit.rules, and all *.rules
 # files under /etc/audit/rules.d/.
-# 0640 octal = 416 decimal; anything higher (more permissive) fails.
+# 0600 octal = 384 decimal; anything higher (more permissive) fails.
 
 - name: RHEL-09-653110 | check audit configuration file permissions
   shell: |
@@ -18,10 +18,10 @@
       mode=$(stat -c '%a' "$f" 2>/dev/null)
       local mode_dec
       mode_dec=$(printf '%d' "0${mode}")
-      if [ "$mode_dec" -le 416 ]; then
+      if [ "$mode_dec" -le 384 ]; then
         findings="${findings}PASS: $f ($mode)\n"
       else
-        findings="${findings}FAIL: $f ($mode) - must be 0640 or less permissive\n"
+        findings="${findings}FAIL: $f ($mode) - must be 0600 or less permissive\n"
       fi
     }
 
@@ -55,8 +55,8 @@
           else 'open',
         'finding_details': _653110_result.stdout | trim,
         'comments':
-          'Run: chmod 0640 /etc/audit/auditd.conf /etc/audit/audit.rules; '
-          ~ 'find /etc/audit/rules.d/ -type f -name *.rules -exec chmod 0640 {} +'
+          'Run: chmod 0600 /etc/audit/auditd.conf /etc/audit/audit.rules; '
+          ~ 'find /etc/audit/rules.d/ -type f -name *.rules -exec chmod 0600 {} +'
       }
     }) }}"
   tags: [validate]

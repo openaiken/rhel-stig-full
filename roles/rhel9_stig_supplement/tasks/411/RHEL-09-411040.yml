@@ -1,5 +1,5 @@
 ---
-# RHEL-09-411040 | V-257993
+# RHEL-09-411040 | V-258047
 # RHEL 9 must automatically expire temporary accounts within 72 hours.
 # CAT II (Medium) | CCI-001682
 

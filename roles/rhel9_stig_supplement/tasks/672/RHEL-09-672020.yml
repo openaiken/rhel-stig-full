@@ -78,7 +78,11 @@
         'finding_details':
           _672020_result.stdout | trim
           ~ '\nAttestation (rhel9_attest_crypto_subpolicy_approved): '
-          ~ (rhel9_attest_crypto_subpolicy_approved | default(false) | bool | string | lower),
+          ~ (rhel9_attest_crypto_subpolicy_approved | default(false) | bool | string | lower)
+          ~ '\nSA documented subpolicy justification: '
+          ~ (rhel9_attest_crypto_subpolicy_approved_method
+             if rhel9_attest_crypto_subpolicy_approved_method | default('')
+             else '(not provided)'),
         'comments':
           'Remove per-application crypto overrides and run: '
           ~ 'update-crypto-policies --set FIPS. '

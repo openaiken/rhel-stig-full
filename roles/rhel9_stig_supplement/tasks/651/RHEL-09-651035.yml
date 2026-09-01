@@ -1,5 +1,5 @@
 ---
-# RHEL-09-651035 | V-258243
+# RHEL-09-651035 | V-258139
 # RHEL 9 must be configured so that the file integrity tool verifies
 # extended attributes.
 # CAT III (Low) | CCI-000366

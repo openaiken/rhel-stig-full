@@ -1,5 +1,5 @@
 ---
-# RHEL-09-431016 | V-258038
+# RHEL-09-431016 | V-272496
 # RHEL 9 must elevate the SELinux context when an administrator calls the
 # sudo command.
 # CAT II (Medium) | CCI-002233

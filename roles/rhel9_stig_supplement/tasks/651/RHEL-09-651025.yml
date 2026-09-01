@@ -1,5 +1,5 @@
 ---
-# RHEL-09-651025 | V-258237
+# RHEL-09-651025 | V-258137
 # RHEL 9 must use cryptographic mechanisms to protect the integrity of
 # audit tools.
 # CAT II (Medium) | CCI-001496

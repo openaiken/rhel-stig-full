@@ -1,5 +1,5 @@
 ---
-# RHEL-09-432035 | V-258028
+# RHEL-09-432035 | V-258088
 # RHEL 9 must restrict the use of the "su" command.
 # CAT II (Medium) | CCI-002235
 

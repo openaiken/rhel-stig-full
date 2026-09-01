@@ -1,5 +1,5 @@
 ---
-# RHEL-09-412035 | V-258008
+# RHEL-09-412035 | V-258068
 # RHEL 9 must automatically exit interactive command shell user sessions after
 # 10 minutes of inactivity.
 # CAT II (Medium) | CCI-002361
@@ -25,7 +25,10 @@
         val=$(echo "$line" | grep -oP 'TMOUT=\K[0-9]+' | head -1)
         [ -n "$val" ] && tmout_val="$val"
         # check for readonly declaration
-        if echo "$line" | grep -qP 'declare\s+(-\w*r\w*|-r)\s'; then
+        # typeset is a bash synonym for declare, so typeset -xr TMOUT=600 is
+        # readonly just as declare -xr is. Matching only declare reported a
+        # correctly hardened host as a finding.
+        if echo "$line" | grep -qP '(declare|typeset)\s+-\w*r\w*\s'; then
           is_readonly=true
         fi
         if echo "$line" | grep -qP '^\s*readonly\s+TMOUT'; then

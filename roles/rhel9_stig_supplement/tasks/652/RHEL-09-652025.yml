@@ -1,5 +1,5 @@
 ---
-# RHEL-09-652025 | V-258249
+# RHEL-09-652025 | V-258143
 # RHEL 9 must be configured so that the rsyslog daemon does not accept log
 # messages from other servers unless the server is being used for log
 # aggregation.

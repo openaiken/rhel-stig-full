@@ -7,6 +7,7 @@
   command: rpm -q --queryformat '%{VERSION}' redhat-release
   register: _rhel_version
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-211010 | resolve EOL date and today
@@ -19,19 +20,25 @@
   set_fact:
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-211010': {
-        'status': 'open' if (_211010_eol != '' and _211010_today > _211010_eol)
-                  else 'not_a_finding',
+        'status':
+          'open' if (_rhel_version.stdout | trim) == ''
+          else ('open' if (_211010_eol != '' and _211010_today > _211010_eol)
+                else 'not_a_finding'),
         'finding_details':
           'Installed: RHEL ' ~ _rhel_version.stdout
           ~ '\nEOL date:  ' ~ (_211010_eol if _211010_eol else 'not set (assumed current release)')
           ~ '\nChecked:   ' ~ _211010_today
-          ~ '\nResult:    ' ~ ('EXPIRED - upgrade required'
-                               if (_211010_eol != '' and _211010_today > _211010_eol)
-                               else 'within vendor support window'),
+          ~ '\nResult:    ' ~ (
+              'UNDETERMINED - could not read redhat-release version'
+              if (_rhel_version.stdout | trim) == ''
+              else ('EXPIRED - upgrade required'
+                    if (_211010_eol != '' and _211010_today > _211010_eol)
+                    else 'within vendor support window')),
         'comments':
           'Date-based check using rhel9_eol_dates in '
           ~ 'roles/rhel9_stig_supplement/defaults/main.yml. '
-          ~ 'Versions not listed are assumed current. '
+          ~ 'Versions not listed are assumed current, but a version that cannot be '
+          ~ 'read at all is an open finding rather than a pass. '
           ~ 'Update EOL dates as Red Hat publishes lifecycle changes. '
           ~ 'Ref: https://access.redhat.com/support/policy/updates/errata'
       }

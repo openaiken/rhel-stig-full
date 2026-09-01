@@ -1,5 +1,5 @@
 ---
-# RHEL-09-611145 | V-258188
+# RHEL-09-611145 | V-258118
 # RHEL 9 must not be configured to bypass password requirements for
 # privilege escalation.
 # CAT II (Medium) | CCI-004895, CCI-002038

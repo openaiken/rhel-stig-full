@@ -30,13 +30,13 @@
         'finding_details':
           'UEFI system: ' ~ (_212010_efi.stat.exists | string | lower)
           ~ '\nResult: '
-          ~ ('not_applicable - UEFI systems are exempt per RHEL 9 V2R8'
+          ~ ('not_applicable - UEFI systems are exempt per RHEL 9 V2R9'
              if _212010_efi.stat.exists
              else ('not_a_finding - password_pbkdf2 entry found in /etc/grub2.cfg'
                    if (_212010_password.stdout | default('') | trim)
                    else 'OPEN - password_pbkdf2 not found in /etc/grub2.cfg')),
         'comments':
-          'Not applicable for UEFI systems per RHEL 9 V2R8. '
+          'Not applicable for UEFI systems per RHEL 9 V2R9. '
           ~ 'To remediate on BIOS: sudo grub2-setpassword'
       }
     }) }}"

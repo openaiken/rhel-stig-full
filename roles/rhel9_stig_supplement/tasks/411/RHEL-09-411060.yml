@@ -1,5 +1,5 @@
 ---
-# RHEL-09-411060 | V-258001
+# RHEL-09-411060 | V-258051
 # All RHEL 9 local interactive users must have a home directory assigned in
 # the /etc/passwd file.
 # CAT II (Medium) | CCI-000764

@@ -1,5 +1,5 @@
 ---
-# RHEL-09-255070 | V-258108
+# RHEL-09-255070 | V-270178
 # The RHEL 9 SSH client must be configured to use only DOD-approved MACs
 # employing FIPS 140-3 validated cryptographic hash algorithms.
 # CAT I (High) | CCI-000877

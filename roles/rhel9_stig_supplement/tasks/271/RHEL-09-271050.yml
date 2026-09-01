@@ -1,5 +1,5 @@
 ---
-# RHEL-09-271050 | V-258196
+# RHEL-09-271050 | V-258020
 # RHEL 9 must prevent a user from overriding the graphical user smart card
 # removal action.
 # CAT II (Medium) | CCI-000056

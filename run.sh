@@ -115,6 +115,10 @@ done
 _cleanup() {
   [[ -n "$BECOME_TMPFILE" ]] && rm -f "$BECOME_TMPFILE"
   [[ -n "$VAULT_TMPFILE" ]]  && rm -f "$VAULT_TMPFILE"
+  # Both tests are false when --vault-pass-file supplied the credentials, which
+  # would make this function return 1. Under an EXIT trap that becomes the
+  # scripts exit code, so a fully successful run would report failure.
+  return 0
 }
 trap _cleanup EXIT
 

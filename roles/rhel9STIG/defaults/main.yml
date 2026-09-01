@@ -21,7 +21,7 @@ rhel9STIG_stigrule_257783_systemd_journald_enable_Enabled: yes
 rhel9STIG_stigrule_257783_systemd_journald_start_State: started
 # R-257784 RHEL-09-211045
 rhel9STIG_stigrule_257784_Manage: True
-rhel9STIG_stigrule_257784__etc_systemd_system_conf_d_55_CtrlAltDel_BurstAction_Value: 'none'
+rhel9STIG_stigrule_257784__etc_systemd_system_conf_d_55_CtrlAltDel_BurstAction_conf_Value: 'none'
 # R-257785 RHEL-09-211050
 rhel9STIG_stigrule_257785_Manage: True
 rhel9STIG_stigrule_257785_ctrl_alt_del_target_disable_Enabled: false
@@ -470,9 +470,6 @@ rhel9STIG_stigrule_257997__etc_ssh_sshd_config_group_owner_Group: root
 rhel9STIG_stigrule_257998_Manage: True
 rhel9STIG_stigrule_257998__etc_ssh_sshd_config_owner_Dest: /etc/ssh/sshd_config
 rhel9STIG_stigrule_257998__etc_ssh_sshd_config_owner_Owner: root
-# R-258002 RHEL-09-255130
-rhel9STIG_stigrule_258002_Manage: True
-rhel9STIG_stigrule_258002_Compression_Line: Compression no
 # R-258003 RHEL-09-255135
 rhel9STIG_stigrule_258003_Manage: True
 rhel9STIG_stigrule_258003_GSSAPIAuthentication_Line: GSSAPIAuthentication no
@@ -922,31 +919,31 @@ rhel9STIG_stigrule_258214_Manage: True
 rhel9STIG_stigrule_258214__etc_audit_rules_d_audit_rules__usr_sbin_shutdown_Line: '-a always,exit -F path=/usr/sbin/shutdown -F perm=x -F auid>=1000 -F auid!=unset -k privileged-shutdown'
 # R-258217 RHEL-09-654215
 rhel9STIG_stigrule_258217_Manage: True
-rhel9STIG_stigrule_258217__etc_audit_rules_d_audit_rules__etc_sudoers_Line: '-w /etc/sudoers -p wa -k identity'
+rhel9STIG_stigrule_258217__etc_audit_rules_d_audit_rules__etc_sudoers_Line: '-a always,exit -F arch=b64 -F path=/etc/sudoers -F perm=wa -k identity'
 # R-258218 RHEL-09-654220
 rhel9STIG_stigrule_258218_Manage: True
-rhel9STIG_stigrule_258218__etc_audit_rules_d_audit_rules__etc_sudoers_d__Line: '-w /etc/sudoers.d/ -p wa -k identity'
+rhel9STIG_stigrule_258218__etc_audit_rules_d_audit_rules__etc_sudoers_d__Line: '-a always,exit -F arch=b64 -F path=/etc/sudoers.d -F perm=wa -k identity'
 # R-258219 RHEL-09-654225
 rhel9STIG_stigrule_258219_Manage: True
-rhel9STIG_stigrule_258219__etc_audit_rules_d_audit_rules__etc_group_Line: '-w /etc/group -p wa -k identity'
+rhel9STIG_stigrule_258219__etc_audit_rules_d_audit_rules__etc_group_Line: '-a always,exit -F arch=b64 -F path=/etc/group -F perm=wa -k identity'
 # R-258220 RHEL-09-654230
 rhel9STIG_stigrule_258220_Manage: True
-rhel9STIG_stigrule_258220__etc_audit_rules_d_audit_rules__etc_gshadow_Line: '-w /etc/gshadow -p wa -k identity'
+rhel9STIG_stigrule_258220__etc_audit_rules_d_audit_rules__etc_gshadow_Line: '-a always,exit -F arch=b64 -F path=/etc/gshadow -F perm=wa -k identity'
 # R-258221 RHEL-09-654235
 rhel9STIG_stigrule_258221_Manage: True
-rhel9STIG_stigrule_258221__etc_audit_rules_d_audit_rules__etc_security_opasswd_Line: '-w /etc/security/opasswd -p wa -k identity'
+rhel9STIG_stigrule_258221__etc_audit_rules_d_audit_rules__etc_security_opasswd_Line: '-a always,exit -F arch=b64 -F path=/etc/opasswd -F perm=wa -k identity'
 # R-258222 RHEL-09-654240
 rhel9STIG_stigrule_258222_Manage: True
-rhel9STIG_stigrule_258222__etc_audit_rules_d_audit_rules__etc_passwd_Line: '-w /etc/passwd -p wa -k identity'
+rhel9STIG_stigrule_258222__etc_audit_rules_d_audit_rules__etc_passwd_Line: '-a always,exit -F arch=b64 -F path=/etc/passwd -F perm=wa -k identity'
 # R-258223 RHEL-09-654245
 rhel9STIG_stigrule_258223_Manage: True
-rhel9STIG_stigrule_258223__etc_audit_rules_d_audit_rules__etc_shadow_Line: '-w /etc/shadow -p wa -k identity'
+rhel9STIG_stigrule_258223__etc_audit_rules_d_audit_rules__etc_shadow_Line: '-a always,exit -F arch=b64 -F path=/etc/shadow -F perm=wa -k identity'
 # R-258224 RHEL-09-654250
 rhel9STIG_stigrule_258224_Manage: True
-rhel9STIG_stigrule_258224__etc_audit_rules_d_audit_rules__var_log_faillock_Line: '-w /var/log/faillock -p wa -k logins'
+rhel9STIG_stigrule_258224__etc_audit_rules_d_audit_rules__var_log_faillock_Line: '-a always,exit -F arch=b64 -F path=/var/log/faillock -F perm=wa -F auid>=1000 -F auid!=unset -k logins'
 # R-258225 RHEL-09-654255
 rhel9STIG_stigrule_258225_Manage: True
-rhel9STIG_stigrule_258225__etc_audit_rules_d_audit_rules__var_log_lastlog_Line: '-w /var/log/lastlog -p wa -k logins'
+rhel9STIG_stigrule_258225__etc_audit_rules_d_audit_rules__var_log_lastlog_Line: '-a always,exit -F arch=b64 -F path=/var/log/lastlog -F perm=wa -F auid>=1000 -F auid!=unset -k logins'
 # R-258227 RHEL-09-654265
 rhel9STIG_stigrule_258227_Manage: True
 rhel9STIG_stigrule_258227__etc_audit_rules_d_audit_rules_f2_Line: '-f 2'
@@ -964,5 +961,5 @@ rhel9STIG_stigrule_272488_Manage: True
 rhel9STIG_stigrule_272488_postfix_State: installed
 # R-279936 RHEL-09-654097
 rhel9STIG_stigrule_279936_Manage: True
-rhel9STIG_stigrule_279936__etc_audit_rules_d_audit_rules__etc_cron_d__Line: '-w /etc/cron.d/ -p wa -k cronjobs'
-rhel9STIG_stigrule_279936__etc_audit_rules_d_audit_rules__var_spool_cron__Line: '-w /var/spool/cron/ -p wa -k cronjobs'
+rhel9STIG_stigrule_279936__etc_audit_rules_d_audit_rules_euid_Line: '-a always,exit -F arch=b32 -S execve -F subj_type=crond_t -F euid=0 -k cron_exec'
+rhel9STIG_stigrule_279936__etc_audit_rules_d_audit_rules_auid_Line: '-a always,exit -F arch=b32 -S execve -F subj_type=crond_t -F auid>=1000 -F auid!=unset -k cron_exec'

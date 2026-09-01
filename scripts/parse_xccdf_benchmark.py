@@ -25,7 +25,7 @@ XCCDF_NS = "http://checklists.nist.gov/xccdf/1.1"
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 XCCDF_PATH = os.path.join(REPO_ROOT, "roles", "rhel9STIG", "files",
-                           "U_RHEL_9_STIG_V2R8_Manual-xccdf.xml")
+                           "U_RHEL_9_STIG_V2R9_Manual-xccdf.xml")
 REPORTS_DIR = os.path.join(REPO_ROOT, "reports")
 XCCDF_RESULTS_NS = "http://checklists.nist.gov/xccdf/1.2"
 OUTPUT_PATH = os.path.join(REPO_ROOT, "files", "rules.json")

@@ -1,5 +1,5 @@
 ---
-# RHEL-09-411065 | V-258002
+# RHEL-09-411065 | V-258052
 # All RHEL 9 local interactive user home directories defined in the /etc/passwd
 # file must exist.
 # CAT II (Medium) | CCI-000764

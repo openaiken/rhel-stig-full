@@ -1,5 +1,5 @@
 ---
-# RHEL-09-411025 | V-257990
+# RHEL-09-411025 | V-258044
 # RHEL 9 must set the umask value to 077 for all local interactive user
 # accounts.
 # CAT II (Medium) | CCI-000366

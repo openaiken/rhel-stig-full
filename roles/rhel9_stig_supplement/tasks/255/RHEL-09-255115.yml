@@ -1,5 +1,5 @@
 ---
-# RHEL-09-255115 | V-258153
+# RHEL-09-255115 | V-257999
 # RHEL 9 SSH server configuration files' permissions must not be modified.
 # CAT II (Medium) | CCI-000366
 

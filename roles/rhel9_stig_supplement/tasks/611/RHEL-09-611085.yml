@@ -1,5 +1,5 @@
 ---
-# RHEL-09-611085 | V-258139
+# RHEL-09-611085 | V-258106
 # RHEL 9 must require users to provide a password for privilege escalation.
 # CAT II (Medium) | CCI-004895, CCI-002038
 
@@ -17,10 +17,13 @@
 #   with NOPASSWD would need separate review via ipa sudorule-show.
 # Do NOT blindly remove NOPASSWD without reviewing operational impact.
 
+# NOTE: grep -n prefixes every output line with "file:lineno:", so a comment
+# filter must anchor past that prefix. A bare '^\s*#' never matches and lets
+# commented-out lines through as findings.
 - name: RHEL-09-611085 | check for NOPASSWD in sudoers
   shell: |
     findings=$(grep -irn 'NOPASSWD' /etc/sudoers /etc/sudoers.d/ 2>/dev/null \
-               | grep -v '^\s*#' || true)
+               | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' || true)
     if [ -n "$findings" ]; then
       echo "STATUS: FAIL"
       echo "$findings"

@@ -1,8 +1,12 @@
 ---
-# RHEL-09-411070 | V-258003
+# RHEL-09-411070 | V-258053
 # All RHEL 9 local interactive user home directories must be group-owned by
 # the home directory owner's primary group.
 # CAT II (Medium) | CCI-000764
+
+# V2R9 changed the check to enumerate with "getent passwd" rather than
+# reading /etc/passwd, so directory-service users (IdM/SSSD) are covered too.
+# Users whose home directory does not exist locally are skipped below.
 
 - name: RHEL-09-411070 | check home directory group ownership
   shell: |
@@ -22,7 +26,7 @@
         group_name=$(getent group "$gid" 2>/dev/null | cut -d: -f1)
         findings="${findings}PASS: ${username}: ${homedir} group-owned by gid=${gid} (${group_name})\n"
       fi
-    done < /etc/passwd
+    done < <(getent passwd)
     if [ -z "$findings" ]; then
       echo "STATUS: PASS (no interactive users found)"
     elif echo -e "$findings" | grep -q '^FAIL:'; then

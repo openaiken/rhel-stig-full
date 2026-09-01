@@ -1,5 +1,5 @@
 ---
-# RHEL-09-611080 | V-258133
+# RHEL-09-611080 | V-258105
 # RHEL 9 passwords must have a 24 hours minimum password lifetime
 # restriction in /etc/shadow.
 # CAT II (Medium) | CCI-004066, CCI-000198

@@ -1,5 +1,5 @@
 ---
-# RHEL-09-433016 | V-258036
+# RHEL-09-433016 | V-270180
 # The RHEL 9 fapolicy module must be configured to employ a deny-all,
 # permit-by-exception policy to allow the execution of authorized software.
 # CAT II (Medium) | CCI-001764

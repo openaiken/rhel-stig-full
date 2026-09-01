@@ -1,5 +1,5 @@
 ---
-# RHEL-09-271045 | V-258195
+# RHEL-09-271045 | V-258019
 # RHEL 9 must be able to initiate a session lock for all connection types
 # using smart card when the smart card is removed.
 # CAT II (Medium) | CCI-000056

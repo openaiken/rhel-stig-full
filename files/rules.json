@@ -90,17 +90,17 @@
   },
   "RHEL-09-211045": {
     "stig_id": "RHEL-09-211045",
-    "rule_id": "SV-257784r1155651",
+    "rule_id": "SV-257784r1208766",
     "group_id": "V-257784",
     "severity": "high",
     "title": "The systemd Ctrl-Alt-Delete burst key sequence in RHEL 9 must be disabled.",
     "discussion": "A locally logged-on user who presses Ctrl-Alt-Delete when at the console can reboot the system. If accidentally pressed, as could happen in the case of a mixed OS environment, this can create the risk of short-term loss of availability of systems due to unintentional reboot. In a graphical user environment, risk of unintentional reboot from the Ctrl-Alt-Delete sequence is reduced because the user will be prompted before any action is taken. Satisfies: SRG-OS-000324-GPOS-00125, SRG-OS-000480-GPOS-00227",
-    "check_content": "Verify RHEL 9 is configured to not reboot the system when Ctrl-Alt-Delete is pressed seven times within two seconds with the following command: $ sudo grep -iR CtrlAltDelBurstAction /etc/systemd/system* /etc/systemd/system.conf.d/55-CtrlAltDel-BurstAction:CtrlAltDelBurstAction=none If the \"CtrlAltDelBurstAction\" is not set to \"none\", commented out, or is missing, this is a finding.",
-    "fix_text": "Configure RHEL 9 to disable the CtrlAltDelBurstAction by adding it to a drop file in a \"/etc/systemd/system.conf.d/\" configuration file: If no drop file exists, create one with the following command: $ sudo mkdir -p /etc/systemd/system.conf.d && sudo vi /etc/systemd/system.conf.d/55-CtrlAltDel-BurstAction Edit the file to contain the setting by adding the following text: CtrlAltDelBurstAction=none Reload the daemon for this change to take effect. $ sudo systemctl daemon-reload",
+    "check_content": "Verify RHEL 9 is configured to not reboot the system when Ctrl-Alt-Delete is pressed seven times within two seconds with the following command: $ sudo grep -iR CtrlAltDelBurstAction /etc/systemd/system* /etc/systemd/system.conf.d/55-CtrlAltDel-BurstAction.conf:CtrlAltDelBurstAction=none If the \"CtrlAltDelBurstAction\" is not set to \"none\", is commented out, or is missing, this is a finding.",
+    "fix_text": "Configure RHEL 9 to disable the CtrlAltDelBurstAction by adding it to a drop file in a \"/etc/systemd/system.conf.d/\" configuration file: If no drop file exists, create one with the following command: $ sudo mkdir -p /etc/systemd/system.conf.d && sudo vi /etc/systemd/system.conf.d/55-CtrlAltDel-BurstAction.conf Edit the file to contain the setting by adding the following text: CtrlAltDelBurstAction=none Reload the daemon for this change to take effect. $ sudo systemctl daemon-reload",
     "ccis": [
       "CCI-002235"
     ],
-    "formal_role_covered": false
+    "formal_role_covered": true
   },
   "RHEL-09-211050": {
     "stig_id": "RHEL-09-211050",
@@ -279,7 +279,7 @@
   },
   "RHEL-09-213010": {
     "stig_id": "RHEL-09-213010",
-    "rule_id": "SV-257797r1155691",
+    "rule_id": "SV-257797r1198253",
     "group_id": "V-257797",
     "severity": "medium",
     "title": "RHEL 9 must restrict access to the kernel message buffer.",
@@ -294,7 +294,7 @@
   },
   "RHEL-09-213015": {
     "stig_id": "RHEL-09-213015",
-    "rule_id": "SV-257798r1155694",
+    "rule_id": "SV-257798r1198253",
     "group_id": "V-257798",
     "severity": "medium",
     "title": "RHEL 9 must prevent kernel profiling by nonprivileged users.",
@@ -324,7 +324,7 @@
   },
   "RHEL-09-213025": {
     "stig_id": "RHEL-09-213025",
-    "rule_id": "SV-257800r1155700",
+    "rule_id": "SV-257800r1198253",
     "group_id": "V-257800",
     "severity": "medium",
     "title": "RHEL 9 must restrict exposed kernel pointer addresses access.",
@@ -453,13 +453,13 @@
   },
   "RHEL-09-213070": {
     "stig_id": "RHEL-09-213070",
-    "rule_id": "SV-257809r1155709",
+    "rule_id": "SV-257809r1208769",
     "group_id": "V-257809",
     "severity": "medium",
     "title": "RHEL 9 must implement address space layout randomization (ASLR) to protect its memory from unauthorized code execution.",
     "discussion": "Some adversaries launch attacks with the intent of executing code in nonexecutable regions of memory or in memory locations that are prohibited. Security safeguards employed to protect memory include, for example, data execution prevention and address space layout randomization. Data execution prevention safeguards can be either hardware-enforced or software-enforced with hardware providing the greater strength of mechanism. Examples of attacks are buffer overflow attacks. The sysctl --system command will load settings from all system configuration files. All configuration files are sorted by their filename in lexicographical order, regardless of the directories in which they reside. If multiple files specify the same option, the entry in the file with the lexicographically latest name will take precedence. Files are read from directories in the following list from top to bottom. Once a file of a given filename is loaded, any file of the same name in subsequent directories is ignored. /etc/sysctl.d/*.conf /run/sysctl.d/*.conf /usr/local/lib/sysctl.d/*.conf /usr/lib/sysctl.d/*.conf /lib/sysctl.d/*.conf /etc/sysctl.conf Satisfies: SRG-OS-000433-GPOS-00193, SRG-OS-000480-GPOS-00227",
-    "check_content": "Verify RHEL 9 is implementing ASLR. Check the status of the \"kernel.randomize_va_space\" kernel parameter with the following command: $ sudo sysctl kernel.randomize_va_space kernel.randomize_va_space = 2 If \"kernel.randomize_va_space\" is not set to \"2\" or is missing, this is a finding.",
-    "fix_text": "Configure RHEL 9 to implement ASLR. Create the drop-in if it does not already exist: $ sudo vi /etc/sysctl.d/99-kernel_randomize_va_space.conf Add the following line to the file: kernel.randomize_va_space = 2 Reload settings from all system configuration files with the following command: $ sudo sysctl --system",
+    "check_content": "Verify RHEL 9 is implementing ASLR. $ sudo sysctl kernel.randomize_va_space kernel.randomize_va_space = 2 If \"kernel.randomize_va_space\" is not set to \"2\", this is a finding. Check that the configuration files are present to enable this kernel parameter. $ sudo grep -rs kernel.randomize_va_space /run/sysctl.d/*.conf /usr/local/lib/sysctl.d/*.conf /usr/lib/sysctl.d/*.conf /lib/sysctl.d/*.conf /etc/sysctl.conf /etc/sysctl.d/*.conf /etc/sysctl.d/99-kernel_randomize_va_space.conf:kernel.randomize_va_space = 2 If \"kernel.randomize_va_space\" is not set to \"2\", or is missing or commented out, this is a finding. If conflicting results are returned, this is a finding.",
+    "fix_text": "Configure RHEL 9 to implement ASLR. $ echo 'kernel.randomize_va_space = 2' | sudo tee /etc/sysctl.d/99-kernel_randomize_va_space.conf Remove any configurations that conflict with the above from the following locations: /run/sysctl.d/*.conf /usr/local/lib/sysctl.d/*.conf /usr/lib/sysctl.d/*.conf /lib/sysctl.d/*.conf /etc/sysctl.conf /etc/sysctl.d/*.conf Issue the following command to make the changes take effect: $ sudo sysctl --system",
     "ccis": [
       "CCI-002824"
     ],
@@ -467,7 +467,7 @@
   },
   "RHEL-09-213075": {
     "stig_id": "RHEL-09-213075",
-    "rule_id": "SV-257810r1155712",
+    "rule_id": "SV-257810r1198253",
     "group_id": "V-257810",
     "severity": "medium",
     "title": "RHEL 9 must disable access to network bpf system call from nonprivileged processes.",
@@ -481,7 +481,7 @@
   },
   "RHEL-09-213080": {
     "stig_id": "RHEL-09-213080",
-    "rule_id": "SV-257811r1155674",
+    "rule_id": "SV-257811r1198253",
     "group_id": "V-257811",
     "severity": "medium",
     "title": "RHEL 9 must restrict usage of ptrace to descendant processes.",
@@ -696,13 +696,13 @@
   },
   "RHEL-09-215015": {
     "stig_id": "RHEL-09-215015",
-    "rule_id": "SV-257826r1106299",
+    "rule_id": "SV-257826r1208770",
     "group_id": "V-257826",
     "severity": "high",
     "title": "RHEL 9 must not have a File Transfer Protocol (FTP) server package installed.",
     "discussion": "The FTP service provides an unencrypted remote access that does not provide for the confidentiality and integrity of user passwords or the remote session. If a privileged user were to log on using this service, the privileged user password could be compromised. SSH or other encrypted file transfer methods must be used in place of this service. Removing the \"vsftpd\" package decreases the risk of accidental activation. If FTP is required for operational support (such as transmission of router configurations), its use must be documented with the information systems security manager (ISSM), restricted to only authorized personnel, and have access control rules established. Satisfies: SRG-OS-000074-GPOS-00042, SRG-OS-000095-GPOS-00049, SRG-OS-000480-GPOS-00227",
-    "check_content": "Verify RHEL 9 does not have an FTP server package installed with the following command: $ sudo dnf list --installed vsftpd Error: No matching Packages to list If the \"ftp\" package is installed, this is a finding.",
-    "fix_text": "The ftp package can be removed with the following command (using vsftpd as an example): $ sudo dnf remove vsftpd",
+    "check_content": "Verify RHEL 9 does not have an FTP server package installed with the following command: $ sudo dnf list --installed | grep vsftpd If the \"vsftpd\" package is installed, this is a finding.",
+    "fix_text": "Remove the vsftpd package with the following command: $ sudo dnf remove vsftpd",
     "ccis": [
       "CCI-000197",
       "CCI-000381"
@@ -1558,12 +1558,12 @@
   },
   "RHEL-09-232040": {
     "stig_id": "RHEL-09-232040",
-    "rule_id": "SV-257888r1134910",
+    "rule_id": "SV-257888r1208771",
     "group_id": "V-257888",
     "severity": "medium",
     "title": "RHEL 9 permissions of cron configuration files and directories must not be modified from the operating system defaults.",
     "discussion": "If the permissions of cron configuration files or directories are modified from the operating system defaults, it may be possible for individuals to insert unauthorized cron jobs that perform unauthorized actions, including potentially escalating privileges.",
-    "check_content": "Run the following command to verify that the owner, group, and mode of cron configuration files and directories match the operating system defaults: $ rpm --verify cronie crontabs | awk '! ($2 == \"c\" && $1 ~ /^.\\..\\.\\.\\.\\..\\./) {print $0}' If the command returns any output, this is a finding. If there are findings, run the following command to determine what the permissions are: $ ls -ld /etc/cron* drwxr-xr-x. 2 root root 21 Oct 3 2024 /etc/cron.d drwxr-xr-x. 2 root root 6 May 1 09:03 /etc/cron.daily -rw-r--r--. 1 root root 0 Oct 3 2024 /etc/cron.deny drwxr-xr-x. 2 root root 22 Mar 5 12:49 /etc/cron.hourly drwxr-xr-x. 2 root root 6 Mar 23 2022 /etc/cron.monthly -rw-r--r--. 1 root root 451 Mar 23 2022 /etc/crontab drwxr-xr-x. 2 root root 6 Mar 23 2022 /etc/cron.weekly",
+    "check_content": "Run the following command to verify that the owner, group, and mode of cron configuration files and directories match the operating system defaults: $ rpm --verify cronie crontabs | awk '! ($2 == \"c\" && $1 ~ /^.\\..\\.\\.\\.\\..\\./) {print $0}' If the command returns any output, this is a finding.",
     "fix_text": "Run the following commands to restore the permissions of cron configuration files and directories to the operating system defaults: $ sudo dnf reinstall cronie crontabs $ rpm --setugids cronie crontabs $ rpm --setperms cronie crontabs",
     "ccis": [
       "CCI-000366"
@@ -3074,13 +3074,13 @@
   },
   "RHEL-09-255120": {
     "stig_id": "RHEL-09-255120",
-    "rule_id": "SV-258000r1045063",
+    "rule_id": "SV-258000r1208772",
     "group_id": "V-258000",
     "severity": "medium",
-    "title": "RHEL 9 SSH private host key files must have mode 0640 or less permissive.",
+    "title": "RHEL 9 SSH private host key files must have mode 0600 or less permissive.",
     "discussion": "If an unauthorized user obtains the private SSH host key file, the host could be impersonated.",
-    "check_content": "Verify the SSH private host key files have a mode of \"0640\" or less permissive with the following command: $ stat -c \"%a %n\" /etc/ssh/*_key 640 /etc/ssh/ssh_host_dsa_key 640 /etc/ssh/ssh_host_ecdsa_key 640 /etc/ssh/ssh_host_ed25519_key 640 /etc/ssh/ssh_host_rsa_key If any private host key file has a mode more permissive than \"0640\", this is a finding.",
-    "fix_text": "Configure the mode of SSH private host key files under \"/etc/ssh\" to \"0640\" with the following command: $ sudo chmod 0640 /etc/ssh/ssh_host*key Restart the SSH daemon for the changes to take effect: $ sudo systemctl restart sshd.service",
+    "check_content": "Verify the SSH private host key files have a mode of \"0600\" or less permissive with the following command: $ stat -c \"%a %n\" /etc/ssh/*_key 600 /etc/ssh/ssh_host_dsa_key 600 /etc/ssh/ssh_host_ecdsa_key 600 /etc/ssh/ssh_host_ed25519_key 600 /etc/ssh/ssh_host_rsa_key If any private host key file has a mode more permissive than \"0600\", this is a finding.",
+    "fix_text": "Configure the mode of SSH private host key files under \"/etc/ssh\" to \"0600\" with the following command: $ sudo chmod 0600 /etc/ssh/ssh_host*key Restart the SSH daemon for the changes to take effect: $ sudo systemctl restart sshd.service",
     "ccis": [
       "CCI-000366"
     ],
@@ -3099,20 +3099,6 @@
       "CCI-000366"
     ],
     "formal_role_covered": false
-  },
-  "RHEL-09-255130": {
-    "stig_id": "RHEL-09-255130",
-    "rule_id": "SV-258002r1155590",
-    "group_id": "V-258002",
-    "severity": "medium",
-    "title": "RHEL 9 SSH daemon must not allow compression or must only allow compression after successful authentication.",
-    "discussion": "If compression is allowed in an SSH connection prior to authentication, vulnerabilities in the compression software could result in compromise of the system from an unauthenticated connection, potentially with root privileges. Compression options are: no - disables compression delayed - allow compression only after authentication yes - enables compression before authentication, which can leak sensitive metadata and is not recommended",
-    "check_content": "Verify the RHEL 9 SSH daemon performs compression after a user successfully authenticates with the following command: $ sudo /usr/sbin/sshd -dd 2>&1 | awk '/filename/ {print $4}' | tr -d '\\r' | tr '\\n' ' ' | xargs sudo grep -iH '^\\s*compression' /etc/ssh/sshd_config:Compression no If the \"Compression\" keyword is set to \"yes\", is missing, or the returned line is commented out, this is a finding.",
-    "fix_text": "Configure the SSH daemon to not allow compression. Uncomment the \"Compression\" keyword in \"/etc/ssh/sshd_config\" on the system and set the value to \"delayed\" or \"no\": Compression no The SSH service must be restarted for changes to take effect: $ sudo systemctl restart sshd.service",
-    "ccis": [
-      "CCI-000366"
-    ],
-    "formal_role_covered": true
   },
   "RHEL-09-255135": {
     "stig_id": "RHEL-09-255135",
@@ -3243,7 +3229,7 @@
       "CCI-001387",
       "CCI-001388"
     ],
-    "formal_role_covered": false
+    "formal_role_covered": true
   },
   "RHEL-09-271015": {
     "stig_id": "RHEL-09-271015",
@@ -3262,7 +3248,7 @@
       "CCI-001387",
       "CCI-001388"
     ],
-    "formal_role_covered": false
+    "formal_role_covered": true
   },
   "RHEL-09-271020": {
     "stig_id": "RHEL-09-271020",
@@ -3277,7 +3263,7 @@
       "CCI-000778",
       "CCI-001958"
     ],
-    "formal_role_covered": false
+    "formal_role_covered": true
   },
   "RHEL-09-271025": {
     "stig_id": "RHEL-09-271025",
@@ -3292,7 +3278,7 @@
       "CCI-000778",
       "CCI-001958"
     ],
-    "formal_role_covered": false
+    "formal_role_covered": true
   },
   "RHEL-09-271030": {
     "stig_id": "RHEL-09-271030",
@@ -3306,7 +3292,7 @@
     "ccis": [
       "CCI-001764"
     ],
-    "formal_role_covered": false
+    "formal_role_covered": true
   },
   "RHEL-09-271035": {
     "stig_id": "RHEL-09-271035",
@@ -3321,7 +3307,7 @@
       "CCI-000778",
       "CCI-001958"
     ],
-    "formal_role_covered": false
+    "formal_role_covered": true
   },
   "RHEL-09-271040": {
     "stig_id": "RHEL-09-271040",
@@ -3351,7 +3337,7 @@
       "CCI-000057",
       "CCI-000058"
     ],
-    "formal_role_covered": false
+    "formal_role_covered": true
   },
   "RHEL-09-271050": {
     "stig_id": "RHEL-09-271050",
@@ -3367,7 +3353,7 @@
       "CCI-000057",
       "CCI-000058"
     ],
-    "formal_role_covered": false
+    "formal_role_covered": true
   },
   "RHEL-09-271055": {
     "stig_id": "RHEL-09-271055",
@@ -3383,7 +3369,7 @@
       "CCI-000057",
       "CCI-000058"
     ],
-    "formal_role_covered": false
+    "formal_role_covered": true
   },
   "RHEL-09-271060": {
     "stig_id": "RHEL-09-271060",
@@ -3399,7 +3385,7 @@
       "CCI-000057",
       "CCI-000058"
     ],
-    "formal_role_covered": false
+    "formal_role_covered": true
   },
   "RHEL-09-271065": {
     "stig_id": "RHEL-09-271065",
@@ -3414,7 +3400,7 @@
       "CCI-000057",
       "CCI-000060"
     ],
-    "formal_role_covered": false
+    "formal_role_covered": true
   },
   "RHEL-09-271070": {
     "stig_id": "RHEL-09-271070",
@@ -3429,7 +3415,7 @@
       "CCI-000057",
       "CCI-000060"
     ],
-    "formal_role_covered": false
+    "formal_role_covered": true
   },
   "RHEL-09-271075": {
     "stig_id": "RHEL-09-271075",
@@ -3443,7 +3429,7 @@
     "ccis": [
       "CCI-000057"
     ],
-    "formal_role_covered": false
+    "formal_role_covered": true
   },
   "RHEL-09-271080": {
     "stig_id": "RHEL-09-271080",
@@ -3457,7 +3443,7 @@
     "ccis": [
       "CCI-000057"
     ],
-    "formal_role_covered": false
+    "formal_role_covered": true
   },
   "RHEL-09-271085": {
     "stig_id": "RHEL-09-271085",
@@ -3471,7 +3457,7 @@
     "ccis": [
       "CCI-000060"
     ],
-    "formal_role_covered": false
+    "formal_role_covered": true
   },
   "RHEL-09-271090": {
     "stig_id": "RHEL-09-271090",
@@ -3513,7 +3499,7 @@
     "ccis": [
       "CCI-000366"
     ],
-    "formal_role_covered": false
+    "formal_role_covered": true
   },
   "RHEL-09-271105": {
     "stig_id": "RHEL-09-271105",
@@ -3527,7 +3513,7 @@
     "ccis": [
       "CCI-000366"
     ],
-    "formal_role_covered": false
+    "formal_role_covered": true
   },
   "RHEL-09-271110": {
     "stig_id": "RHEL-09-271110",
@@ -3541,7 +3527,7 @@
     "ccis": [
       "CCI-000366"
     ],
-    "formal_role_covered": false
+    "formal_role_covered": true
   },
   "RHEL-09-271115": {
     "stig_id": "RHEL-09-271115",
@@ -3555,7 +3541,7 @@
     "ccis": [
       "CCI-000366"
     ],
-    "formal_role_covered": false
+    "formal_role_covered": true
   },
   "RHEL-09-291010": {
     "stig_id": "RHEL-09-291010",
@@ -3840,12 +3826,12 @@
   },
   "RHEL-09-411070": {
     "stig_id": "RHEL-09-411070",
-    "rule_id": "SV-258053r1184318",
+    "rule_id": "SV-258053r1208773",
     "group_id": "V-258053",
     "severity": "medium",
     "title": "All RHEL 9 local interactive user home directories must be group-owned by the home directory owner's primary group.",
     "discussion": "If the Group Identifier (GID) of a local interactive users home directory is not the same as the primary GID of the user, this would allow unauthorized access to the users files, and users that share the same group may not be able to access files that they legitimately should.",
-    "check_content": "Verify the assigned home directory of all local interactive users is group-owned by that user's primary GID with the following command: Note: This may miss local interactive users that have been assigned a privileged user identifier (UID). Evidence of interactive use may be obtained from a number of log files containing system logon information. The returned directory \"/home/disauser\" is used as an example. $ sudo ls -ld $(awk -F: '($3>=1000)&&($7 !~ /nologin/){print $6}' /etc/passwd) drwxr-x--- 2 disauser admin 4096 Jun 5 12:41 disauser Check the user's primary group with the following command: $ sudo grep $(grep disauser /etc/passwd | awk -F: \u2018{print $4}') /etc/group admin:x:250:disauser,doduser,nsauser If the user home directory referenced in \"/etc/passwd\" is not group-owned by that user's primary GID, this is a finding.",
+    "check_content": "Verify the assigned home directory of all local interactive users is group-owned by that user's primary GID with the following command: Note: This may miss local interactive users that have been assigned a privileged user identifier (UID). Evidence of interactive use may be obtained from a number of log files containing system logon information. The returned directory \"/home/disauser\" is used as an example. $ getent passwd | awk -F: '($3>=1000 && $7!~/(nologin|false)$/){printf \"User: %-15s Primary GID: %-5s Home: %s\\n\", $1, $4, $6}' User: disauser Primary GID: 1002 Home: /home/disauser Check the user's primary group with the following command: $ stat -c \"Directory: %n --> Actual GID: %g (%G)\" /home/disauser Directory: /home/disauser --> Actual GID: 1002 (disauser) If the user home directory referenced in \"/etc/passwd\" is not group-owned by that user's primary GID, this is a finding.",
     "fix_text": "Change the group owner of a local interactive user's home directory to the group found in \"/etc/passwd\". To change the group owner of a local interactive user's home directory, use the following command: Note: The example will be for the user \"disauser\", who has a home directory of \"/home/disauser\", and has a primary group of users. $ sudo chgrp users /home/disauser",
     "ccis": [
       "CCI-000366"
@@ -4286,11 +4272,11 @@
   },
   "RHEL-09-611010": {
     "stig_id": "RHEL-09-611010",
-    "rule_id": "SV-258091r1045185",
+    "rule_id": "SV-258091r1208774",
     "group_id": "V-258091",
     "severity": "medium",
     "title": "RHEL 9 must ensure the password complexity module in the system-auth file is configured for three retries or less.",
-    "discussion": "Use of a complex password helps to increase the time and resources required to compromise the password. Password complexity, or strength, is a measure of the effectiveness of a password in resisting attempts at guessing and brute-force attacks. \"pwquality\" enforces complex password construction configuration and has the ability to limit brute-force attacks on the system. RHEL 9 uses \"pwquality\" as a mechanism to enforce password complexity. This is set in both: /etc/pam.d/password-auth /etc/pam.d/system-auth By limiting the number of attempts to meet the pwquality module complexity requirements before returning with an error, the system will audit abnormal attempts at password changes.",
+    "discussion": "Use of a complex password helps to increase the time and resources required to compromise the password. Password complexity, or strength, is a measure of the effectiveness of a password in resisting attempts at guessing and brute-force attacks. \"pwquality\" enforces complex password construction configuration and has the ability to limit brute-force attacks on the system. By limiting the number of attempts to meet the pwquality module complexity requirements before returning with an error, the system will audit abnormal attempts at password changes.",
     "check_content": "Verify RHEL 9 is configured to limit the \"pwquality\" retry option to \"3\". Check for the use of the retry option in the security directory with the following command: $ grep -w retry /etc/security/pwquality.conf /etc/security/pwquality.conf.d/*.conf retry = 3 If the value of \"retry\" is set to \"0\" or greater than \"3\", or is missing, this is a finding.",
     "fix_text": "Configure RHEL 9 to limit the \"pwquality\" retry option to \"3\". Add or update the following line in the \"/etc/security/pwquality.conf\" file or a file in the \"/etc/security/pwquality.conf.d/\" directory to contain the \"retry\" parameter: retry = 3",
     "ccis": [
@@ -4748,10 +4734,10 @@
   },
   "RHEL-09-611180": {
     "stig_id": "RHEL-09-611180",
-    "rule_id": "SV-258125r1045253",
+    "rule_id": "SV-258125r1208775",
     "group_id": "V-258125",
     "severity": "medium",
-    "title": "The pcscd service on RHEL 9 must be active.",
+    "title": "The pcscd socket on RHEL 9 must be active.",
     "discussion": "The information system ensures that even if the information system is compromised, that compromise will not affect credentials stored on the authentication device. The daemon program for pcsc-lite and the MuscleCard framework is pcscd. It is a resource manager that coordinates communications with smart card readers and smart cards and cryptographic tokens that are connected to the system.",
     "check_content": "Verify that the \"pcscd\" socket is active with the following command: $ systemctl is-active pcscd.socket active If the pcscd socket is not active, this is a finding.",
     "fix_text": "To enable the pcscd socket, run the following command: $ sudo systemctl enable --now pcscd.socket",
@@ -5439,13 +5425,13 @@
   },
   "RHEL-09-653110": {
     "stig_id": "RHEL-09-653110",
-    "rule_id": "SV-258171r1134934",
+    "rule_id": "SV-258171r1208777",
     "group_id": "V-258171",
     "severity": "medium",
     "title": "RHEL 9 must allow only the information system security manager (ISSM) (or individuals or roles appointed by the ISSM) to select which auditable events are to be audited.",
     "discussion": "Without the capability to restrict the roles and individuals that can select which events are audited, unauthorized personnel may be able to prevent the auditing of critical events. Misconfigured audits may degrade the system's performance by overwhelming the audit log. Misconfigured audits may also make it more difficult to establish, correlate, and investigate the events relating to an incident or identify those responsible for one.",
-    "check_content": "Verify that the files in directory \"/etc/audit/rules.d/\" and \"/etc/audit/auditd.conf\" file have a mode of \"0640\" or less permissive with the following command: $ sudo find /etc/audit/rules.d/ /etc/audit/audit.rules /etc/audit/auditd.conf -type f -exec stat -c \"%a %n\" {} \\; 600 /etc/audit/rules.d/audit.rules 640 /etc/audit/audit.rules 640 /etc/audit/auditd.conf If the audit configuration files have a mode more permissive than those shown, this is a finding.",
-    "fix_text": "Configure the files in directory \"/etc/audit/rules.d/\" and the \"/etc/audit/auditd.conf\" file to have a mode of \"0640\" with the following commands: $ sudo chmod 0640 /etc/audit/rules.d/audit.rules $ sudo chmod 0640 /etc/audit/rules.d/[customrulesfile].rules $ sudo chmod 0640 /etc/audit/auditd.conf",
+    "check_content": "Verify that the files in directory \"/etc/audit/rules.d/\" and \"/etc/audit/auditd.conf\" file have a mode of \"0600\" or less permissive with the following command: $ sudo find /etc/audit/rules.d/ /etc/audit/audit.rules /etc/audit/auditd.conf -type f -exec stat -c \"%a %n\" {} \\; 600 /etc/audit/rules.d/audit.rules 600 /etc/audit/audit.rules 600 /etc/audit/auditd.conf If the audit configuration files have a mode more permissive than \"0600\", this is a finding.",
+    "fix_text": "Configure the files in directory \"/etc/audit/rules.d/\" and the \"/etc/audit/auditd.conf\" file to have a mode of \"0600\" with the following commands: $ sudo chmod 0600 /etc/audit/rules.d/audit.rules $ sudo chmod 0600 /etc/audit/rules.d/[customrulesfile].rules $ sudo chmod 0600 /etc/audit/auditd.conf",
     "ccis": [
       "CCI-000171"
     ],
@@ -6212,13 +6198,13 @@
   },
   "RHEL-09-654215": {
     "stig_id": "RHEL-09-654215",
-    "rule_id": "SV-258217r1045436",
+    "rule_id": "SV-258217r1210919",
     "group_id": "V-258217",
     "severity": "medium",
     "title": "RHEL 9 must generate audit records for all account creations, modifications, disabling, and termination events that affect /etc/sudoers.",
-    "discussion": "The actions taken by system administrators must be audited to keep a record of what was executed on the system, as well as for accountability purposes. Editing the sudoers file may be sign of an attacker trying to establish persistent methods to a system, auditing the editing of the sudoers files mitigates this risk. Satisfies: SRG-OS-000004-GPOS-00004, SRG-OS-000037-GPOS-00015, SRG-OS-000042-GPOS-00020, SRG-OS-000062-GPOS-00031, SRG-OS-000304-GPOS-00121, SRG-OS-000392-GPOS-00172, SRG-OS-000462-GPOS-00206, SRG-OS-000470-GPOS-00214, SRG-OS-000471-GPOS-00215, SRG-OS-000239-GPOS-00089, SRG-OS-000240-GPOS-00090, SRG-OS-000241-GPOS-00091, SRG-OS-000303-GPOS-00120, SRG-OS-000466-GPOS-00210, SRG-OS-000476-GPOS-00221",
-    "check_content": "Verify RHEL 9 generates audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/sudoers\" with the following command: $ sudo auditctl -l | grep '/etc/sudoers[^.]' -w /etc/sudoers -p wa -k identity If the command does not return a line, or the line is commented out, this is a finding.",
-    "fix_text": "Configure RHEL 9 to generate audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/sudoers\". Add or update the following file system rule to \"/etc/audit/rules.d/audit.rules\": -w /etc/sudoers -p wa -k identity To load the rules to the kernel immediately, use the following command: $ sudo augenrules --load",
+    "discussion": "The actions taken by system administrators must be audited to keep a record of what was executed on the system, as well as for accountability purposes. Editing the sudoers file may be sign of an attacker trying to establish persistent methods to a system. Auditing the editing of the sudoers files mitigates this risk. Satisfies: SRG-OS-000004-GPOS-00004, SRG-OS-000037-GPOS-00015, SRG-OS-000042-GPOS-00020, SRG-OS-000062-GPOS-00031, SRG-OS-000304-GPOS-00121, SRG-OS-000392-GPOS-00172, SRG-OS-000462-GPOS-00206, SRG-OS-000470-GPOS-00214, SRG-OS-000471-GPOS-00215, SRG-OS-000239-GPOS-00089, SRG-OS-000240-GPOS-00090, SRG-OS-000241-GPOS-00091, SRG-OS-000303-GPOS-00120, SRG-OS-000466-GPOS-00210, SRG-OS-000476-GPOS-00221",
+    "check_content": "Verify RHEL 9 generates audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/sudoers\" with the following command: $ sudo auditctl -l | grep '/etc/sudoers[^.]' -a always,exit -F arch=b32 -F path=/etc/sudoers -F perm=wa -k identity -a always,exit -F arch=b64 -F path=/etc/sudoers -F perm=wa -k identity If the command does not return a line, or the line is commented out, this is a finding.",
+    "fix_text": "Configure RHEL 9 to generate audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/sudoers\". Add or update the following file system rule to \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -F path=/etc/sudoers -F perm=wa -k identity -a always,exit -F arch=b64 -F path=/etc/sudoers -F perm=wa -k identity To load the rules to the kernel immediately, use the following command: $ sudo augenrules --load",
     "ccis": [
       "CCI-000018",
       "CCI-000130",
@@ -6237,13 +6223,13 @@
   },
   "RHEL-09-654220": {
     "stig_id": "RHEL-09-654220",
-    "rule_id": "SV-258218r1101981",
+    "rule_id": "SV-258218r1210920",
     "group_id": "V-258218",
     "severity": "medium",
-    "title": "RHEL 9 must generate audit records for all account creations, modifications, disabling, and termination events that affect /etc/sudoers.d/ directory.",
-    "discussion": "The actions taken by system administrators must be audited to keep a record of what was executed on the system, as well as for accountability purposes. Editing the sudoers file may be sign of an attacker trying to establish persistent methods to a system, auditing the editing of the sudoers files mitigates this risk. Satisfies: SRG-OS-000004-GPOS-00004, SRG-OS-000037-GPOS-00015, SRG-OS-000042-GPOS-00020, SRG-OS-000062-GPOS-00031, SRG-OS-000304-GPOS-00121, SRG-OS-000392-GPOS-00172, SRG-OS-000462-GPOS-00206, SRG-OS-000470-GPOS-00214, SRG-OS-000471-GPOS-00215, SRG-OS-000239-GPOS-00089, SRG-OS-000240-GPOS-00090, SRG-OS-000241-GPOS-00091, SRG-OS-000303-GPOS-00120, SRG-OS-000466-GPOS-00210, SRG-OS-000476-GPOS-00221",
-    "check_content": "Verify RHEL 9 generates audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/sudoers.d/\" with the following command: $ sudo auditctl -l | grep /etc/sudoers.d -w /etc/sudoers.d/ -p wa -k identity If the command does not return a line, or the line is commented out, this is a finding.",
-    "fix_text": "Configure RHEL 9 to generate audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/sudoers.d/\". Add or update the following file system rule to \"/etc/audit/rules.d/audit.rules\": -w /etc/sudoers.d/ -p wa -k identity To load the rules to the kernel immediately, use the following command: $ sudo augenrules --load",
+    "title": "RHEL 9 must generate audit records for all account creations, modifications, disabling, and termination events that affect /etc/sudoers.d/directory.",
+    "discussion": "The actions taken by system administrators must be audited to keep a record of what was executed on the system, as well as for accountability purposes. Editing the sudoers file may be sign of an attacker trying to establish persistent methods to a system. Auditing the editing of the sudoers files mitigates this risk. Satisfies: SRG-OS-000004-GPOS-00004, SRG-OS-000037-GPOS-00015, SRG-OS-000042-GPOS-00020, SRG-OS-000062-GPOS-00031, SRG-OS-000304-GPOS-00121, SRG-OS-000392-GPOS-00172, SRG-OS-000462-GPOS-00206, SRG-OS-000470-GPOS-00214, SRG-OS-000471-GPOS-00215, SRG-OS-000239-GPOS-00089, SRG-OS-000240-GPOS-00090, SRG-OS-000241-GPOS-00091, SRG-OS-000303-GPOS-00120, SRG-OS-000466-GPOS-00210, SRG-OS-000476-GPOS-00221",
+    "check_content": "Verify RHEL 9 generates audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/sudoers.d/\" with the following command: $ sudo auditctl -l | grep /etc/sudoers.d -a always,exit -F arch=b32 -F path=/etc/sudoers.d -F perm=wa -k identity -a always,exit -F arch=b64 -F path=/etc/sudoers.d -F perm=wa -k identity If the command does not return a line, or the line is commented out, this is a finding.",
+    "fix_text": "Configure RHEL 9 to generate audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/sudoers.d/\". Add or update the following file system rule to \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -F path=/etc/sudoers.d -F perm=wa -k identity -a always,exit -F arch=b64 -F path=/etc/sudoers.d -F perm=wa -k identity To load the rules to the kernel immediately, use the following command: $ sudo augenrules --load",
     "ccis": [
       "CCI-000018",
       "CCI-000130",
@@ -6262,13 +6248,13 @@
   },
   "RHEL-09-654225": {
     "stig_id": "RHEL-09-654225",
-    "rule_id": "SV-258219r1015130",
+    "rule_id": "SV-258219r1210921",
     "group_id": "V-258219",
     "severity": "medium",
     "title": "RHEL 9 must generate audit records for all account creations, modifications, disabling, and termination events that affect /etc/group.",
     "discussion": "In addition to auditing new user and group accounts, these watches will alert the system administrator(s) to any modifications. Any unexpected users, groups, or modifications must be investigated for legitimacy. Satisfies: SRG-OS-000004-GPOS-00004, SRG-OS-000037-GPOS-00015, SRG-OS-000042-GPOS-00020, SRG-OS-000062-GPOS-00031, SRG-OS-000304-GPOS-00121, SRG-OS-000392-GPOS-00172, SRG-OS-000462-GPOS-00206, SRG-OS-000470-GPOS-00214, SRG-OS-000471-GPOS-00215, SRG-OS-000239-GPOS-00089, SRG-OS-000240-GPOS-00090, SRG-OS-000241-GPOS-00091, SRG-OS-000303-GPOS-00120, SRG-OS-000466-GPOS-00210, SRG-OS-000476-GPOS-00221",
-    "check_content": "Verify RHEL 9 generates audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/group\" with the following command: $ sudo auditctl -l | egrep '(/etc/group)' -w /etc/group -p wa -k identity If the command does not return a line, or the line is commented out, this is a finding.",
-    "fix_text": "Configure RHEL 9 to generate audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/group\". Add or update the following file system rule to \"/etc/audit/rules.d/audit.rules\": -w /etc/group -p wa -k identity The audit daemon must be restarted for the changes to take effect.",
+    "check_content": "Verify RHEL 9 generates audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/group\" with the following command: $ sudo auditctl -l | egrep '(/etc/group)' -a always,exit -F arch=b32 -F path=/etc/group -F perm=wa -k identity -a always,exit -F arch=b64 -F path=/etc/group -F perm=wa -k identity If the command does not return a line, or the line is commented out, this is a finding.",
+    "fix_text": "Configure RHEL 9 to generate audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/group\". Add or update the following file system rule to \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -F path=/etc/group -F perm=wa -k identity -a always,exit -F arch=b64 -F path=/etc/group -F perm=wa -k identity To load the rules to the kernel immediately, use the following command: $ sudo augenrules --load",
     "ccis": [
       "CCI-000018",
       "CCI-000130",
@@ -6287,13 +6273,13 @@
   },
   "RHEL-09-654230": {
     "stig_id": "RHEL-09-654230",
-    "rule_id": "SV-258220r1015131",
+    "rule_id": "SV-258220r1210922",
     "group_id": "V-258220",
     "severity": "medium",
     "title": "RHEL 9 must generate audit records for all account creations, modifications, disabling, and termination events that affect /etc/gshadow.",
     "discussion": "In addition to auditing new user and group accounts, these watches will alert the system administrator(s) to any modifications. Any unexpected users, groups, or modifications should be investigated for legitimacy. Satisfies: SRG-OS-000004-GPOS-00004, SRG-OS-000037-GPOS-00015, SRG-OS-000042-GPOS-00020, SRG-OS-000062-GPOS-00031, SRG-OS-000304-GPOS-00121, SRG-OS-000392-GPOS-00172, SRG-OS-000462-GPOS-00206, SRG-OS-000470-GPOS-00214, SRG-OS-000471-GPOS-00215, SRG-OS-000239-GPOS-00089, SRG-OS-000240-GPOS-00090, SRG-OS-000241-GPOS-00091, SRG-OS-000303-GPOS-00120, SRG-OS-000466-GPOS-00210, SRG-OS-000476-GPOS-00221",
-    "check_content": "Verify RHEL 9 generates audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/gshadow\" with the following command: $ sudo auditctl -l | egrep '(/etc/gshadow)' -w /etc/gshadow -p wa -k identity If the command does not return a line, or the line is commented out, this is a finding.",
-    "fix_text": "Configure RHEL 9 to generate audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/gshadow\". Add or update the following file system rule to \"/etc/audit/rules.d/audit.rules\": -w /etc/gshadow -p wa -k identity The audit daemon must be restarted for the changes to take effect.",
+    "check_content": "Verify RHEL 9 generates audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/gshadow\" with the following command: $ sudo auditctl -l | egrep '(/etc/gshadow)' -a always,exit -F arch=b32 -F path=/etc/gshadow -F perm=wa -k identity -a always,exit -F arch=b64 -F path=/etc/gshadow -F perm=wa -k identity If the command does not return a line, or the line is commented out, this is a finding.",
+    "fix_text": "Configure RHEL 9 to generate audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/gshadow\". Add or update the following file system rule to \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -F path=/etc/gshadow -F perm=wa -k identity -a always,exit -F arch=b64 -F path=/etc/gshadow -F perm=wa -k identity To load the rules to the kernel immediately, use the following command: $ sudo augenrules --load",
     "ccis": [
       "CCI-000018",
       "CCI-000130",
@@ -6312,13 +6298,13 @@
   },
   "RHEL-09-654235": {
     "stig_id": "RHEL-09-654235",
-    "rule_id": "SV-258221r1015132",
+    "rule_id": "SV-258221r1210923",
     "group_id": "V-258221",
     "severity": "medium",
     "title": "RHEL 9 must generate audit records for all account creations, modifications, disabling, and termination events that affect /etc/opasswd.",
     "discussion": "In addition to auditing new user and group accounts, these watches will alert the system administrator(s) to any modifications. Any unexpected users, groups, or modifications should be investigated for legitimacy. Satisfies: SRG-OS-000004-GPOS-00004, SRG-OS-000037-GPOS-00015, SRG-OS-000042-GPOS-00020, SRG-OS-000062-GPOS-00031, SRG-OS-000304-GPOS-00121, SRG-OS-000392-GPOS-00172, SRG-OS-000462-GPOS-00206, SRG-OS-000470-GPOS-00214, SRG-OS-000471-GPOS-00215, SRG-OS-000239-GPOS-00089, SRG-OS-000240-GPOS-00090, SRG-OS-000241-GPOS-00091, SRG-OS-000303-GPOS-00120, SRG-OS-000466-GPOS-00210, SRG-OS-000476-GPOS-00221",
-    "check_content": "Verify RHEL 9 generates audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/security/opasswd\" with the following command: $ sudo auditctl -l | egrep '(/etc/security/opasswd)' -w /etc/security/opasswd -p wa -k identity If the command does not return a line, or the line is commented out, this is a finding.",
-    "fix_text": "Configure RHEL 9 to generate audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/security/opasswd\". Add or update the following file system rule to \"/etc/audit/rules.d/audit.rules\": -w /etc/security/opasswd -p wa -k identity The audit daemon must be restarted for the changes to take effect.",
+    "check_content": "Verify RHEL 9 generates audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/security/opasswd\" with the following command: $ sudo auditctl -l | egrep '(/etc/security/opasswd)' -a always,exit -F arch=b32 -F path=/etc/security/opasswd -F perm=wa -k identity -a always,exit -F arch=b64 -F path=/etc/security/opasswd -F perm=wa -k identity If the command does not return a line, or the line is commented out, this is a finding.",
+    "fix_text": "Configure RHEL 9 to generate audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/security/opasswd\". Add or update the following file system rule to \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -F path=/etc/opasswd -F perm=wa -k identity -a always,exit -F arch=b64 -F path=/etc/opasswd -F perm=wa -k identity To load the rules to the kernel immediately, use the following command: $ sudo augenrules --load",
     "ccis": [
       "CCI-000018",
       "CCI-000130",
@@ -6337,13 +6323,13 @@
   },
   "RHEL-09-654240": {
     "stig_id": "RHEL-09-654240",
-    "rule_id": "SV-258222r1015133",
+    "rule_id": "SV-258222r1210924",
     "group_id": "V-258222",
     "severity": "medium",
     "title": "RHEL 9 must generate audit records for all account creations, modifications, disabling, and termination events that affect /etc/passwd.",
     "discussion": "In addition to auditing new user and group accounts, these watches will alert the system administrator(s) to any modifications. Any unexpected users, groups, or modifications should be investigated for legitimacy. Satisfies: SRG-OS-000004-GPOS-00004, SRG-OS-000037-GPOS-00015, SRG-OS-000042-GPOS-00020, SRG-OS-000062-GPOS-00031, SRG-OS-000304-GPOS-00121, SRG-OS-000392-GPOS-00172, SRG-OS-000462-GPOS-00206, SRG-OS-000470-GPOS-00214, SRG-OS-000471-GPOS-00215, SRG-OS-000239-GPOS-00089, SRG-OS-000240-GPOS-00090, SRG-OS-000241-GPOS-00091, SRG-OS-000303-GPOS-00120, SRG-OS-000466-GPOS-00210, SRG-OS-000476-GPOS-00221, SRG-OS-000274-GPOS-00104, SRG-OS-000275-GPOS-00105, SRG-OS-000276-GPOS-00106, SRG-OS-000277-GPOS-00107",
-    "check_content": "Verify RHEL 9 generates audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/passwd\" with the following command: $ sudo auditctl -l | egrep '(/etc/passwd)' -w /etc/passwd -p wa -k identity If the command does not return a line, or the line is commented out, this is a finding.",
-    "fix_text": "Configure RHEL 9 to generate audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/passwd\". Add or update the following file system rule to \"/etc/audit/rules.d/audit.rules\": -w /etc/passwd -p wa -k identity The audit daemon must be restarted for the changes to take effect.",
+    "check_content": "Verify RHEL 9 generates audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/passwd\" with the following command: $ sudo auditctl -l | egrep '(/etc/passwd)' -a always,exit -F arch=b32 -F path=/etc/passwd -F perm=wa -k identity -a always,exit -F arch=b64 -F path=/etc/passwd -F perm=wa -k identity If the command does not return a line, or the line is commented out, this is a finding.",
+    "fix_text": "Configure RHEL 9 to generate audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/passwd\". Add or update the following file system rule to \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -F path=/etc/passwd -F perm=wa -k identity -a always,exit -F arch=b64 -F path=/etc/passwd -F perm=wa -k identity To load the rules to the kernel immediately, use the following command: $ sudo augenrules --load",
     "ccis": [
       "CCI-000015",
       "CCI-000018",
@@ -6366,13 +6352,13 @@
   },
   "RHEL-09-654245": {
     "stig_id": "RHEL-09-654245",
-    "rule_id": "SV-258223r1015134",
+    "rule_id": "SV-258223r1210925",
     "group_id": "V-258223",
     "severity": "medium",
     "title": "RHEL 9 must generate audit records for all account creations, modifications, disabling, and termination events that affect /etc/shadow.",
     "discussion": "In addition to auditing new user and group accounts, these watches will alert the system administrator(s) to any modifications. Any unexpected users, groups, or modifications should be investigated for legitimacy. Satisfies: SRG-OS-000004-GPOS-00004, SRG-OS-000037-GPOS-00015, SRG-OS-000042-GPOS-00020, SRG-OS-000062-GPOS-00031, SRG-OS-000304-GPOS-00121, SRG-OS-000392-GPOS-00172, SRG-OS-000462-GPOS-00206, SRG-OS-000470-GPOS-00214, SRG-OS-000471-GPOS-00215, SRG-OS-000239-GPOS-00089, SRG-OS-000240-GPOS-00090, SRG-OS-000241-GPOS-00091, SRG-OS-000303-GPOS-00120, SRG-OS-000466-GPOS-00210, SRG-OS-000476-GPOS-00221",
-    "check_content": "Verify RHEL 9 generates audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/passwd with the following command: $ sudo auditctl -l | egrep '(/etc/shadow)' -w /etc/shadow -p wa -k identity If the command does not return a line, or the line is commented out, this is a finding.",
-    "fix_text": "Configure RHEL 9 to generate audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/shadow\". Add or update the following file system rule to \"/etc/audit/rules.d/audit.rules\": -w /etc/shadow -p wa -k identity The audit daemon must be restarted for the changes to take effect.",
+    "check_content": "Verify RHEL 9 generates audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/shadow\" with the following command: $ sudo auditctl -l | egrep '(/etc/shadow)' -a always,exit -F arch=b32 -F path=/etc/shadow -F perm=wa -k identity -a always,exit -F arch=b64 -F path=/etc/shadow -F perm=wa -k identity If the command does not return a line, or the line is commented out, this is a finding.",
+    "fix_text": "Configure RHEL 9 to generate audit records for all account creations, modifications, disabling, and termination events that affect \"/etc/shadow\". Add or update the following file system rule to \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -F path=/etc/shadow -F perm=wa -k identity -a always,exit -F arch=b64 -F path=/etc/shadow -F perm=wa -k identity To load the rules to the kernel immediately, use the following command: $ sudo augenrules --load",
     "ccis": [
       "CCI-000018",
       "CCI-000130",
@@ -6391,13 +6377,13 @@
   },
   "RHEL-09-654250": {
     "stig_id": "RHEL-09-654250",
-    "rule_id": "SV-258224r1014988",
+    "rule_id": "SV-258224r1210926",
     "group_id": "V-258224",
     "severity": "medium",
     "title": "RHEL 9 must generate audit records for all account creations, modifications, disabling, and termination events that affect /var/log/faillock.",
     "discussion": "Without generating audit records specific to the security and mission needs of the organization, it would be difficult to establish, correlate, and investigate the events relating to an incident or identify those responsible for one. Satisfies: SRG-OS-000392-GPOS-00172, SRG-OS-000470-GPOS-00214, SRG-OS-000473-GPOS-00218",
-    "check_content": "Verify RHEL 9 generates audit records for all account creations, modifications, disabling, and termination events that affect \"/var/log/faillock\" with the following command: $ sudo auditctl -l | grep /var/log/faillock -w /var/log/faillock -p wa -k logins If the command does not return a line, or the line is commented out, this is a finding.",
-    "fix_text": "Configure RHEL 9 to generate audit records for all account creations, modifications, disabling, and termination events that affect \"/var/log/faillock\". Add or update the following file system rule to \"/etc/audit/rules.d/audit.rules\": -w /var/log/faillock -p wa -k logins The audit daemon must be restarted for the changes to take effect. $ sudo service auditd restart",
+    "check_content": "Verify RHEL 9 generates audit records for all account creations, modifications, disabling, and termination events that affect \"/var/log/faillock\" with the following command: $ sudo auditctl -l | grep /var/log/faillock -a always,exit -F arch=b32 -F path=/var/log/faillock -F perm=wa -F auid>=1000 -F auid!=unset -k logins -a always,exit -F arch=b64 -F path=/var/log/faillock -F perm=wa -F auid>=1000 -F auid!=unset -k logins If the command does not return a line, or the line is commented out, this is a finding.",
+    "fix_text": "Configure RHEL 9 to generate audit records for all account creations, modifications, disabling, and termination events that affect \"/var/log/faillock\". Add or update the following file system rule to \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -F path=/var/log/faillock -F perm=wa -F auid>=1000 -F auid!=unset -k logins -a always,exit -F arch=b64 -F path=/var/log/faillock -F perm=wa -F auid>=1000 -F auid!=unset -k logins To load the rules to the kernel immediately, use the following command: $ sudo augenrules --load",
     "ccis": [
       "CCI-000172",
       "CCI-002884"
@@ -6406,13 +6392,13 @@
   },
   "RHEL-09-654255": {
     "stig_id": "RHEL-09-654255",
-    "rule_id": "SV-258225r1014990",
+    "rule_id": "SV-258225r1210927",
     "group_id": "V-258225",
     "severity": "medium",
     "title": "RHEL 9 must generate audit records for all account creations, modifications, disabling, and termination events that affect /var/log/lastlog.",
     "discussion": "Without generating audit records specific to the security and mission needs of the organization, it would be difficult to establish, correlate, and investigate the events relating to an incident or identify those responsible for one. Satisfies: SRG-OS-000037-GPOS-00015, SRG-OS-000042-GPOS-00020, SRG-OS-000062-GPOS-00031, SRG-OS-000392-GPOS-00172, SRG-OS-000462-GPOS-00206, SRG-OS-000471-GPOS-00215, SRG-OS-000473-GPOS-00218, SRG-OS-000470-GPOS-00214",
-    "check_content": "Verify RHEL 9 generates audit records for all account creations, modifications, disabling, and termination events that affect \"/var/log/lastlog\" with the following command: $ sudo auditctl -l | grep /var/log/lastlog -w /var/log/lastlog -p wa -k logins If the command does not return a line, or the line is commented out, this is a finding.",
-    "fix_text": "Configure RHEL 9 to generate audit records for all account creations, modifications, disabling, and termination events that affect \"/var/log/lastlog\". Add or update the following file system rule to \"/etc/audit/rules.d/audit.rules\": -w /var/log/lastlog -p wa -k logins The audit daemon must be restarted for the changes to take effect. $ sudo service auditd restart",
+    "check_content": "Verify RHEL 9 generates audit records for all account creations, modifications, disabling, and termination events that affect \"/var/log/lastlog\" with the following command: $ sudo auditctl -l | grep /var/log/lastlog -a always,exit -F arch=b32 -F path=/var/log/lastlog -F perm=wa -F auid>=1000 -F auid!=unset -k logins -a always,exit -F arch=b64 -F path=/var/log/lastlog -F perm=wa -F auid>=1000 -F auid!=unset -k logins If the command does not return a line, or the line is commented out, this is a finding.",
+    "fix_text": "Configure RHEL 9 to generate audit records for all account creations, modifications, disabling, and termination events that affect \"/var/log/lastlog\". Add or update the following file system rule to \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b32 -F path=/var/log/lastlog -F perm=wa -F auid>=1000 -F auid!=unset -k logins -a always,exit -F arch=b64 -F path=/var/log/lastlog -F perm=wa -F auid>=1000 -F auid!=unset -k logins To load the rules to the kernel immediately, use the following command: $ sudo augenrules --load",
     "ccis": [
       "CCI-000130",
       "CCI-000135",
@@ -6489,12 +6475,12 @@
   },
   "RHEL-09-671015": {
     "stig_id": "RHEL-09-671015",
-    "rule_id": "SV-258231r1069375",
+    "rule_id": "SV-258231r1208790",
     "group_id": "V-258231",
     "severity": "medium",
-    "title": "RHEL 9 must employ FIPS 140-3 approved cryptographic hashing algorithms for all stored passwords.",
+    "title": "RHEL 9 must employ FIPS 140-3-approved cryptographic hashing algorithms for all stored passwords.",
     "discussion": "The system must use a strong hashing algorithm to store the password. Passwords need to be protected at all times, and encryption is the standard method for protecting passwords. If passwords are not encrypted, they can be plainly read (i.e., clear text) and easily compromised. Satisfies: SRG-OS-000073-GPOS-00041, SRG-OS-000120-GPOS-00061",
-    "check_content": "Verify the interactive user account passwords are using a strong password hash with the following command: $ sudo cut -d: -f2 /etc/shadow $6$kcOnRq/5$NUEYPuyL.wghQwWssXRcLRFiiru7f5JPV6GaJhNC2aK5F3PZpE/BCCtwrxRc/AInKMNX3CdMw11m9STiql12f/ Password hashes \"!\" or \"*\" indicate inactive accounts not available for logon and are not evaluated. If any interactive user password hash does not begin with \"$6$\", this is a finding.",
+    "check_content": "Verify the interactive user account passwords are using a strong password hash with the following command: $ sudo cut -d: -f1,2 /etc/shadow nsauser:$6$kcOnRq/5$NUEYPuyL.wghQwWssXRcLRFiiru7f5JPV6GaJhNC2aK5F3PZpE/BCCtwrxRc/AInKMNX3CdMw11m9STiql12f/ Password hashes \"!\" or \"*\" indicate inactive accounts not available for logon and are not evaluated. If any interactive user password hash does not begin with \"$6$\", this is a finding.",
     "fix_text": "Lock all interactive user accounts not using SHA-512 hashing until the passwords can be regenerated with SHA-512.",
     "ccis": [
       "CCI-004062",
@@ -6709,13 +6695,13 @@
   },
   "RHEL-09-654097": {
     "stig_id": "RHEL-09-654097",
-    "rule_id": "SV-279936r1156361",
+    "rule_id": "SV-279936r1210929",
     "group_id": "V-279936",
     "severity": "medium",
     "title": "RHEL 9 must audit any script or executable called by cron as root or by any privileged user.",
     "discussion": "Any script or executable called by cron as root or by any privileged user must be owned by that user. It must also have the permissions 755 or more restrictive and should have no extended rights that allow any nonprivileged user to modify the script or executable.",
-    "check_content": "Verify RHEL 9 is configured to audit the execution of any system call made by cron as root or by any privileged user. $ sudo auditctl -l | grep /etc/cron.d -w /etc/cron.d -p wa -k cronjobs $ sudo auditctl -l | grep /var/spool/cron -w /var/spool/cron -p wa -k cronjobs If either of these commands do not return the expected output, or the lines are commented out, this is a finding.",
-    "fix_text": "Configure RHEL 9 to audit the execution of any system call made by cron as root or by any privileged user. Add or update the following file system rules to \"/etc/audit/rules.d/audit.rules\": -w /etc/cron.d/ -p wa -k cronjobs -w /var/spool/cron/ -p wa -k cronjobs To load the rules to the kernel immediately, use the following command: $ sudo augenrules --load",
+    "check_content": "Verify RHEL 9 is configured to audit the execution of any system call made by cron as root or by any privileged user with the following command: $ sudo auditctl -l | grep crond_t -a always,exit -F arch=b64 -S execve -F subj_type=crond_t -F euid=0 -k cron_exec -a always,exit -F arch=b32 -S execve -F subj_type=crond_t -F euid=0 -k cron_exec -a always,exit -F arch=b64 -S execve -F subj_type=crond_t -F auid>=1000 -F auid!=unset -k cron_exec -a always,exit -F arch=b32 -S execve -F subj_type=crond_t -F auid>=1000 -F auid!=unset -k cron_exec If this command does not return the expected output, or the lines are commented out, this is a finding.",
+    "fix_text": "Configure RHEL 9 to audit the execution of any system call made by cron as root or by any privileged user. Add or update the following file system rules to \"/etc/audit/rules.d/audit.rules\": -a always,exit -F arch=b64 -S execve -F subj_type=crond_t -F euid=0 -k cron_exec -a always,exit -F arch=b32 -S execve -F subj_type=crond_t -F euid=0 -k cron_exec -a always,exit -F arch=b64 -S execve -F subj_type=crond_t -F auid>=1000 -F auid!=unset -k cron_exec -a always,exit -F arch=b32 -S execve -F subj_type=crond_t -F auid>=1000 -F auid!=unset -k cron_exec To load the rules to the kernel immediately, use the following command: $ sudo augenrules --load",
     "ccis": [
       "CCI-000172"
     ],

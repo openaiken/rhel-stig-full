@@ -1,5 +1,5 @@
 ---
-# RHEL-09-611200 | V-258215
+# RHEL-09-611200 | V-258129
 # RHEL 9 must require authentication to access single-user mode.
 # CAT II (Medium) | CCI-000213
 

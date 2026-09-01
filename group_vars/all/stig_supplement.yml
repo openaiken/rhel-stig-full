@@ -44,7 +44,7 @@ supp_rules:
   RHEL-09-215060: true
   # CAT II   A graphical display manager must not be installed on RHEL 9 unless app
   RHEL-09-215070: true
-  # CAT I    RHEL 9 must implement a FIPS 140-3-compliant systemwide cryptographic
+  # CAT I    RHEL 9 must implement a FIPS 140-3-compliant systemwide cryptographic 
   RHEL-09-215105: true
   # CAT II   A separate RHEL 9 file system must be used for user home directories (
   RHEL-09-231010: true
@@ -66,13 +66,13 @@ supp_rules:
   RHEL-09-231050: true
   # CAT II   RHEL 9 must prevent code from being executed on file systems that cont
   RHEL-09-231055: true
-  # CAT II   RHEL 9 must prevent special devices on file systems that are imported
+  # CAT II   RHEL 9 must prevent special devices on file systems that are imported 
   RHEL-09-231065: true
   # CAT II   RHEL 9  must prevent code from being executed on file systems that are
   RHEL-09-231070: true
   # CAT II   RHEL 9 must prevent files with the setuid and setgid bit set from bein
   RHEL-09-231075: true
-  # CAT II   RHEL 9 must prevent code from being executed on file systems that are
+  # CAT II   RHEL 9 must prevent code from being executed on file systems that are 
   RHEL-09-231080: true
   # CAT II   RHEL 9 must prevent special devices on file systems that are used with
   RHEL-09-231085: true
@@ -168,7 +168,7 @@ supp_rules:
   RHEL-09-232255: true
   # CAT II   RHEL 9 must be configured so that all system device files are correctl
   RHEL-09-232260: true
-  # CAT II   The RHEL 9 firewall must employ a deny-all, allow-by-exception policy
+  # CAT II   The RHEL 9 firewall must employ a deny-all, allow-by-exception policy 
   RHEL-09-251020: true
   # CAT II   RHEL 9 must be configured to prohibit or restrict the use of functions
   RHEL-09-251035: true
@@ -198,7 +198,7 @@ supp_rules:
   RHEL-09-255075: true
   # CAT II   RHEL 9 SSH server configuration files' permissions must not be modifie
   RHEL-09-255115: true
-  # CAT II   RHEL 9 SSH private host key files must have mode 0640 or less permissi
+  # CAT II   RHEL 9 SSH private host key files must have mode 0600 or less permissi
   RHEL-09-255120: true
   # CAT II   RHEL 9 SSH public host key files must have mode 0644 or less permissiv
   RHEL-09-255125: true
@@ -214,13 +214,13 @@ supp_rules:
   RHEL-09-271030: true
   # CAT II   RHEL 9 must prevent a user from overriding the disabling of the graphi
   RHEL-09-271035: true
-  # CAT I    RHEL 9 must not allow unattended or automatic logon via the graphical
+  # CAT I    RHEL 9 must not allow unattended or automatic logon via the graphical 
   RHEL-09-271040: true
   # CAT II   RHEL 9 must be able to initiate directly a session lock for all connec
   RHEL-09-271045: true
   # CAT II   RHEL 9 must prevent a user from overriding the disabling of the graphi
   RHEL-09-271050: true
-  # CAT II   RHEL 9 must enable a user session lock until that user re-establishes
+  # CAT II   RHEL 9 must enable a user session lock until that user re-establishes 
   RHEL-09-271055: true
   # CAT II   RHEL 9 must prevent a user from overriding the screensaver lock-enable
   RHEL-09-271060: true
@@ -252,7 +252,7 @@ supp_rules:
   RHEL-09-291040: true
   # CAT II   RHEL 9 user account passwords must have a 60-day maximum password life
   RHEL-09-411015: true
-  # CAT II   RHEL 9 must set the umask value to 077 for all local interactive user
+  # CAT II   RHEL 9 must set the umask value to 077 for all local interactive user 
   RHEL-09-411025: true
   # CAT II   RHEL 9 duplicate User IDs (UIDs) must not exist for interactive users.
   RHEL-09-411030: true
@@ -286,7 +286,7 @@ supp_rules:
   RHEL-09-431016: true
   # CAT II   RHEL 9 must configure SELinux context type to allow the use of a nonde
   RHEL-09-431020: true
-  # CAT II   RHEL 9 must use the invoking user's password for privilege escalation
+  # CAT II   RHEL 9 must use the invoking user's password for privilege escalation 
   RHEL-09-432020: true
   # CAT II   RHEL 9 must require users to reauthenticate for privilege escalation.
   RHEL-09-432025: true
@@ -308,7 +308,7 @@ supp_rules:
   RHEL-09-611040: true
   # CAT II   RHEL 9 must ensure the password complexity module is enabled in the sy
   RHEL-09-611045: true
-  # CAT II   RHEL 9 password-auth must be configured to use a sufficient number of
+  # CAT II   RHEL 9 password-auth must be configured to use a sufficient number of 
   RHEL-09-611050: true
   # CAT II   RHEL 9 system-auth must be configured to use a sufficient number of ha
   RHEL-09-611055: true
@@ -354,19 +354,19 @@ supp_rules:
   RHEL-09-653085: true
   # CAT II   RHEL 9 audit logs file must have mode 0600 or less permissive to preve
   RHEL-09-653090: true
-  # CAT II   RHEL 9 must allow only the information system security manager (ISSM)
+  # CAT II   RHEL 9 must allow only the information system security manager (ISSM) 
   RHEL-09-653110: true
   # CAT III  RHEL 9 must allocate an audit_backlog_limit of sufficient size to capt
   RHEL-09-653120: true
   # CAT II   RHEL 9 must have mail aliases to notify the information system securit
   RHEL-09-653125: true
-  # CAT II   Successful/unsuccessful uses of the umount system call in RHEL 9 must
+  # CAT II   Successful/unsuccessful uses of the umount system call in RHEL 9 must 
   RHEL-09-654205: true
   # CAT II   Successful/unsuccessful uses of the umount2 system call in RHEL 9 must
   RHEL-09-654210: true
   # CAT I    RHEL 9 must enable FIPS mode.
   RHEL-09-671010: true
-  # CAT II   RHEL 9 must employ FIPS 140-3 approved cryptographic hashing algorithm
+  # CAT II   RHEL 9 must employ FIPS 140-3-approved cryptographic hashing algorithm
   RHEL-09-671015: true
   # CAT I    RHEL 9 IP tunnels must use FIPS 140-3 approved cryptographic algorithm
   RHEL-09-671020: true

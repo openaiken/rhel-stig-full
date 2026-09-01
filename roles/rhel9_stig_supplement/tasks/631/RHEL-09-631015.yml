@@ -1,5 +1,5 @@
 ---
-# RHEL-09-631015 | V-258225
+# RHEL-09-631015 | V-258132
 # RHEL 9 must map the authenticated identity to the user or group account
 # for PKI-based authentication.
 # CAT II (Medium) | CCI-000187

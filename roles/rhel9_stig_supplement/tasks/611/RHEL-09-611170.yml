@@ -1,5 +1,5 @@
 ---
-# RHEL-09-611170 | V-258206
+# RHEL-09-611170 | V-258123
 # RHEL 9 must implement certificate status checking for multifactor
 # authentication.
 # CAT II (Medium) | CCI-004046, CCI-001954, CCI-001948

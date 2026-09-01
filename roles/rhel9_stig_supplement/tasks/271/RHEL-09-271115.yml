@@ -1,5 +1,5 @@
 ---
-# RHEL-09-271115 | V-258209
+# RHEL-09-271115 | V-258033
 # RHEL 9 must disable the user list at logon for graphical user interfaces.
 # CAT II (Medium) | CCI-000366
 

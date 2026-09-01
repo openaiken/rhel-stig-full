@@ -5,14 +5,23 @@
 
 # Checks that removable media fstab entries (vfat, fat, ntfs, exfat) have noexec.
 
+# Removable media is inferred from the filesystem type, but the EFI System
+# Partition is required to be FAT and is fixed internal storage, not removable
+# media, so /boot/efi and /boot are excluded. Including them reported a finding
+# the STIG does not describe: it asks only about entries that refer to
+# removable media.
 - name: RHEL-09-231080 | get removable media entries from fstab
-  shell: grep -Ei '^[^#]' /etc/fstab | grep -Ei '\b(vfat|fat|ntfs|exfat)\b' || true
+  shell: >
+    grep -Ei '^[^#]' /etc/fstab | grep -Ei '\b(vfat|fat|ntfs|exfat)\b'
+    | awk '$2 != "/boot/efi" && $2 != "/boot"' || true
   register: _231080_result_all
   changed_when: false
   tags: [validate]
 
 - name: RHEL-09-231080 | get removable media fstab entries missing noexec
-  shell: grep -Ei '^[^#]' /etc/fstab | grep -Ei '\b(vfat|fat|ntfs|exfat)\b' | grep -v 'noexec' || true
+  shell: >
+    grep -Ei '^[^#]' /etc/fstab | grep -Ei '\b(vfat|fat|ntfs|exfat)\b'
+    | awk '$2 != "/boot/efi" && $2 != "/boot"' | grep -v 'noexec' || true
   register: _231080_result_bad
   changed_when: false
   tags: [validate]

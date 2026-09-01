@@ -1,5 +1,5 @@
 ---
-# RHEL-09-252035 | V-257953
+# RHEL-09-252035 | V-257948
 # RHEL 9 systems using DNS resolution must have at least two name servers
 # configured.
 # CAT II (Medium) | CCI-000366

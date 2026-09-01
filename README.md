@@ -6,13 +6,13 @@ This project is a Work-In-Progress. Furthermore, *this document was largely writ
 
 ## Overview
 
-The DISA Ansible role (`rhel9STIG`) remediates most RHEL 9 STIG controls but emits XCCDF results for only 259 of the 446 rules. This project wraps that role with:
+The DISA Ansible role (`rhel9STIG`) remediates most RHEL 9 STIG controls but emits XCCDF results for only a subset of the 445 rules — 278 of them on a representative host, though the exact number is host-dependent (see [`formal_role_covered`](#filesrulesjson-and-formal_role_covered)). This project wraps that role with:
 
-- A **supplement role** (`rhel9_stig_supplement`) containing shell-based validation tasks for all 187 rules the formal role does not cover.
+- A **supplement role** (`rhel9_stig_supplement`) containing 187 shell-based validation tasks, covering every rule the formal role does not report on.
 - A **CKLB renderer** (`cklb_renderer`) that merges XCCDF results and supplement facts into a populated `.cklb` checklist for STIG Viewer 3.x.
 - A **`run.sh`** orchestration script that drives all three playbooks with a single command.
 
-The result is a fully automated pipeline that produces a deliverable checklist covering all 446 rules.
+The result is a fully automated pipeline that produces a deliverable checklist covering all 445 rules.
 
 ## Usage
 
@@ -23,8 +23,9 @@ The result is a fully automated pipeline that produces a deliverable checklist c
 # checks, writes a populated CKLB to reports/
 ./run.sh validate
 
-# Full remediate pass — enforces STIG settings, runs supplement checks
-# (no CKLB output; run validate afterward for the deliverable)
+# Full remediate pass — formal role enforces STIG settings. The supplement is
+# validation-only and does not run here; no CKLB output. Run validate afterward
+# for the deliverable.
 ./run.sh remediate
 ```
 
@@ -36,7 +37,8 @@ Usage: run.sh <validate|remediate> [OPTIONS] [-- ANSIBLE_ARGS]
 Modes (required):
   validate    Dry-run: formal role in check mode, supplement validation,
               CKLB checklist generated.
-  remediate   Apply: formal role enforces settings, supplement runs.
+  remediate   Apply: formal role enforces settings. The supplement is a
+              validation-only role and assesses nothing in this mode.
               CKLB is NOT generated (run validate after for deliverable).
 
 Target:
@@ -88,7 +90,7 @@ ansible-playbook cklb.yml -t validate -e my_host=myserver
 | Tag | Formal role | Supplement role | CKLB renderer |
 |---|---|---|---|
 | `validate` | Runs in check mode (no changes) | Runs all check tasks | Renders checklist |
-| `remediate` | Remediates findings | Runs all remediation tasks | Not applicable |
+| `remediate` | Remediates findings | Nothing — every supplement task is tagged `validate` only | Not applicable |
 | `RHEL-09-XXXXXX` | — | Runs that single rule only | — |
 | *(no tag)* | Remediates | Runs all tasks | Renders checklist |
 
@@ -178,6 +180,8 @@ At the end of the play, `supp_facts` is written to `reports/supp-facts/` as a JS
 - `open` — check failed and no clearing attestation is set
 - `not_applicable` — rule does not apply to this system
 
+The supplement never writes `not_reviewed`. A rule awaiting an operator decision is `open` until the relevant attestation variable is set, and a check that cannot determine the system's state is also `open`, since an unverifiable control is conservatively a finding. A `not_reviewed` entry in a rendered checklist therefore means the rule was covered by neither the supplement nor the formal role's callback — a coverage gap to fix, not an assessment outcome. Reviewers routinely reject a submitted checklist containing `not_reviewed`.
+
 **Coverage:**
 
 | Category range | Domain |
@@ -194,7 +198,9 @@ At the end of the play, `supp_facts` is written to `reports/supp-facts/` as a JS
 | 651–654 | File integrity (AIDE) and audit logging |
 | 671–672 | FIPS and crypto policy |
 
-All 187 rules not covered by the formal role have supplement tasks. Coverage is verified by cross-referencing `files/rules.json`.
+Every rule the formal role does not report on has a supplement task. Verify with `python3 scripts/audit_coverage.py`, which cross-checks `files/rules.json`, the task files, the `main.yml` wiring, and the `supp_rules` toggles and must print `CLEAN`.
+
+The supplement carries slightly more tasks (187) than any single host strictly needs, because coverage is host-dependent — see [`formal_role_covered`](#filesrulesjson-and-formal_role_covered). The overlap is deliberate; do not delete a task merely because the formal role happens to cover that rule on one host.
 
 ## Project Structure
 
@@ -205,15 +211,17 @@ All 187 rules not covered by the formal role have supplement tasks. Coverage is 
 - **`run.sh`** — orchestrates all three playbooks. Handles become/vault credential prompts, skip flags, and argument passthrough.
 
 ### Roles
-- **`roles/rhel9STIG/`** — unmodified DISA formal role (RHEL 9 V2R8). Do not edit. When updating to a new version, delete `roles/rhel9STIG/callback_plugins/` if present — the role ships a stale `stig_xml` callback that conflicts with the project callback and will silently break XCCDF output.
+- **`roles/rhel9STIG/`** — unmodified DISA formal role (RHEL 9 V2R9). Do not edit. When updating to a new version, delete `roles/rhel9STIG/callback_plugins/` if present — the role ships a stale `stig_xml` callback that conflicts with the project callback and will silently break XCCDF output.
 - **`roles/rhel9_stig_supplement/`** — 187 shell-based validation tasks, one file per STIG ID, organized under `tasks/<category>/`. Attestation-aware: each task reads from `group_vars/all/stig_attestation.yml` and folds attestation values into `finding_details`.
 - **`roles/cklb_renderer/`** — Ansible role with a Python filter plugin (`filter_plugins/cklb.py`) that parses XCCDF results and supplement JSON, maps them onto the CKLB template, and writes the rendered checklist. Handles multi-scan history by picking the latest result file per host.
 
 ### Supporting Files
-- **`files/rules.json`** — all 446 RHEL 9 V2R8 rules keyed by STIG ID. Includes `formal_role_covered` flag derived from actual XCCDF callback output. Regenerate with `python3 scripts/parse_xccdf_benchmark.py` after a new scan or a new benchmark release.
-- **`files/empty-checklist-rhel9v2r8.cklb`** — CKLB template used by the renderer. Replace with the new template when DISA releases a new revision.
+- **`files/rules.json`** — all 445 RHEL 9 V2R9 rules keyed by STIG ID. Includes `formal_role_covered` flag derived from actual XCCDF callback output. Regenerate with `python3 scripts/parse_xccdf_benchmark.py` after a new scan or a new benchmark release.
+- **`files/empty-checklist-rhel9v2r9.cklb`** — CKLB template used by the renderer. Replace with the new template when DISA releases a new revision, and update `cklb_template_path` in `roles/cklb_renderer/defaults/main.yml`.
 - **`callbacks/rhel9_xccdf_results.py`** — callback plugin that writes per-host XCCDF results to `reports/`. A refactor of the DISA-bundled `stig_xml` callback, renamed to avoid collisions on role updates.
-- **`scripts/parse_xccdf_benchmark.py`** — parses the XCCDF benchmark XML and cross-references XCCDF results to produce `files/rules.json`.
+- **`scripts/parse_xccdf_benchmark.py`** — parses the XCCDF benchmark XML and cross-references XCCDF results to produce `files/rules.json`. Update `XCCDF_PATH` when the benchmark filename changes.
+- **`scripts/diff_benchmarks.py`** — diffs two XCCDF benchmarks by STIG ID, reporting added, removed, and changed rules, and flagging substantive check/fix/severity/CCI changes that need task rework. Run this first on a revision bump.
+- **`scripts/audit_coverage.py`** — cross-checks `rules.json`, task files, `main.yml` imports, and `supp_rules` toggles. Must print `CLEAN` before a revision update is considered done.
 
 ### Reports
 The `reports/` directory is gitignored. It contains:
@@ -225,13 +233,25 @@ The `reports/` directory is gitignored. It contains:
 
 ### Updating to a new STIG revision
 1. Replace `roles/rhel9STIG/` with the new DISA role. Remove `roles/rhel9STIG/callback_plugins/` if present.
-2. Replace `files/empty-checklist-rhel9v2r8.cklb` with the new CKLB template.
+2. Replace the CKLB template in `files/` and point `cklb_template_path` (in `roles/cklb_renderer/defaults/main.yml`) at it. Confirm its `release_info` and rule count match the new XCCDF.
 3. Run a scan against a representative host to generate a fresh XCCDF results file.
 4. Run `python3 scripts/parse_xccdf_benchmark.py` to regenerate `files/rules.json` with updated `formal_role_covered` flags and rule metadata.
-5. Review the diff — new rules added by DISA will appear as uncovered and will need supplement tasks.
+5. Run `python3 scripts/diff_benchmarks.py OLD.xml NEW.xml` and reconcile the result against DISA's published changelog. The XCCDF is authoritative; the changelog omits pure `rule_id` revision bumps.
+6. Rework supplement tasks for rules with substantive check/fix changes, and retire tasks, `supp_rules` toggles, and attestation vars for removed rules.
+7. Update `XCCDF_PATH` in `scripts/parse_xccdf_benchmark.py`, then regenerate the generated blocks in `group_vars/all/stig_formal_role.yml` and `group_vars/all/stig_supplement.yml`.
+8. Run `python3 scripts/audit_coverage.py` — it must print `CLEAN`.
 
 ### `files/rules.json` and `formal_role_covered`
 This flag is set by cross-referencing the XCCDF callback output, not by inspecting the role source. It is the ground truth for which rules the formal role actually produces results for in your environment. On a fresh clone with no scan results, all rules show as uncovered; run at least one scan first.
+
+**This flag is host-dependent, and that is the single most important thing to understand about it.** Many formal-role tasks are gated on conditionals such as `packages['dconf'] is defined`. On a host with dconf installed those tasks run and the callback records a result; on a headless host without it they are skipped silently and the rule produces no result at all, landing in the checklist as `not_reviewed`. The V2R9 update measured 278 covered rules on a host with dconf, against 259 on an earlier host without it — the same role, a different machine.
+
+Two consequences:
+
+- The supplement deliberately carries tasks for rules the formal role covers on *some* hosts. `scripts/audit_coverage.py` reports this overlap as an informational note, not a defect. Do not delete a supplement task just because one scan shows the formal role covering that rule.
+- `cklb.py` gives supplement facts precedence over XCCDF results for exactly this reason: the supplement result is host-accurate and always present, so it is the safer of the two when both exist.
+
+The `formal role static tasks (# R-)` line in `audit_coverage.py` shows how many rules the role *attempts*, which is always a superset of what any one scan records. A large gap between those two numbers means many role tasks are being skipped by conditionals on that host.
 
 ### Supplement task conventions
 - One file per STIG ID: `roles/rhel9_stig_supplement/tasks/<category>/RHEL-09-XXXXXX.yml`
