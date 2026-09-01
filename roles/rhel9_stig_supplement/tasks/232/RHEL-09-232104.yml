@@ -7,6 +7,7 @@
   shell: stat -c "%G" /etc/audit
   register: _232104_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-232104 | record /etc/audit/ group ownership status

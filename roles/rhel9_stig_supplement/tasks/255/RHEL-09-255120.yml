@@ -3,16 +3,24 @@
 # RHEL 9 SSH private host key files must have mode 0600 or less permissive.
 # CAT II (Medium) | CCI-000366
 
-# stat -c "%a" outputs octal permissions as a decimal digit string (e.g. "640").
-# Comparing as integers works because the octal digit string for any mode more
-# permissive than 0600 will be numerically greater than 600 (e.g. 640, 644, 755).
+# "0600 or less permissive" means no permission bits outside owner read/write.
+# Test that with a bitmask, not a numeric compare of the octal digit string: a
+# string compare misses any mode whose owner digit is 0, so 0004 (world-readable
+# private key) would score 4, fall under a 600 threshold, and pass as compliant.
+# 8#NNN is bash base-8 notation; mask 0177 clears the allowed owner-rw bits.
 
 - name: RHEL-09-255120 | check SSH private host key modes
-  shell: >
-    stat -c "%a %n" /etc/ssh/*_key 2>/dev/null |
-    awk '$1+0 > 600 {print "OVER_LIMIT: " $0}' || true
+  shell: |
+    for f in /etc/ssh/*_key; do
+      [ -e "$f" ] || continue
+      mode=$(stat -c '%a' "$f" 2>/dev/null) || continue
+      if [ $(( 8#$mode & 8#177 )) -ne 0 ]; then
+        echo "OVER_LIMIT: $mode $f"
+      fi
+    done
   register: _255120_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-255120 | collect all private key modes for context

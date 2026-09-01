@@ -64,7 +64,11 @@
           ~ '\nMinimum storage threshold (rhel9_audit_min_storage_gb): '
           ~ (rhel9_audit_min_storage_gb | default(2) | string)
           ~ 'GB\nAttestation (rhel9_attest_audit_immediate_offload): '
-          ~ (rhel9_attest_audit_immediate_offload | default(false) | bool | string | lower),
+          ~ (rhel9_attest_audit_immediate_offload | default(false) | bool | string | lower)
+          ~ '\nSA documented offload method: '
+          ~ (rhel9_attest_audit_immediate_offload_method
+             if rhel9_attest_audit_immediate_offload_method | default('')
+             else '(not provided)'),
         'comments':
           'Resize the partition hosting /var/log/audit/ or relocate audit logs '
           ~ 'to a larger dedicated partition. Adjust rhel9_audit_min_storage_gb '

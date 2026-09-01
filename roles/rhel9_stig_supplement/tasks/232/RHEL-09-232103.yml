@@ -7,6 +7,7 @@
   shell: stat -c "%U" /etc/audit
   register: _232103_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-232103 | record /etc/audit/ ownership status

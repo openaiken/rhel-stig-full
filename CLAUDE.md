@@ -65,6 +65,9 @@ Do not confuse `not_applicable` (rule doesn't apply here) with `not_a_finding`
 
 ### Shell traps that have actually shipped bugs here
 
+Run `python3 scripts/lint_supplement.py` — it encodes every class below and must
+report 0. Re-run it after touching any task.
+
 - **`grep -n`/`-rn` prefix every line with `file:lineno:`** (just `lineno:` under
   `-h`). A downstream `grep -v '^\s*#'` then never matches. This shipped in 5
   tasks: one cried wolf on every host, one was a **silent always-PASS**. Anchor
@@ -72,6 +75,25 @@ Do not confuse `not_applicable` (rule doesn't apply here) with `not_a_finding`
 - A check that can only ever return PASS is worse than no check. When the
   detection pattern and the exclusion filters share a broken anchor, both die
   together and the task reports compliant forever.
+- **Never compare an octal mode as a decimal string.** `stat -c '%a'` gives
+  `"640"`; testing `$1+0 > 600` misses every mode whose owner digit is 0, so a
+  world-readable private key at `0004` scores 4 and passes. Use a bitmask of the
+  disallowed bits: `[ $(( 8#$mode & 8#177 )) -ne 0 ]` for "0600 or less
+  permissive", `8#133` for 0644. (`8#` is bash base-8.)
+- **Grepping a config file does not prove the setting is in effect.** systemd
+  ignores drop-ins whose name does not end in `.conf`, so a grep hit can reflect
+  dead configuration — this is exactly what V2R9 renamed 211045's drop-in to fix.
+  Prefer the effective value: `systemctl show -p X --value`, `sysctl -n`, `sshd -T`.
+- **A shell that can exit non-zero needs `failed_when: false`.** `supplement.yml`
+  does not ignore errors, so one failure aborts the play and every later rule
+  silently drops out of `supp_facts`. Watch the *last* command specifically:
+  `grep`, `findmnt`, `rpm -q`, `systemctl is-*`, `getent`, `stat`, `test` all exit
+  non-zero on a benign "found nothing". `awk` does not.
+- **An undeterminable result is `open`, never a pass.** If a lookup returns
+  empty, do not let the status expression fall through to `not_a_finding`.
+- If an attestation var follows the bool+`_method` pattern, the `_method` string
+  must actually reach `finding_details`, or the operator's justification is
+  silently discarded.
 - `process substitution` (`done < <(...)`) is fine — the shell module gets bash.
 
 ## Verification loop

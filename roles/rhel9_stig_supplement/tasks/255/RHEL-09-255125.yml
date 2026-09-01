@@ -3,12 +3,23 @@
 # RHEL 9 SSH public host key files must have mode 0644 or less permissive.
 # CAT II (Medium) | CCI-000366
 
+# "0644 or less permissive" means no permission bits outside owner rw plus
+# group/other read. Tested with a bitmask rather than a numeric compare of the
+# octal digit string, which would miss any mode whose owner digit is 0 -- 0020
+# (group-writable) would score 20 and pass a 644 threshold.
+
 - name: RHEL-09-255125 | check SSH public host key modes
-  shell: >
-    stat -c "%a %n" /etc/ssh/*.pub 2>/dev/null |
-    awk '$1+0 > 644 {print "OVER_LIMIT: " $0}' || true
+  shell: |
+    for f in /etc/ssh/*.pub; do
+      [ -e "$f" ] || continue
+      mode=$(stat -c '%a' "$f" 2>/dev/null) || continue
+      if [ $(( 8#$mode & 8#133 )) -ne 0 ]; then
+        echo "OVER_LIMIT: $mode $f"
+      fi
+    done
   register: _255125_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-255125 | collect all public key modes for context
