@@ -759,10 +759,16 @@
   tags: [RHEL-09-672050]
   when: supp_rules['RHEL-09-672050'] | default(true) | bool
 
+# Every rule task is tagged [validate], so a run with --tags remediate assesses
+# nothing and leaves supp_facts empty. Writing that empty result would create the
+# newest supp-facts file, and cklb.py selects the latest one -- a checklist
+# rendered afterwards would report almost every rule not_reviewed. Skip the write
+# instead, leaving the previous real result as the most recent.
 - name: write supplement facts to disk
   copy:
     content: "{{ supp_facts | to_nice_json(indent=2) }}"
     dest: "{{ supp_facts_dir }}/{{ supp_run_ts }}-{{ inventory_hostname }}.json"
   delegate_to: localhost
   become: false
+  when: supp_facts | length > 0
   tags: always

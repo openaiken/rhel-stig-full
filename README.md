@@ -23,8 +23,9 @@ The result is a fully automated pipeline that produces a deliverable checklist c
 # checks, writes a populated CKLB to reports/
 ./run.sh validate
 
-# Full remediate pass — enforces STIG settings, runs supplement checks
-# (no CKLB output; run validate afterward for the deliverable)
+# Full remediate pass — formal role enforces STIG settings. The supplement is
+# validation-only and does not run here; no CKLB output. Run validate afterward
+# for the deliverable.
 ./run.sh remediate
 ```
 
@@ -36,7 +37,8 @@ Usage: run.sh <validate|remediate> [OPTIONS] [-- ANSIBLE_ARGS]
 Modes (required):
   validate    Dry-run: formal role in check mode, supplement validation,
               CKLB checklist generated.
-  remediate   Apply: formal role enforces settings, supplement runs.
+  remediate   Apply: formal role enforces settings. The supplement is a
+              validation-only role and assesses nothing in this mode.
               CKLB is NOT generated (run validate after for deliverable).
 
 Target:
@@ -88,7 +90,7 @@ ansible-playbook cklb.yml -t validate -e my_host=myserver
 | Tag | Formal role | Supplement role | CKLB renderer |
 |---|---|---|---|
 | `validate` | Runs in check mode (no changes) | Runs all check tasks | Renders checklist |
-| `remediate` | Remediates findings | Runs all remediation tasks | Not applicable |
+| `remediate` | Remediates findings | Nothing — every supplement task is tagged `validate` only | Not applicable |
 | `RHEL-09-XXXXXX` | — | Runs that single rule only | — |
 | *(no tag)* | Remediates | Runs all tasks | Renders checklist |
 
