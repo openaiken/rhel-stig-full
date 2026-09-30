@@ -13,21 +13,18 @@
     default_file=/usr/lib/systemd/system/rescue.service
     dropin_dir=/etc/systemd/system/rescue.service.d
 
-    # Prefer drop-in override if present; otherwise check default
-    dropin_match=$(grep -rh 'sulogin' "$dropin_dir"/*.conf 2>/dev/null | grep -v '^\s*#' || true)
-    default_match=$(grep -h 'sulogin' "$default_file" 2>/dev/null | grep -v '^\s*#' || true)
-
-    if [ -n "$dropin_match" ]; then
+    # Decide on the effective ExecStart. The files alone mislead: a drop-in that
+    # resets ExecStart to a plain shell left the default file still matching
+    # sulogin, and the check passed.
+    effective=$(systemctl show rescue.service -p ExecStart --value 2>/dev/null)
+    echo "EFFECTIVE ExecStart: ${effective:-(unavailable)}"
+    echo "default file: $(grep -h 'sulogin' "$default_file" 2>/dev/null | grep -v '^\s*#')"
+    echo "drop-ins: $(grep -h 'ExecStart' "$dropin_dir"/*.conf 2>/dev/null | grep -v '^\s*#' | tr '\n' ' ')"
+    if echo "$effective" | grep -q 'argv\[\]=[^;]*sulogin'; then
       echo "STATUS: PASS"
-      echo "PASS: sulogin found in drop-in: $dropin_dir/"
-      echo "$dropin_match"
-    elif [ -n "$default_match" ]; then
-      echo "STATUS: PASS"
-      echo "PASS: sulogin found in default: $default_file"
-      echo "$default_match"
     else
       echo "STATUS: FAIL"
-      echo "FAIL: sulogin not found in $default_file or $dropin_dir/*.conf"
+      echo "FAIL: rescue.service does not run sulogin"
     fi
   register: _611200_result
   changed_when: false

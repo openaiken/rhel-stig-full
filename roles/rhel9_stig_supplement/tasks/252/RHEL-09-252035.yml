@@ -5,7 +5,7 @@
 # CAT II (Medium) | CCI-000366
 
 - name: RHEL-09-252035 | count configured nameservers
-  shell: grep -c '^\s*nameserver\s' /etc/resolv.conf 2>/dev/null || echo 0
+  shell: grep -c '^\s*nameserver\s' /etc/resolv.conf 2>/dev/null || true
   register: _252035_count
   changed_when: false
   failed_when: false

@@ -27,10 +27,17 @@
       exit 0
     fi
 
-    # Check all conf sources for certificate_verification = ocsp_dgst=sha512
-    result=$(grep -sir 'certificate_verification' \
-               /etc/sssd/sssd.conf /etc/sssd/conf.d/ 2>/dev/null \
-             | grep -v '^\s*#' || true)
+    # certificate_verification in the [sssd] section of sssd.conf or a conf.d
+    # snippet, comments excluded. This was grep -r piped to grep -v on a comment
+    # anchor, but grep -r prefixes each line with its file name, so a
+    # commented-out setting passed. The STIG also requires the [sssd] section.
+    shopt -s nullglob
+    result=$(awk '
+      FNR == 1 { sec = "" }
+      /^[[:space:]]*[#;]/ { next }
+      /^[[:space:]]*\[/ { sec = tolower($0); gsub(/[][[:space:]]/, "", sec); next }
+      sec == "sssd" && tolower($0) ~ /^[[:space:]]*certificate_verification[[:space:]]*=/ { print FILENAME ": " $0 }
+    ' /etc/sssd/sssd.conf /etc/sssd/conf.d/*.conf 2>/dev/null)
 
     if echo "$result" | grep -qi 'ocsp_dgst=sha512'; then
       echo "STATUS: PASS"

@@ -18,8 +18,6 @@
     while IFS=: read -r user shadow_pw last_change min_days rest; do
       # skip blank lines
       [ -z "$user" ] && continue
-      # skip if no min_days value
-      [ -z "$min_days" ] && continue
       # skip system accounts (UID < 1000)
       uid=$(getent passwd "$user" 2>/dev/null | cut -d: -f3)
       [ -z "$uid" ] && continue
@@ -28,7 +26,11 @@
       shell=$(getent passwd "$user" 2>/dev/null | cut -d: -f7)
       [[ "$shell" == "/sbin/nologin" || "$shell" == "/bin/false" || "$shell" == "/usr/sbin/nologin" ]] && continue
 
-      if [ "$min_days" -lt 1 ]; then
+      # A blank field means no minimum, which the STIG awk ($4 < 1) flags. It used
+      # to be skipped before the interactive-account filter, so it passed.
+      if [ -z "$min_days" ]; then
+        findings="${findings}FAIL: $user has a blank min_days (no minimum) in /etc/shadow\n"
+      elif [ "$min_days" -lt 1 ]; then
         findings="${findings}FAIL: $user has min_days=$min_days in /etc/shadow\n"
       fi
     done < /etc/shadow

@@ -25,8 +25,11 @@
 
     preauth_pos=$(echo "$active" | grep 'pam_faillock\.so' | grep 'preauth' | awk '{print $1}' | head -1)
     unix_pos=$(echo "$active" | grep 'pam_unix\.so' | awk '{print $1}' | head -1)
-    has_authfail=$(echo "$active" | grep -c 'pam_faillock\.so.*authfail' || echo 0)
-    has_account=$(echo "$active" | grep -c 'account.*pam_faillock\.so' || echo 0)
+    # || true, not || echo 0: grep -c already prints 0 when nothing matches and
+    # then exits 1, so || echo 0 produced "0<newline>0". The -eq 0 test on that
+    # errored, and a missing authfail or account line was reported as present.
+    has_authfail=$(echo "$active" | grep -c 'pam_faillock\.so.*authfail' || true)
+    has_account=$(echo "$active" | grep -c 'account.*pam_faillock\.so' || true)
 
     findings=""
 
