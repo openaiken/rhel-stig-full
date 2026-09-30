@@ -44,6 +44,7 @@
     fi
   register: _431020_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-431020 | record faillock dir SELinux context status

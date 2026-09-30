@@ -58,6 +58,7 @@
     echo -e "$findings" | sed '/^$/d'
   register: _611030_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-611030 | record pam_faillock system-auth status

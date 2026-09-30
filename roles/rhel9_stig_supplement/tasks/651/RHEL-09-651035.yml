@@ -31,6 +31,7 @@
     fi
   register: _651035_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-651035 | record AIDE xattrs verification status

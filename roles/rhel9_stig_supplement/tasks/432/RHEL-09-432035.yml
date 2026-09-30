@@ -23,6 +23,7 @@
     fi
   register: _432035_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-432035 | record su pam_wheel restriction status

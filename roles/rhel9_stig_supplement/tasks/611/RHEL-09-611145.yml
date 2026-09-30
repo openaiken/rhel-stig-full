@@ -20,6 +20,7 @@
     fi
   register: _611145_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-611145 | record pam_succeed_if sudo status

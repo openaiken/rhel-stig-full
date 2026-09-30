@@ -10,6 +10,7 @@
   shell: awk '$2 == "/boot" { print $4 }' /proc/mounts
   register: _231100_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-231100 | record /boot nosuid mount option status

@@ -27,6 +27,7 @@
     fi
   register: _255065_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-255065 | record SSH server cipher status

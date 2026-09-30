@@ -10,6 +10,7 @@
   shell: awk '$2 == "/dev/shm" { print $4 }' /proc/mounts
   register: _231115_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-231115 | record /dev/shm noexec mount option status

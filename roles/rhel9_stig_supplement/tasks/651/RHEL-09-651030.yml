@@ -32,6 +32,7 @@
     fi
   register: _651030_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-651030 | record AIDE ACL verification status

@@ -10,12 +10,14 @@
   shell: grep -Ei '^[^#].*\bnfs[0-9]?\b' /etc/fstab || true
   register: _231070_result_all
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-231070 | get NFS fstab entries missing noexec
   shell: grep -Ei '^[^#].*\bnfs[0-9]?\b' /etc/fstab | grep -v 'noexec' || true
   register: _231070_result_bad
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-231070 | record NFS noexec status

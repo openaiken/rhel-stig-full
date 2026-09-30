@@ -52,6 +52,7 @@
     fi
   register: _611190_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-611190 | record SSH private key passphrase status

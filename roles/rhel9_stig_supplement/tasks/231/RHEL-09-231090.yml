@@ -9,12 +9,14 @@
   shell: grep -Ei '^[^#]' /etc/fstab | grep -Ei '\b(vfat|fat|ntfs|exfat)\b' || true
   register: _231090_result_all
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-231090 | get removable media fstab entries missing nosuid
   shell: grep -Ei '^[^#]' /etc/fstab | grep -Ei '\b(vfat|fat|ntfs|exfat)\b' | grep -v 'nosuid' || true
   register: _231090_result_bad
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-231090 | record removable media nosuid status

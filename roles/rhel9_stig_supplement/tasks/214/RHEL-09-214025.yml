@@ -12,12 +12,14 @@
   shell: grep -rhi gpgcheck /etc/yum.repos.d/ 2>/dev/null | grep -Evi 'gpgcheck\s*=\s*(1|true|yes)' || true
   register: _214025_bad_gpgcheck
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-214025 | check for repo files missing gpgcheck entirely
   shell: grep -rL gpgcheck /etc/yum.repos.d/ 2>/dev/null || true
   register: _214025_missing_gpgcheck
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-214025 | record GPG repo check status

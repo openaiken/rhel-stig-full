@@ -63,6 +63,7 @@
     echo -e "$findings" | sed '/^$/d'
   register: _433016_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-433016 | record fapolicyd deny-all policy status

@@ -10,6 +10,7 @@
     -maxdepth 0 -perm /022 2>/dev/null || true
   register: _232035_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-232035 | record audit tools mode status

@@ -10,6 +10,7 @@
   shell: find / -xdev -type d -perm -0002 ! -perm -1000 2>/dev/null | head -40 || true
   register: _232245_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-232245 | record sticky bit status

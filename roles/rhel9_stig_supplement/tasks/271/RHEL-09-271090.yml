@@ -24,6 +24,7 @@
     fi
   register: _271090_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-271090 | record dconf database freshness status

@@ -9,6 +9,7 @@
     -xdev -type f -perm /022 2>/dev/null || true
   register: _232020_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-232020 | record library files mode status

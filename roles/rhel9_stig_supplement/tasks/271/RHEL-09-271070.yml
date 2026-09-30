@@ -16,6 +16,7 @@
     fi
   register: _271070_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-271070 | record idle-delay lock status

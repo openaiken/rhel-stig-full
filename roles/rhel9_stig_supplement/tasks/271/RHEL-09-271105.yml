@@ -19,6 +19,7 @@
     fi
   register: _271105_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-271105 | record Ctrl-Alt-Del logout key status

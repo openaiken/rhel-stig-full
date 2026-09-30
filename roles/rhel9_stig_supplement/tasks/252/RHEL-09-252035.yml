@@ -8,12 +8,14 @@
   shell: grep -c '^\s*nameserver\s' /etc/resolv.conf 2>/dev/null || echo 0
   register: _252035_count
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-252035 | collect nameserver lines
   shell: grep '^\s*nameserver\s' /etc/resolv.conf 2>/dev/null || true
   register: _252035_lines
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-252035 | record DNS redundancy status

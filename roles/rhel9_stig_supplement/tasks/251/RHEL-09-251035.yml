@@ -14,6 +14,7 @@
     firewall-cmd --info-zone=$(firewall-cmd --get-default-zone) 2>/dev/null || true
   register: _251035_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-251035 | record PPSM compliance status

@@ -25,6 +25,7 @@
     fi
   register: _171011_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-171011 | record banner message text status

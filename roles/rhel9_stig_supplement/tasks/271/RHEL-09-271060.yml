@@ -16,6 +16,7 @@
     fi
   register: _271060_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-271060 | record screensaver lock-enabled lock status

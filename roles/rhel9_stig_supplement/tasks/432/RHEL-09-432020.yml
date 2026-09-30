@@ -40,6 +40,7 @@
     echo -e "$findings" | sed '/^$/d'
   register: _432020_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-432020 | record sudo invoking-user password status

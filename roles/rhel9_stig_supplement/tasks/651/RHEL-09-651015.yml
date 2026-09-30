@@ -93,6 +93,7 @@
     AIDE_TIMER_UNIT: "{{ rhel9_aide_timer_unit | default('') }}"
   register: _651015_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-651015 | record AIDE scheduling status

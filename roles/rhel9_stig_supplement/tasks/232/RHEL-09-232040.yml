@@ -8,6 +8,7 @@
   shell: rpm -V cronie 2>/dev/null | awk 'substr($0,2,1) == "M" {print}' || true
   register: _232040_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-232040 | record cron permissions status

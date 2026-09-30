@@ -27,6 +27,7 @@
   shell: stat -c "%a %n" /etc/ssh/*_key 2>/dev/null || true
   register: _255120_all
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-255120 | record SSH private key mode status

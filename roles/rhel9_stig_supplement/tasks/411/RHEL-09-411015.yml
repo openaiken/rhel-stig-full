@@ -28,6 +28,7 @@
     echo -e "$findings" | sed '/^$/d'
   register: _411015_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-411015 | record shadow max age status

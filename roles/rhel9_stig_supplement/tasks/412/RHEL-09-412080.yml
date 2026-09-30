@@ -23,6 +23,7 @@
     fi
   register: _412080_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-412080 | record idle session termination status

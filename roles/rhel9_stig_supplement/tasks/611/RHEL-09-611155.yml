@@ -23,6 +23,7 @@
     fi
   register: _611155_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-611155 | record blank shadow password status

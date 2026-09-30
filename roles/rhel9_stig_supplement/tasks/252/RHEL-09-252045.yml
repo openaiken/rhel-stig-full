@@ -13,12 +13,14 @@
   shell: systemctl is-active ipsec 2>/dev/null || echo inactive
   register: _252045_ipsec_state
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-252045 | collect configured ipsec connections
   shell: grep -rni '\bconn\b' /etc/ipsec.conf /etc/ipsec.d/ 2>/dev/null | grep -v '#' || true
   register: _252045_conns
   changed_when: false
+  failed_when: false
   when: (_252045_ipsec_state.stdout | trim) == 'active'
   tags: [validate]
 

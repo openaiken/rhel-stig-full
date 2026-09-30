@@ -40,6 +40,7 @@
     AUTHORIZED_USERS: "{{ rhel9_authorized_users | join(',') }}"
   register: _411095_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-411095 | record unauthorized account check status

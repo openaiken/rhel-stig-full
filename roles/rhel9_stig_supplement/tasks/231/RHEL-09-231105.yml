@@ -16,6 +16,7 @@
   shell: awk '$2 == "/boot/efi" { print $4 }' /proc/mounts
   register: _231105_result_opts
   changed_when: false
+  failed_when: false
   when: _231105_result_efi.stat.exists
   tags: [validate]
 

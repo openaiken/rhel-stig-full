@@ -23,6 +23,7 @@
     fi
   register: _611040_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-611040 | record pam_pwquality password-auth status

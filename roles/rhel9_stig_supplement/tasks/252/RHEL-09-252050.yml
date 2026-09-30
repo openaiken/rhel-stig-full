@@ -10,12 +10,14 @@
   shell: rpm -q postfix 2>/dev/null && echo installed || echo not_installed
   register: _252050_postfix
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-252050 | get smtpd_client_restrictions
   shell: postconf -n smtpd_client_restrictions 2>/dev/null || true
   register: _252050_restriction
   changed_when: false
+  failed_when: false
   when: (_252050_postfix.stdout | trim) == 'installed'
   tags: [validate]
 

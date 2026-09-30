@@ -9,6 +9,7 @@
     -xdev -type d ! -user root 2>/dev/null || true
   register: _232210_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-232210 | record library directory ownership status

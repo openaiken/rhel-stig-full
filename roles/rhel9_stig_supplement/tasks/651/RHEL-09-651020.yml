@@ -37,6 +37,7 @@
     fi
   register: _651020_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-651020 | record AIDE sha512 status

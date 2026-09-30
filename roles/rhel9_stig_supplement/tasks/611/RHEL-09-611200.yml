@@ -31,6 +31,7 @@
     fi
   register: _611200_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-611200 | record single-user mode auth status

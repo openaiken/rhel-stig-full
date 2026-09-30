@@ -55,6 +55,7 @@
     fi
   register: _431016_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-431016 | record sudo SELinux context elevation status

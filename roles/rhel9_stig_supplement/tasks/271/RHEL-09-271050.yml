@@ -16,6 +16,7 @@
     fi
   register: _271050_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-271050 | record smartcard removal-action lock status

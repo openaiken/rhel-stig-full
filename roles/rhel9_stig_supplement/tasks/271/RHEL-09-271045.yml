@@ -15,6 +15,7 @@
     echo "${val:-NOTSET}"
   register: _271045_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-271045 | record smartcard removal-action status

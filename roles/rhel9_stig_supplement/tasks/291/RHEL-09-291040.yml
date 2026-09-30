@@ -15,12 +15,14 @@
   shell: nmcli -t -f DEVICE,TYPE device status 2>/dev/null | grep ':wifi$' || true
   register: _291040_wifi_devices
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-291040 | check wifi radio state
   shell: nmcli radio wifi 2>/dev/null || echo "(nmcli unavailable)"
   register: _291040_radio
   changed_when: false
+  failed_when: false
   when: _291040_wifi_devices.stdout | trim
   tags: [validate]
 

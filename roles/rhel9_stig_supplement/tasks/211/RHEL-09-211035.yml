@@ -10,6 +10,7 @@
   command: cat /proc/sys/crypto/fips_enabled
   register: _211035_fips
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-211035 | check rngd service status

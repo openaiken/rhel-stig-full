@@ -42,6 +42,7 @@
     fi
   register: _611080_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-611080 | record shadow min age status

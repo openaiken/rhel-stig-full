@@ -51,6 +51,7 @@
     TEMP_ACCOUNTS: "{{ rhel9_temporary_accounts | join(',') }}"
   register: _411040_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-411040 | record temporary account expiry status

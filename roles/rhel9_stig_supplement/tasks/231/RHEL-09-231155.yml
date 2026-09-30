@@ -10,6 +10,7 @@
   shell: awk '$2 == "/var/log" { print $4 }' /proc/mounts
   register: _231155_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-231155 | record /var/log nosuid mount option status

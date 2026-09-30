@@ -10,6 +10,7 @@
     -maxdepth 0 ! -group root 2>/dev/null || true
   register: _232235_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-232235 | record cron config group ownership status

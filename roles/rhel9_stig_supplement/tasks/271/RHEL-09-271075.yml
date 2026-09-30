@@ -22,6 +22,7 @@
     fi
   register: _271075_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-271075 | record screensaver lock-delay status

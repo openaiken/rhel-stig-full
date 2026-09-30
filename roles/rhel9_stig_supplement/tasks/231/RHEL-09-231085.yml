@@ -9,12 +9,14 @@
   shell: grep -Ei '^[^#]' /etc/fstab | grep -Ei '\b(vfat|fat|ntfs|exfat)\b' || true
   register: _231085_result_all
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-231085 | get removable media fstab entries missing nodev
   shell: grep -Ei '^[^#]' /etc/fstab | grep -Ei '\b(vfat|fat|ntfs|exfat)\b' | grep -v 'nodev' || true
   register: _231085_result_bad
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-231085 | record removable media nodev status

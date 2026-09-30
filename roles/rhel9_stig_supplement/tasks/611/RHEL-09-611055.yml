@@ -29,6 +29,7 @@
     fi
   register: _611055_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-611055 | record hashing rounds system-auth status

@@ -75,6 +75,7 @@
     echo -e "$findings" | sed '/^$/d'
   register: _651025_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-651025 | record AIDE audit tool integrity status

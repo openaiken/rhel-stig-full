@@ -18,6 +18,7 @@
     fi
   register: _271085_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-271085 | record screensaver picture-uri lock status

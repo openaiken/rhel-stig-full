@@ -13,6 +13,7 @@
     xargs -I {} find {} -maxdepth 1 -name ".[^.]*" -type f -perm /033 2>/dev/null || true
   register: _232045_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-232045 | record local init files mode status

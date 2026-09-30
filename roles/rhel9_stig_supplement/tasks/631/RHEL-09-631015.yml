@@ -46,6 +46,7 @@
     fi
   register: _631015_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-631015 | record SSSD certmap status

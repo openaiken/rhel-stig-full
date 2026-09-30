@@ -12,12 +12,14 @@
   shell: firewall-cmd --get-default-zone 2>/dev/null || true
   register: _251020_zone
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-251020 | get default zone target
   shell: "firewall-cmd --info-zone={{ _251020_zone.stdout | trim }} 2>/dev/null | grep -i 'target:' || true"
   register: _251020_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-251020 | record firewall deny-all status

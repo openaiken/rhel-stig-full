@@ -18,6 +18,7 @@
     fi
   register: _271015_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-271015 | record banner-message-enable lock status

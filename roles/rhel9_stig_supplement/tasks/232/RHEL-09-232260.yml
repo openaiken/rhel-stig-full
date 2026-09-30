@@ -8,6 +8,7 @@
   shell: find /dev -context '*unlabeled_t*' 2>/dev/null | head -40 || true
   register: _232260_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-232260 | record device file SELinux label status

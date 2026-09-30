@@ -9,6 +9,7 @@
   shell: awk '$2 == "/home"' /proc/mounts
   register: _231010_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-231010 | record /home separate filesystem status

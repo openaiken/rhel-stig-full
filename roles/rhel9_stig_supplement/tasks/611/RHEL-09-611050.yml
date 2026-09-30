@@ -36,6 +36,7 @@
     fi
   register: _611050_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-611050 | record hashing rounds password-auth status

@@ -17,6 +17,7 @@
   shell: grep -ri execstart /usr/lib/systemd/system/tftp.service /etc/systemd/system/tftp.service.d/ 2>/dev/null || true
   register: _215060_execstart
   changed_when: false
+  failed_when: false
   when: _215060_installed.rc == 0
   tags: [validate]
 

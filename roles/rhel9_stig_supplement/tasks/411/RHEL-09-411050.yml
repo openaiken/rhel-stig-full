@@ -24,6 +24,7 @@
     fi
   register: _411050_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-411050 | record account inactivity setting status
