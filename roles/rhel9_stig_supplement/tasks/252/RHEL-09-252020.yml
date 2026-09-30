@@ -36,8 +36,9 @@
       'RHEL-09-252020': {
         'status':
           'open' if (_252020_maxpoll.stdout | trim)
+          else ('open' if not (_252020_servers.stdout | trim)
           else ('not_a_finding' if rhel9_attest_ntp_source_approved | bool
-          else 'open'),
+          else 'open')),
         'finding_details':
           'Configured NTP server/pool lines:\n'
           ~ (_252020_servers.stdout | trim if _252020_servers.stdout | trim else '(none found)')
@@ -46,7 +47,8 @@
           ~ '\nAttestation (rhel9_attest_ntp_source_approved): '
           ~ (rhel9_attest_ntp_source_approved | bool | string | lower),
         'comments':
-          'maxpoll must not exceed 16 on any server/pool line. '
+          'No server or pool line is itself a finding, attestation or not. '
+          ~ 'maxpoll must not exceed 16 on any server/pool line. '
           ~ 'Set rhel9_attest_ntp_source_approved: true in stig_attestation.yml '
           ~ 'after confirming configured NTP sources are organizationally approved '
           ~ 'authoritative time sources (DoD NTP pool or equivalent upstream).'

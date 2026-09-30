@@ -17,7 +17,7 @@
   tags: [validate]
 
 - name: RHEL-09-252045 | collect configured ipsec connections
-  shell: grep -rni '\bconn\b' /etc/ipsec.conf /etc/ipsec.d/ 2>/dev/null | grep -v '#' || true
+  shell: grep -rni '\bconn\b' /etc/ipsec.conf /etc/ipsec.d/ 2>/dev/null | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' || true
   register: _252045_conns
   changed_when: false
   failed_when: false

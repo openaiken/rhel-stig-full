@@ -4,7 +4,10 @@
 # CAT I (High) | CCI-000366
 
 - name: RHEL-09-252070 | find shosts.equiv files
-  shell: find / -xdev -name shosts.equiv 2>/dev/null | head -40 || true
+  # Every local filesystem, as the STIG searches all of /: -xdev on / alone
+  # skipped separate /home and /var partitions.
+  shell: >-
+    df --local -P | awk 'NR > 1 {print $6}' | xargs -I{} find {} -xdev -name shosts.equiv 2>/dev/null | head -40 || true
   register: _252070_result
   changed_when: false
   failed_when: false

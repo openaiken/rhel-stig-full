@@ -4,8 +4,11 @@
 # postfix alias.
 # CAT II (Medium) | CCI-000139
 
-# Not Applicable if postfix is not installed.
-# Compliant when /etc/aliases contains: postmaster: root
+# Compliant when /etc/aliases contains: postmaster: root. Otherwise the STIG
+# asks how the SA and ISSO are notified of audit processing failures
+# (rhel9_attest_audit_notification_compliant + _method). The STIG has no
+# not-applicable clause: without postfix this used to report not_applicable,
+# which hid the missing notification path.
 
 - name: RHEL-09-252060 | check if postfix is installed
   shell: rpm -q postfix 2>/dev/null && echo installed || echo not_installed
@@ -19,7 +22,6 @@
   register: _252060_alias
   changed_when: false
   failed_when: false
-  when: (_252060_postfix.stdout | trim) == 'installed'
   tags: [validate]
 
 - name: RHEL-09-252060 | collect current aliases for context
@@ -27,7 +29,6 @@
   register: _252060_current
   changed_when: false
   failed_when: false
-  when: (_252060_postfix.stdout | trim) == 'installed'
   tags: [validate]
 
 - name: RHEL-09-252060 | record postmaster alias status
@@ -35,10 +36,9 @@
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-252060': {
         'status':
-          'not_applicable' if (_252060_postfix.stdout | trim) == 'not_installed'
-          else ('not_a_finding' if (_252060_alias.stdout | default('') | trim)
+          'not_a_finding' if (_252060_alias.stdout | default('') | trim)
           else ('not_a_finding' if rhel9_attest_audit_notification_compliant | bool
-          else 'open')),
+          else 'open'),
         'finding_details':
           'Postfix installed: ' ~ (_252060_postfix.stdout | trim)
           ~ '\npostmaster alias match (postmaster: root):\n'
