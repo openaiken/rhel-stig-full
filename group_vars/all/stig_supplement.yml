@@ -162,6 +162,10 @@ supp_rules:
   RHEL-09-232015: true
   # CAT II   RHEL 9 library files must have mode 755 or less permissive.
   RHEL-09-232020: true
+  # CAT II   RHEL 9 /var/log directory must have mode 0755 or less permissive.
+  RHEL-09-232025: true
+  # CAT II   RHEL 9 /var/log/messages file must have mode 0640 or less permissive.
+  RHEL-09-232030: true
   # CAT II   RHEL 9 audit tools must have a mode of 0755 or less permissive.
   RHEL-09-232035: true
   # CAT II   RHEL 9 permissions of cron configuration files and directories must no
@@ -170,6 +174,14 @@ supp_rules:
   RHEL-09-232045: true
   # CAT II   All RHEL 9 local interactive user home directories must have mode 0750
   RHEL-09-232050: true
+  # CAT II   RHEL 9 /etc/group file must have mode 0644 or less permissive to prev
+  RHEL-09-232055: true
+  # CAT II   RHEL 9 /etc/group- file must have mode 0644 or less permissive to pre
+  RHEL-09-232060: true
+  # CAT II   RHEL 9 /etc/passwd file must have mode 0644 or less permissive to pre
+  RHEL-09-232075: true
+  # CAT II   RHEL 9 /etc/passwd- file must have mode 0644 or less permissive to pr
+  RHEL-09-232080: true
   # CAT II   RHEL 9 "/etc/audit/" must be owned by root.
   RHEL-09-232103: true
   # CAT II   RHEL 9 "/etc/audit/" must be group-owned by root.
@@ -624,6 +636,12 @@ supp_rules:
   RHEL-09-654250: true
   # CAT II   RHEL 9 must generate audit records for all account creations, modific
   RHEL-09-654255: true
+  # CAT II   RHEL 9 must take appropriate action when a critical audit processing
+  RHEL-09-654265: true
+  # CAT II   RHEL 9 audit system must protect logon UIDs from unauthorized change.
+  RHEL-09-654270: true
+  # CAT II   RHEL 9 audit system must protect auditing rules from unauthorized cha
+  RHEL-09-654275: true
   # CAT I    RHEL 9 must enable FIPS mode.
   RHEL-09-671010: true
   # CAT II   RHEL 9 must employ FIPS 140-3-approved cryptographic hashing algorithm
