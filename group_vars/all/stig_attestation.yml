@@ -232,7 +232,8 @@ rhel9_attest_alt_log_offload_method: ""
 rhel9_attest_log_aggregation_server: false
 #
 # ┄┄ RHEL-09-653030 | V-258155 | RHEL 9 V2R9 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
-# Minimum available storage (in GB) on the partition hosting audit logs.
+# Minimum SIZE (in GB, as provisioned: the block device) of the partition
+# hosting audit logs. Free space is not checked: auditd rolls old logs off.
 # The STIG cites 10GB as "typically sufficient" for high-activity systems;
 # 2GB is appropriate for low-activity systems or those with remote offload.
 # Adjust upward for high-volume environments (many users, verbose syscall rules).
