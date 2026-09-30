@@ -79,7 +79,9 @@ report 0. Re-run it after touching any task.
   `"640"`; testing `$1+0 > 600` misses every mode whose owner digit is 0, so a
   world-readable private key at `0004` scores 4 and passes. Use a bitmask of the
   disallowed bits: `[ $(( 8#$mode & 8#177 )) -ne 0 ]` for "0600 or less
-  permissive", `8#133` for 0644. (`8#` is bash base-8.)
+  permissive", `8#133` for 0644. (`8#` is bash base-8.) Converting correctly
+  to decimal and comparing by size (`printf '%d' "0$mode"` then `-le 384`) is
+  the same bug: 0006 is numerically tiny. Lint rule OCTAL-MAGNITUDE.
 - **Grepping a config file does not prove the setting is in effect.** systemd
   ignores drop-ins whose name does not end in `.conf`, so a grep hit can reflect
   dead configuration — this is exactly what V2R9 renamed 211045's drop-in to fix.
