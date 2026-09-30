@@ -5,7 +5,8 @@
 # CAT II (Medium) | CCI-000318, CCI-000368, CCI-001812, CCI-001813, CCI-001814
 
 - name: RHEL-09-232260 | find device files with unlabeled SELinux context
-  shell: find /dev -context '*unlabeled_t*' 2>/dev/null | head -40 || true
+  shell: >-
+    find /dev \( -context '*:device_t:*' -o -context '*:unlabeled_t:*' \) \( -type c -o -type b \) -printf '%p %Z\n' 2>/dev/null | head -40 || true
   register: _232260_result
   changed_when: false
   failed_when: false

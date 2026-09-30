@@ -7,7 +7,8 @@
 # any user can delete or rename files owned by other users in that directory.
 
 - name: RHEL-09-232245 | find world-writable directories without sticky bit
-  shell: find / -xdev -type d -perm -0002 ! -perm -1000 2>/dev/null | head -40 || true
+  shell: >-
+    df --local -P | awk 'NR > 1 {print $6}' | xargs -I{} find {} -xdev -type d -perm -0002 ! -perm -1000 2>/dev/null | head -40 || true
   register: _232245_result
   changed_when: false
   failed_when: false

@@ -4,11 +4,8 @@
 # CAT II (Medium) | CCI-001494
 
 - name: RHEL-09-232205 | find library files group-owned by non-system accounts
-  shell: >
-    find -L /lib /lib64 /usr/lib /usr/lib64
-    -xdev -type f ! -group root
-    -exec stat -c '%n %G %g' {} \; 2>/dev/null |
-    awk '$3 >= 1000 {print $1, "(group:", $2, "GID:", $3 ")"}' || true
+  shell: >-
+    find -L /lib /lib64 /usr/lib /usr/lib64 -type f -name '*.so*' ! -group root -exec stat -L -c '%n %G' {} + 2>/dev/null || true
   register: _232205_result
   changed_when: false
   failed_when: false
@@ -20,7 +17,7 @@
       'RHEL-09-232205': {
         'status': 'not_a_finding' if not (_232205_result.stdout | trim) else 'open',
         'finding_details':
-          'Library files group-owned by non-system accounts (GID >= 1000):\n'
+          'Shared library files (*.so*) not group-owned by root:\n'
           ~ (_232205_result.stdout | trim if _232205_result.stdout | trim else '(none)'),
         'comments':
           'Run chgrp root <file> for each listed file, or verify the group is '
