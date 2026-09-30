@@ -13,8 +13,11 @@
 
 - name: RHEL-09-651020 | check AIDE sha512 configuration
   shell: |
+    # No AIDE is not "not applicable": the STIG asks how else this is done.
+    # rhel9_attest_alt_fim_tool is the not-applicable path; without it, open.
     if ! rpm -q aide &>/dev/null; then
-      echo "NA: aide not installed"
+      echo "STATUS: FAIL"
+      echo "FAIL: aide not installed and no alternate file integrity tool attested"
       exit 0
     fi
 
@@ -25,16 +28,39 @@
       exit 0
     fi
 
-    # Look for sha512 in non-commented rule definitions (macro defs and path lines)
-    matches=$(grep -v '^\s*#' "$conf" | grep 'sha512' || true)
-    if [ -n "$matches" ]; then
-      echo "STATUS: PASS"
-      echo "PASS: sha512 found in active rule definitions:"
-      echo "$matches"
-    else
-      echo "STATUS: FAIL"
-      echo "FAIL: sha512 not found in any active rule definition in $conf"
-    fi
+    # Every uncommented selection line must carry sha512 in its effective rule,
+    # as the STIG requires. Rule expressions are expanded through the macro
+    # definitions in the file, honouring + and - (for example LOG-xattrs-n
+    # removes xattrs). H, the group of all compiled hashsums, includes sha512.
+    # This formerly passed if sha512 appeared anywhere, and the stock macro
+    # definitions always contain it, so any host with AIDE installed passed.
+    awk -v want=sha512 '
+      function expand(expr, depth,   n, i, tok, op, parts, seps) {
+        if (depth > 20) return
+        gsub(/[[:space:]]/, "", expr)
+        n = split(expr, parts, /[+-]/, seps)
+        for (i = 1; i <= n; i++) {
+          tok = parts[i]
+          op = (i == 1) ? "+" : seps[i - 1]
+          if (tok == "") continue
+          if (tok in macro) { if (op == "+") expand(macro[tok], depth + 1) }
+          else if (tok == "H" && want == "sha512") acc["sha512"] = (op == "+")
+          else acc[tok] = (op == "+")
+        }
+      }
+      /^[[:space:]]*#/ || /^[[:space:]]*$/ || /^@@/ { next }
+      /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*=/ {
+        name = $0; sub(/[[:space:]]*=.*/, "", name); gsub(/[[:space:]]/, "", name)
+        val = $0; sub(/^[^=]*=/, "", val); macro[name] = val; next
+      }
+      /^[[:space:]]*[=\/]/ && NF >= 2 {
+        sel++; delete acc; expand($2, 0)
+        if (!acc[want]) { bad++; print "FAIL: " $1 " " $2 " (no " want ")" }
+      }
+      END {
+        print "SELECTION LINES: " sel + 0 ", without " want ": " bad + 0
+        print ((sel > 0 && bad == 0) ? "STATUS: PASS" : "STATUS: FAIL")
+      }' "$conf"
   register: _651020_result
   changed_when: false
   failed_when: false

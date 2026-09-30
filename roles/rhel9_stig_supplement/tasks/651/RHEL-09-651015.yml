@@ -44,10 +44,11 @@
       [ -f "$f" ] && found_cron="$f" && break
     done
     if [ -z "$found_cron" ]; then
-      found_cron=$(grep -rl 'aide' /etc/cron.d/ /etc/crontab 2>/dev/null | head -1 || true)
+      # uncommented lines only: a commented-out aide job used to count
+      found_cron=$(grep -rlE '^[^#]*aide' /etc/cron.d/ /etc/crontab 2>/dev/null | head -1 || true)
     fi
     if [ -z "$found_cron" ]; then
-      found_cron=$(grep -l 'aide' /var/spool/cron/root /var/spool/cron/crontabs/root 2>/dev/null | head -1 || true)
+      found_cron=$(grep -lE '^[^#]*aide' /var/spool/cron/root /var/spool/cron/crontabs/root 2>/dev/null | head -1 || true)
     fi
 
     if [ -n "$found_cron" ]; then
