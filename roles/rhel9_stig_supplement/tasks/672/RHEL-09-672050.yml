@@ -24,10 +24,13 @@
 
     target='include "/etc/crypto-policies/back-ends/bind.config"'
 
-    if grep -q "$target" "$named_conf" 2>/dev/null; then
+    # Anchored to the start of the line: a substring match passed a
+    # commented-out (// or #) include, which the STIG calls a finding.
+    found=$(grep -E '^[[:space:]]*include[[:space:]]+"/etc/crypto-policies/back-ends/bind\.config"' "$named_conf" 2>/dev/null)
+    if [ -n "$found" ]; then
       echo "STATUS: PASS"
       echo "PASS: crypto policy include found in $named_conf"
-      grep "$target" "$named_conf"
+      echo "$found"
     else
       echo "STATUS: FAIL"
       echo "FAIL: $named_conf does not contain:"
