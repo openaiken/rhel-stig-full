@@ -1,0 +1,58 @@
+---
+# RHEL-09-611125 | V-258114
+# RHEL 9 must require the maximum number of repeating characters be limited to
+# three when passwords are changed.
+# CAT II (Medium) | CCI-004066, CCI-000195
+
+# The formal role checks for its own line in one specific file, so a host
+# configured equivalently elsewhere (a drop-in, other spacing or case) was
+# reported open while compliant.
+# The formal role also enforces one exact value, but the STIG sets a limit
+# ("X or more", "X or less", one of a set); a stricter value was reported open.
+# The files are read as the consuming library reads them (drop-ins where it
+# has them, comments ignored, last value wins) and compared as the STIG says.
+# 0 disables the check entirely, so it is treated as a finding although the
+# STIG only names values over 3 (as with TMOUT=0 in RHEL-09-412035).
+
+- name: RHEL-09-611125 | check pwquality maxrepeat
+  shell: |
+    shopt -s nullglob
+    files=(/etc/security/pwquality.conf /etc/security/pwquality.conf.d/*.conf)
+    isint() { [[ "$1" =~ ^-?[0-9]+$ ]]; }
+    val=$(awk -v k="maxrepeat" -v m="eq" '
+      { line = $0; sub(/#.*/, "", line) }
+      line ~ /^[[:space:]]*$/ { next }
+      m == "eq" && index(line, "=") {
+        kk = substr(line, 1, index(line, "=") - 1); gsub(/[[:space:]]/, "", kk)
+        if (tolower(kk) == tolower(k)) { v = substr(line, index(line, "=") + 1); gsub(/^[[:space:]]+|[[:space:]]+$/, "", v); f = 1 }
+      }
+      m == "ws" { split(line, a, " "); if (tolower(a[1]) == tolower(k)) { v = a[2]; f = 1 } }
+      m == "flag" { t = line; gsub(/[[:space:]]/, "", t); if (tolower(t) == tolower(k)) { v = "set"; f = 1 } }
+      END { if (f) print v }' "${files[@]}" 2>/dev/null)
+    echo "maxrepeat (effective, last uncommented occurrence): ${val:-(not set)}"
+    echo "lines: $(grep -Hi 'maxrepeat' "${files[@]}" 2>/dev/null | grep -vE ':[[:space:]]*#' | tr '\n' ' ')"
+    if isint "$val" && [ "$val" -ge 1 ] && [ "$val" -le 3 ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: maxrepeat must be 1 to 3 (0 disables the check)"
+    fi
+  register: _611125_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-611125 | record status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-611125': {
+        'status':
+          'not_a_finding' if _611125_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _611125_result.stdout | trim,
+        'comments':
+          'Set maxrepeat = 3 in /etc/security/pwquality.conf or a conf.d file.'
+      }
+    }) }}"
+  tags: [validate]

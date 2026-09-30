@@ -1,0 +1,41 @@
+---
+# RHEL-09-432015 | V-258084
+# RHEL 9 must require reauthentication when using the "sudo" command.
+# CAT II (Medium) | CCI-004895, CCI-002038
+
+# The formal role checks for its own line in one specific file, so a host
+# configured equivalently elsewhere (a drop-in, other spacing or case) was
+# reported open while compliant.
+# Per the STIG: set in exactly one file, not negative.
+
+- name: RHEL-09-432015 | check sudo timestamp_timeout
+  shell: |
+    hits=$(grep -irs 'timestamp_timeout' /etc/sudoers /etc/sudoers.d/ | grep -vE '^[^:]+:[[:space:]]*#')
+    echo "timestamp_timeout lines: ${hits:-(none)}"
+    nfiles=$(echo "$hits" | awk -F: 'NF {print $1}' | sort -u | grep -c .)
+    val=$(echo "$hits" | grep -oiE 'timestamp_timeout[[:space:]]*=[[:space:]]*-?[0-9]+' | tail -1 | grep -oE -- '-?[0-9]+$')
+    if [ "$nfiles" -eq 1 ] && [[ "$val" =~ ^[0-9]+$ ]]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: timestamp_timeout must be set, not negative, in exactly one file"
+    fi
+  register: _432015_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-432015 | record status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-432015': {
+        'status':
+          'not_a_finding' if _432015_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _432015_result.stdout | trim,
+        'comments':
+          'Set Defaults timestamp_timeout=0 in one sudoers file only.'
+      }
+    }) }}"
+  tags: [validate]

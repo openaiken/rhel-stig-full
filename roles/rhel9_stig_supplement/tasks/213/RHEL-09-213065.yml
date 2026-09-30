@@ -1,0 +1,49 @@
+---
+# RHEL-09-213065 | V-257808
+# RHEL 9 must disable the Transparent Inter Process Communication (TIPC)
+# kernel module.
+# CAT II (Medium) | CCI-000381
+
+# The formal role checks for its own line in one specific file, so a host
+# configured equivalently elsewhere (a drop-in, other spacing or case) was
+# reported open while compliant.
+# Both lines the STIG shows are required, uncommented, in any file it lists
+# (install <module> /bin/false, and blacklist <module>); the module name is
+# matched as a whole word. /bin/true is accepted as well: either prevents
+# loading. A use documented with the ISSO is accepted
+# (rhel9_attest_documented_exceptions).
+
+- name: RHEL-09-213065 | check tipc module is disabled
+  shell: |
+    lines=$(grep -hsE '^[[:space:]]*(install|blacklist)[[:space:]]+tipc([[:space:]]|$)' /etc/modprobe.conf /etc/modprobe.d/*)
+    echo "modprobe lines for tipc: $(echo "$lines" | tr '\n' ' ')"
+    inst=$(echo "$lines" | grep -E '^[[:space:]]*install[[:space:]]+tipc[[:space:]]+/(usr/)?bin/(false|true)[[:space:]]*$')
+    bl=$(echo "$lines" | grep -E '^[[:space:]]*blacklist[[:space:]]+tipc[[:space:]]*$')
+    if [ -n "$inst" ] && [ -n "$bl" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: both install tipc /bin/false and blacklist tipc are required"
+    fi
+  register: _213065_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-213065 | record status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-213065': {
+        'status':
+          'not_a_finding' if _213065_result.stdout is search('^STATUS: PASS', multiline=True)
+          else ('not_a_finding' if (rhel9_attest_documented_exceptions | default({})).get('RHEL-09-213065')
+          else 'open'),
+        'finding_details':
+          _213065_result.stdout | trim
+          ~ '\nDocumented exception (rhel9_attest_documented_exceptions): '
+          ~ ((rhel9_attest_documented_exceptions | default({})).get('RHEL-09-213065') or '(none)'),
+        'comments':
+          'Add install tipc /bin/false and blacklist tipc to a file in /etc/modprobe.d/.'
+      }
+    }) }}"
+  tags: [validate]

@@ -1,0 +1,48 @@
+---
+# RHEL-09-231195 | V-257880
+# RHEL 9 must disable mounting of cramfs.
+# CAT III (Low) | CCI-000381
+
+# The formal role checks for its own line in one specific file, so a host
+# configured equivalently elsewhere (a drop-in, other spacing or case) was
+# reported open while compliant.
+# Both lines the STIG shows are required, uncommented, in any file it lists
+# (install <module> /bin/false, and blacklist <module>); the module name is
+# matched as a whole word. /bin/true is accepted as well: either prevents
+# loading. A use documented with the ISSO is accepted
+# (rhel9_attest_documented_exceptions).
+
+- name: RHEL-09-231195 | check cramfs module is disabled
+  shell: |
+    lines=$(grep -hsE '^[[:space:]]*(install|blacklist)[[:space:]]+cramfs([[:space:]]|$)' /etc/modprobe.conf /etc/modprobe.d/*)
+    echo "modprobe lines for cramfs: $(echo "$lines" | tr '\n' ' ')"
+    inst=$(echo "$lines" | grep -E '^[[:space:]]*install[[:space:]]+cramfs[[:space:]]+/(usr/)?bin/(false|true)[[:space:]]*$')
+    bl=$(echo "$lines" | grep -E '^[[:space:]]*blacklist[[:space:]]+cramfs[[:space:]]*$')
+    if [ -n "$inst" ] && [ -n "$bl" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: both install cramfs /bin/false and blacklist cramfs are required"
+    fi
+  register: _231195_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-231195 | record status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-231195': {
+        'status':
+          'not_a_finding' if _231195_result.stdout is search('^STATUS: PASS', multiline=True)
+          else ('not_a_finding' if (rhel9_attest_documented_exceptions | default({})).get('RHEL-09-231195')
+          else 'open'),
+        'finding_details':
+          _231195_result.stdout | trim
+          ~ '\nDocumented exception (rhel9_attest_documented_exceptions): '
+          ~ ((rhel9_attest_documented_exceptions | default({})).get('RHEL-09-231195') or '(none)'),
+        'comments':
+          'Add install cramfs /bin/false and blacklist cramfs to a file in /etc/modprobe.d/.'
+      }
+    }) }}"
+  tags: [validate]

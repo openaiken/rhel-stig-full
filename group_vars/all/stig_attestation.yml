@@ -274,7 +274,10 @@ rhel9_attest_ssh_x11_forwarding_approved_method: ""
 #   rhel9_attest_documented_exceptions:
 #     RHEL-09-213105: "ISSM memo 2026-014: rootless podman needs user namespaces"
 # Rules that honour it: 213040, 213105, 253065, 253070, 253075 (sysctl);
-# 213085, 213090, 213095, 213100 (core dumps); 412040 (maxlogins);
-# 252040 (DNS resolver other than NetworkManager); 654265 (audit -f, when
-# availability is documented as the overriding concern).
+# 213085, 213090, 213095, 213100 (core dumps); 213045, 213050, 213055,
+# 213060, 213065, 231195, 291010, 291035 (kernel modules); 412040
+# (maxlogins); 252025 (chrony port, for an NTP server); 252040 (DNS resolver
+# other than NetworkManager); 653035, 653040, 653045, 653050, 653055, 653070
+# (auditd storage alerts, where the check asks the SA for another method);
+# 654265 (audit -f, when availability is the overriding concern).
 rhel9_attest_documented_exceptions: {}

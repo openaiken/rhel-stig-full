@@ -1,0 +1,56 @@
+---
+# RHEL-09-412050 | V-258071
+# RHEL 9 must enforce a delay of at least four seconds between logon prompts
+# following a failed logon attempt.
+# CAT II (Medium) | CCI-000366
+
+# The formal role checks for its own line in one specific file, so a host
+# configured equivalently elsewhere (a drop-in, other spacing or case) was
+# reported open while compliant.
+# The formal role also enforces one exact value, but the STIG sets a limit
+# ("X or more", "X or less", one of a set); a stricter value was reported open.
+# The files are read as the consuming library reads them (drop-ins where it
+# has them, comments ignored, last value wins) and compared as the STIG says.
+
+- name: RHEL-09-412050 | check FAIL_DELAY
+  shell: |
+    shopt -s nullglob
+    files=(/etc/login.defs)
+    isint() { [[ "$1" =~ ^-?[0-9]+$ ]]; }
+    val=$(awk -v k="FAIL_DELAY" -v m="ws" '
+      { line = $0; sub(/#.*/, "", line) }
+      line ~ /^[[:space:]]*$/ { next }
+      m == "eq" && index(line, "=") {
+        kk = substr(line, 1, index(line, "=") - 1); gsub(/[[:space:]]/, "", kk)
+        if (tolower(kk) == tolower(k)) { v = substr(line, index(line, "=") + 1); gsub(/^[[:space:]]+|[[:space:]]+$/, "", v); f = 1 }
+      }
+      m == "ws" { split(line, a, " "); if (tolower(a[1]) == tolower(k)) { v = a[2]; f = 1 } }
+      m == "flag" { t = line; gsub(/[[:space:]]/, "", t); if (tolower(t) == tolower(k)) { v = "set"; f = 1 } }
+      END { if (f) print v }' "${files[@]}" 2>/dev/null)
+    echo "FAIL_DELAY (effective, last uncommented occurrence): ${val:-(not set)}"
+    echo "lines: $(grep -Hi 'FAIL_DELAY' "${files[@]}" 2>/dev/null | grep -vE ':[[:space:]]*#' | tr '\n' ' ')"
+    if isint "$val" && [ "$val" -ge 4 ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: FAIL_DELAY must be 4 or more"
+    fi
+  register: _412050_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-412050 | record status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-412050': {
+        'status':
+          'not_a_finding' if _412050_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _412050_result.stdout | trim,
+        'comments':
+          'Set FAIL_DELAY 4 in /etc/login.defs.'
+      }
+    }) }}"
+  tags: [validate]

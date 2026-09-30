@@ -46,6 +46,16 @@ supp_rules:
   RHEL-09-213035: true
   # CAT II   RHEL 9 must disable the kernel.core_pattern.
   RHEL-09-213040: true
+  # CAT II   RHEL 9 must be configured to disable the Asynchronous Transfer Mode k
+  RHEL-09-213045: true
+  # CAT II   RHEL 9 must be configured to disable the Controller Area Network kern
+  RHEL-09-213050: true
+  # CAT II   RHEL 9 must be configured to disable the FireWire kernel module.
+  RHEL-09-213055: true
+  # CAT II   RHEL 9 must disable the Stream Control Transmission Protocol (SCTP) k
+  RHEL-09-213060: true
+  # CAT II   RHEL 9 must disable the Transparent Inter Process Communication (TIPC
+  RHEL-09-213065: true
   # CAT II   RHEL 9 must implement address space layout randomization (ASLR) to pr
   RHEL-09-213070: true
   # CAT II   RHEL 9 must disable access to network bpf system call from nonprivile
@@ -154,6 +164,8 @@ supp_rules:
   RHEL-09-231185: true
   # CAT I    RHEL 9 local disk partitions must implement cryptographic mechanisms t
   RHEL-09-231190: true
+  # CAT III  RHEL 9 must disable mounting of cramfs.
+  RHEL-09-231195: true
   # CAT II   RHEL 9 must prevent special devices on non-root local partitions.
   RHEL-09-231200: true
   # CAT II   RHEL 9 system commands must have mode 755 or less permissive.
@@ -218,6 +230,8 @@ supp_rules:
   RHEL-09-232260: true
   # CAT II   The RHEL 9 firewall must employ a deny-all, allow-by-exception policy 
   RHEL-09-251020: true
+  # CAT II   RHEL 9 must protect against or limit the effects of denial-of-service
+  RHEL-09-251030: true
   # CAT II   RHEL 9 must be configured to prohibit or restrict the use of functions
   RHEL-09-251035: true
   # CAT II   RHEL 9 network interfaces must not be in promiscuous mode.
@@ -226,6 +240,10 @@ supp_rules:
   RHEL-09-251045: true
   # CAT II   RHEL 9 must securely compare internal information system clocks at lea
   RHEL-09-252020: true
+  # CAT III  RHEL 9 must disable the chrony daemon from acting as a server.
+  RHEL-09-252025: true
+  # CAT III  RHEL 9 must disable network management of the chrony daemon.
+  RHEL-09-252030: true
   # CAT II   RHEL 9 systems using Domain Name Servers (DNS) resolution must have at
   RHEL-09-252035: true
   # CAT II   RHEL 9 must configure a DNS processing mode in Network Manager.
@@ -382,12 +400,20 @@ supp_rules:
   RHEL-09-271110: true
   # CAT II   RHEL 9 must disable the user list at logon for graphical user interfac
   RHEL-09-271115: true
+  # CAT II   RHEL 9 must be configured to disable USB mass storage.
+  RHEL-09-291010: true
   # CAT II   RHEL 9 must have the USBGuard package enabled.
   RHEL-09-291020: true
+  # CAT III  RHEL 9 must enable Linux audit logging for the USBGuard daemon.
+  RHEL-09-291025: true
   # CAT II   RHEL 9 must block unauthorized peripherals before establishing a conne
   RHEL-09-291030: true
+  # CAT II   RHEL 9 Bluetooth must be disabled.
+  RHEL-09-291035: true
   # CAT II   RHEL 9 wireless network adapters must be disabled.
   RHEL-09-291040: true
+  # CAT II   RHEL 9 user account passwords for new users or password changes must
+  RHEL-09-411010: true
   # CAT II   RHEL 9 user account passwords must have a 60-day maximum password life
   RHEL-09-411015: true
   # CAT II   All RHEL 9 local interactive user accounts must be assigned a home di
@@ -412,26 +438,50 @@ supp_rules:
   RHEL-09-411065: true
   # CAT II   All RHEL 9 local interactive user home directories must be group-owned
   RHEL-09-411070: true
+  # CAT II   RHEL 9 must automatically lock an account when three unsuccessful log
+  RHEL-09-411075: true
+  # CAT II   RHEL 9 must automatically lock the root account until the root accoun
+  RHEL-09-411080: true
+  # CAT II   RHEL 9 must automatically lock an account when three unsuccessful log
+  RHEL-09-411085: true
+  # CAT II   RHEL 9 must maintain an account lock until the locked account is rele
+  RHEL-09-411090: true
   # CAT II   RHEL 9 must not have unauthorized accounts.
   RHEL-09-411095: true
   # CAT I    The root account must be the only account having unrestricted access t
   RHEL-09-411100: true
+  # CAT II   RHEL 9 must ensure account lockouts persist.
+  RHEL-09-411105: true
   # CAT II   RHEL 9 groups must have unique Group ID (GID).
   RHEL-09-411110: true
   # CAT II   RHEL 9 must automatically exit interactive command shell user sessions
   RHEL-09-412035: true
   # CAT III  RHEL 9 must limit the number of concurrent sessions to ten for all ac
   RHEL-09-412040: true
+  # CAT II   RHEL 9 must log username information when unsuccessful logon attempts
+  RHEL-09-412045: true
+  # CAT II   RHEL 9 must enforce a delay of at least four seconds between logon pr
+  RHEL-09-412050: true
   # CAT II   RHEL 9 must define default permissions for the bash shell.
   RHEL-09-412055: true
   # CAT II   RHEL 9 must define default permissions for the c shell.
   RHEL-09-412060: true
+  # CAT II   RHEL 9 must define default permissions for all authenticated users in
+  RHEL-09-412065: true
+  # CAT II   RHEL 9 must define default permissions for the system default profile
+  RHEL-09-412070: true
   # CAT II   RHEL 9 must terminate idle user sessions.
   RHEL-09-412080: true
+  # CAT I    RHEL 9 must use a Linux Security Module configured to enforce limits
+  RHEL-09-431010: true
+  # CAT II   RHEL 9 must enable the SELinux targeted policy.
+  RHEL-09-431015: true
   # CAT II   RHEL 9 must elevate the SELinux context when an administrator calls th
   RHEL-09-431016: true
   # CAT II   RHEL 9 must configure SELinux context type to allow the use of a nonde
   RHEL-09-431020: true
+  # CAT II   RHEL 9 must require reauthentication when using the "sudo" command.
+  RHEL-09-432015: true
   # CAT II   RHEL 9 must use the invoking user's password for privilege escalation 
   RHEL-09-432020: true
   # CAT II   RHEL 9 must require users to reauthenticate for privilege escalation.
@@ -460,12 +510,38 @@ supp_rules:
   RHEL-09-611050: true
   # CAT II   RHEL 9 system-auth must be configured to use a sufficient number of ha
   RHEL-09-611055: true
+  # CAT II   RHEL 9 must enforce password complexity rules for the root account.
+  RHEL-09-611060: true
+  # CAT II   RHEL 9 must enforce password complexity by requiring that at least on
+  RHEL-09-611065: true
+  # CAT II   RHEL 9 must enforce password complexity by requiring that at least on
+  RHEL-09-611070: true
+  # CAT II   RHEL 9 passwords for new users or password changes must have a 24 hou
+  RHEL-09-611075: true
   # CAT II   RHEL 9 passwords must have a 24 hours minimum password lifetime restri
   RHEL-09-611080: true
   # CAT II   RHEL 9 must require users to provide a password for privilege escalati
   RHEL-09-611085: true
+  # CAT II   RHEL 9 passwords must be created with a minimum of 15 characters.
+  RHEL-09-611090: true
+  # CAT II   RHEL 9 must enforce password complexity by requiring that at least on
+  RHEL-09-611100: true
+  # CAT II   RHEL 9 must prevent the use of dictionary words for passwords.
+  RHEL-09-611105: true
+  # CAT II   RHEL 9 must enforce password complexity by requiring that at least on
+  RHEL-09-611110: true
+  # CAT II   RHEL 9 must require the change of at least eight characters when pass
+  RHEL-09-611115: true
+  # CAT II   RHEL 9 must require the maximum number of repeating characters of the
+  RHEL-09-611120: true
+  # CAT II   RHEL 9 must require the maximum number of repeating characters be lim
+  RHEL-09-611125: true
+  # CAT II   RHEL 9 must require the change of at least four character classes whe
+  RHEL-09-611130: true
   # CAT II   RHEL 9 must be configured so that user and group account administrati
   RHEL-09-611135: true
+  # CAT II   RHEL 9 must be configured to use the shadow file to store only encryp
+  RHEL-09-611140: true
   # CAT II   RHEL 9 must not be configured to bypass password requirements for priv
   RHEL-09-611145: true
   # CAT II   RHEL 9 must not have accounts configured with blank or null passwords.
@@ -520,14 +596,36 @@ supp_rules:
   RHEL-09-653025: true
   # CAT II   RHEL 9 must allocate audit record storage capacity to store at least o
   RHEL-09-653030: true
+  # CAT II   RHEL 9 must take action when allocated audit record storage volume re
+  RHEL-09-653035: true
+  # CAT II   RHEL 9 must notify the system administrator (SA) and information syst
+  RHEL-09-653040: true
+  # CAT II   RHEL 9 must take action when allocated audit record storage volume re
+  RHEL-09-653045: true
+  # CAT II   RHEL 9 must take action when allocated audit record storage volume re
+  RHEL-09-653050: true
+  # CAT II   RHEL 9 audit system must take appropriate action when the audit files
+  RHEL-09-653055: true
+  # CAT II   RHEL 9 must label all offloaded audit logs before sending them to the
+  RHEL-09-653060: true
   # CAT II   RHEL 9 must take appropriate action when the internal event queue is
   RHEL-09-653065: true
+  # CAT II   RHEL 9 System Administrator (SA) and/or information system security o
+  RHEL-09-653070: true
+  # CAT II   RHEL 9 audit system must audit local events.
+  RHEL-09-653075: true
   # CAT II   RHEL 9 audit logs must be group-owned by root or by a restricted loggi
   RHEL-09-653080: true
   # CAT II   RHEL 9 audit log directory must be owned by root to prevent unauthoriz
   RHEL-09-653085: true
   # CAT II   RHEL 9 audit logs file must have mode 0600 or less permissive to preve
   RHEL-09-653090: true
+  # CAT II   RHEL 9 must periodically flush audit records to disk to prevent the l
+  RHEL-09-653095: true
+  # CAT II   RHEL 9 must produce audit records containing information to establish
+  RHEL-09-653100: true
+  # CAT II   RHEL 9 must write audit records to disk.
+  RHEL-09-653105: true
   # CAT II   RHEL 9 must allow only the information system security manager (ISSM) 
   RHEL-09-653110: true
   # CAT III  RHEL 9 must allocate an audit_backlog_limit of sufficient size to capt

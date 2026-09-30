@@ -1,0 +1,48 @@
+---
+# RHEL-09-291035 | V-258039
+# RHEL 9 Bluetooth must be disabled.
+# CAT II (Medium) | CCI-000381, CCI-001443
+
+# The formal role checks for its own line in one specific file, so a host
+# configured equivalently elsewhere (a drop-in, other spacing or case) was
+# reported open while compliant.
+# Both lines the STIG shows are required, uncommented, in any file it lists
+# (install <module> /bin/false, and blacklist <module>); the module name is
+# matched as a whole word. /bin/true is accepted as well: either prevents
+# loading. A use documented with the ISSO is accepted
+# (rhel9_attest_documented_exceptions).
+
+- name: RHEL-09-291035 | check bluetooth module is disabled
+  shell: |
+    lines=$(grep -hsE '^[[:space:]]*(install|blacklist)[[:space:]]+bluetooth([[:space:]]|$)' /etc/modprobe.conf /etc/modprobe.d/*)
+    echo "modprobe lines for bluetooth: $(echo "$lines" | tr '\n' ' ')"
+    inst=$(echo "$lines" | grep -E '^[[:space:]]*install[[:space:]]+bluetooth[[:space:]]+/(usr/)?bin/(false|true)[[:space:]]*$')
+    bl=$(echo "$lines" | grep -E '^[[:space:]]*blacklist[[:space:]]+bluetooth[[:space:]]*$')
+    if [ -n "$inst" ] && [ -n "$bl" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: both install bluetooth /bin/false and blacklist bluetooth are required"
+    fi
+  register: _291035_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-291035 | record status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-291035': {
+        'status':
+          'not_a_finding' if _291035_result.stdout is search('^STATUS: PASS', multiline=True)
+          else ('not_a_finding' if (rhel9_attest_documented_exceptions | default({})).get('RHEL-09-291035')
+          else 'open'),
+        'finding_details':
+          _291035_result.stdout | trim
+          ~ '\nDocumented exception (rhel9_attest_documented_exceptions): '
+          ~ ((rhel9_attest_documented_exceptions | default({})).get('RHEL-09-291035') or '(none)'),
+        'comments':
+          'Add install bluetooth /bin/false and blacklist bluetooth to a file in /etc/modprobe.d/.'
+      }
+    }) }}"
+  tags: [validate]
