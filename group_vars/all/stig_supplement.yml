@@ -76,6 +76,8 @@ supp_rules:
   RHEL-09-213110: true
   # CAT II   RHEL 9 must ensure cryptographic verification of vendor software packa
   RHEL-09-214010: true
+  # CAT I    RHEL 9 must check the GPG signature of software packages originating
+  RHEL-09-214015: true
   # CAT I    RHEL 9 must check the GPG signature of locally installed software pac
   RHEL-09-214020: true
   # CAT I    RHEL 9 must have GPG signature verification enabled for all software r
@@ -548,12 +550,16 @@ supp_rules:
   RHEL-09-611155: true
   # CAT II   RHEL 9 must use the common access card (CAC) smart card driver.
   RHEL-09-611160: true
+  # CAT II   RHEL 9 must enable certificate based smart card authentication.
+  RHEL-09-611165: true
   # CAT II   RHEL 9 must implement certificate status checking for multifactor auth
   RHEL-09-611170: true
   # CAT II   The pcscd socket on RHEL 9 must be active.
   RHEL-09-611180: true
   # CAT II   RHEL 9, for PKI-based authentication, must enforce authorized access t
   RHEL-09-611190: true
+  # CAT II   RHEL 9 must require authentication to access emergency mode.
+  RHEL-09-611195: true
   # CAT II   RHEL 9 must require authentication to access single-user mode.
   RHEL-09-611200: true
   # CAT II   RHEL 9, for PKI-based authentication, must validate certificates by co

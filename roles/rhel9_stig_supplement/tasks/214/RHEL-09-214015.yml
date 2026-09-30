@@ -1,0 +1,52 @@
+---
+# RHEL-09-214015 | V-257820
+# RHEL 9 must check the GPG signature of software packages originating from
+# external software repositories before installation.
+# CAT I (High) | CCI-003992, CCI-001749
+
+# The formal role checks for its own line in one specific file, so a host
+# configured equivalently elsewhere (a drop-in, other spacing or case) was
+# reported open while compliant.
+# Parsed from the [main] section, with any spacing; 1, True and yes are the
+# same to dnf. The check asks the SA for another approved process when unset:
+# rhel9_attest_documented_exceptions.
+
+- name: RHEL-09-214015 | check dnf gpgcheck
+  shell: |
+    val=$(awk -v want="gpgcheck" '
+      /^[[:space:]]*[#;]/ { next }
+      /^[[:space:]]*\[/ { sec = tolower($0); gsub(/[][[:space:]]/, "", sec); next }
+      sec == "main" && index($0, "=") {
+        k = $0; sub(/=.*/, "", k); gsub(/[[:space:]]/, "", k)
+        if (tolower(k) == want) { v = $0; sub(/^[^=]*=/, "", v); gsub(/^[[:space:]]+|[[:space:]]+$/, "", v) }
+      }
+      END { print v }' /etc/dnf/dnf.conf 2>/dev/null)
+    echo "[main] gpgcheck in /etc/dnf/dnf.conf: ${val:-(not set)}"
+    if [[ "${val,,}" =~ ^(1|true|yes)$ ]]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: gpgcheck must be enabled in [main] of /etc/dnf/dnf.conf"
+    fi
+  register: _214015_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-214015 | record status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-214015': {
+        'status':
+          'not_a_finding' if _214015_result.stdout is search('^STATUS: PASS', multiline=True)
+          else ('not_a_finding' if (rhel9_attest_documented_exceptions | default({})).get('RHEL-09-214015')
+          else 'open'),
+        'finding_details':
+          _214015_result.stdout | trim
+          ~ '\nDocumented exception (rhel9_attest_documented_exceptions): '
+          ~ ((rhel9_attest_documented_exceptions | default({})).get('RHEL-09-214015') or '(none)'),
+        'comments':
+          'Set gpgcheck=1 in the [main] section of /etc/dnf/dnf.conf.'
+      }
+    }) }}"
+  tags: [validate]
