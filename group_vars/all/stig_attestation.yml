@@ -134,12 +134,15 @@ rhel9_authorized_users:
 rhel9_temporary_accounts: []
 #
 # ┄┄ RHEL-09-431016 | V-272496 | RHEL 9 V2R9 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
-# sudo rules must include TYPE=sysadm_t ROLE=sysadm_r for administrator
-# accounts. If sudo is managed via IdM/SSSD rather than local sudoers files,
-# the automated check will detect the SSSD provider and set status to CENTRALIZED
-# in finding_details. Set rhel9_attest_sel_sudo_context_compliant: true only
-# after verifying that the IdM sudo rules include the sysadm_t/sysadm_r context.
-# Document the IdM sudo rule name(s) or HBAC policy in the method field.
+# The designated sudo administrator group(s) or account(s) must elevate to
+# TYPE=sysadm_t ROLE=sysadm_r. List them exactly as written in sudoers, e.g.
+# ["%stigadmins"] or ["alice"]. The check passes when each has a local rule
+# with the context and no rule without it; other rules are informational.
+rhel9_sudo_designated_admins: []
+# If sudo rules are managed in IdM, they do not appear in local sudoers files.
+# Set rhel9_attest_sel_sudo_context_compliant: true only after verifying the
+# IdM sudo rules include the sysadm_t/sysadm_r context, and document the IdM
+# sudo rule name(s) in the method field. The attestation closes the rule.
 rhel9_attest_sel_sudo_context_compliant: false
 rhel9_attest_sel_sudo_context_method: ""
 #
