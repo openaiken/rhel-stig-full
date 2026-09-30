@@ -43,7 +43,7 @@
   set_fact:
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-412080': {
-        'status': 'not_a_finding' if 'STATUS: PASS' in _412080_result.stdout else 'open',
+        'status': 'not_a_finding' if _412080_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
         'finding_details': _412080_result.stdout | trim,
         'comments':
           'Set StopIdleSessionSec=600 in /etc/systemd/logind.conf and run: '

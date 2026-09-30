@@ -23,7 +23,7 @@
   set_fact:
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-411030': {
-        'status': 'not_a_finding' if 'STATUS: PASS' in _411030_result.stdout else 'open',
+        'status': 'not_a_finding' if _411030_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
         'finding_details': _411030_result.stdout | trim,
         'comments': 'Each user account must have a unique UID in /etc/passwd'
       }

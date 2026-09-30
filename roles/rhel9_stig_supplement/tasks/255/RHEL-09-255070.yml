@@ -34,7 +34,7 @@
   set_fact:
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-255070': {
-        'status': 'not_a_finding' if 'STATUS: PASS' in _255070_result.stdout else 'open',
+        'status': 'not_a_finding' if _255070_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
         'finding_details': _255070_result.stdout | trim,
         'comments':
           'Set FIPS crypto policy: sudo update-crypto-policies --set FIPS. '

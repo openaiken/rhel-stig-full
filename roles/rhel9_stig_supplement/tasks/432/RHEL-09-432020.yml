@@ -47,7 +47,7 @@
   set_fact:
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-432020': {
-        'status': 'not_a_finding' if 'STATUS: PASS' in _432020_result.stdout else 'open',
+        'status': 'not_a_finding' if _432020_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
         'finding_details': _432020_result.stdout | trim,
         'comments':
           'Add to /etc/sudoers (single location): '

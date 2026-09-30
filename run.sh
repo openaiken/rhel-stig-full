@@ -12,6 +12,7 @@ HOST="default_host_group"
 SKIP_FORMAL=false
 SKIP_SUPPLEMENT=false
 SKIP_CKLB=false
+MAX_RESULT_AGE=
 VERBOSITY="-v"
 VAULT_MODE=""        # "file" or "prompt"
 VAULT_FILE=""        # path supplied with --vault-pass-file
@@ -22,6 +23,7 @@ PASSTHROUGH=()
 # ── helpers ───────────────────────────────────────────────────────────────────
 die()  { echo "ERROR: $*" >&2; exit 1; }
 info() { echo; echo "==> $*"; }
+warn() { echo "WARNING: $*" >&2; }
 
 usage() {
   cat <<'EOF'
@@ -52,9 +54,21 @@ Skip plays:
   --skip-supplement         Skip the supplement checks/remediation play
   --skip-cklb               Skip the CKLB renderer (validate mode only)
 
+Checklist:
+  --max-result-age DAYS     Merge only result files from the last DAYS days
+                            into the checklist (default 30; 0 = no limit).
+                            Older results are left out rather than reported.
+
 Other:
   -v, -vv, -vvv, -vvvv     Ansible verbosity level (default: -v)
   -h, --help                Show this message
+
+Exit status:
+  0  every stage completed on every host
+  1  a stage failed outright (bad arguments, parse or vault error, or no host
+     completed); later stages were not run
+  2  some hosts failed or were unreachable; the others were processed and a
+     WARNING lists the hosts that were not
 
 Arguments after -- are forwarded verbatim to every ansible-playbook call.
 
@@ -86,6 +100,10 @@ while [[ $# -gt 0 ]]; do
       SKIP_SUPPLEMENT=true; shift ;;
     --skip-cklb)
       SKIP_CKLB=true; shift ;;
+    --max-result-age)
+      [[ $# -lt 2 ]] && die "--max-result-age requires a number of days"
+      [[ "$2" =~ ^[0-9]+$ ]] || die "--max-result-age takes a whole number of days, got: $2"
+      MAX_RESULT_AGE="$2"; shift 2 ;;
     --vault-pass-file)
       [[ $# -lt 2 ]] && die "--vault-pass-file requires a path argument"
       [[ -f "$2" ]] || die "Vault password file not found: $2"
@@ -147,19 +165,57 @@ COMMON=("$VERBOSITY" -e "my_host=$HOST")
 [[ ${#PASSTHROUGH[@]} -gt 0 ]] && COMMON+=("${PASSTHROUGH[@]}")
 
 # ── run plays ─────────────────────────────────────────────────────────────────
+# One unreachable or failed host must not stop the other hosts from being
+# assessed. ansible-playbook exits 2 (failed hosts) or 4 (unreachable hosts),
+# but 4 is also what a parse or vault error returns, before anything has run.
+# So a stage continues only if it printed a PLAY RECAP and at least one host
+# came through clean; otherwise it is fatal, as before. Hosts that did not come
+# through are listed at the end, and the script then exits non-zero.
+SKIPPED_HOSTS=()
+run_play() {
+  local stage="$1"; shift
+  local log rc
+  log=$(mktemp)
+  set +e
+  ansible-playbook "$@" 2>&1 | tee "$log"
+  rc=${PIPESTATUS[0]}
+  set -e
+  if [[ $rc -ne 0 ]]; then
+    local clean bad
+    clean=$(awk '/^PLAY RECAP/ {r=1; next} r && / : ok=/ && /unreachable=0 / && /failed=0 / {print $1}' "$log")
+    bad=$(awk '/^PLAY RECAP/ {r=1; next} r && / : ok=/ && !(/unreachable=0 / && /failed=0 /) {print $1}' "$log")
+    rm -f "$log"
+    if [[ ($rc -eq 2 || $rc -eq 4) && -n "$clean" ]]; then
+      warn "$stage: failed or unreachable on: $(echo $bad); continuing with: $(echo $clean)"
+      SKIPPED_HOSTS+=($bad)
+      return 0
+    fi
+    die "$stage failed (ansible-playbook exit $rc) with no host completing cleanly"
+  fi
+  rm -f "$log"
+}
+
 if [[ "$SKIP_FORMAL" == false ]]; then
   info "Formal role ($TAG) → $HOST"
-  ansible-playbook ./formal-role.yml --tags "$TAG" "${COMMON[@]}"
+  run_play "Formal role" ./formal-role.yml --tags "$TAG" "${COMMON[@]}"
 fi
 
 if [[ "$SKIP_SUPPLEMENT" == false ]]; then
   info "Supplement ($TAG) → $HOST"
-  ansible-playbook ./supplement.yml --tags "$TAG" "${COMMON[@]}"
+  run_play "Supplement" ./supplement.yml --tags "$TAG" "${COMMON[@]}"
 fi
 
 if [[ "$SKIP_CKLB" == false && "$TAG" == "validate" ]]; then
   info "CKLB renderer → $HOST"
-  ansible-playbook ./cklb.yml --tags validate "${COMMON[@]}"
+  CKLB_ARGS=()
+  [[ -n "$MAX_RESULT_AGE" ]] && CKLB_ARGS+=(-e "cklb_max_result_age_days=$MAX_RESULT_AGE")
+  run_play "CKLB renderer" ./cklb.yml --tags validate "${COMMON[@]}" "${CKLB_ARGS[@]}"
+fi
+
+if [[ ${#SKIPPED_HOSTS[@]} -gt 0 ]]; then
+  warn "not fully processed: $(printf '%s\n' "${SKIPPED_HOSTS[@]}" | sort -u | tr '\n' ' ')"
+  warn "their checklists (if rendered) carry results from earlier runs, dated in the comments"
+  exit 2
 fi
 
 info "Done."

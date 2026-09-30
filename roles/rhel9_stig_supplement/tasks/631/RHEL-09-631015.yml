@@ -60,7 +60,7 @@
         'status':
           'not_applicable' if _631015_result.stdout is search('^NA:')
           else ('not_applicable' if (rhel9_attest_alt_mfa_no_pki | bool)
-          else ('not_a_finding' if 'STATUS: PASS' in _631015_result.stdout
+          else ('not_a_finding' if _631015_result.stdout is search('^STATUS: PASS', multiline=True)
           else ('not_a_finding' if (rhel9_attest_ipa_certmap | bool)
           else 'open'))),
         'finding_details':

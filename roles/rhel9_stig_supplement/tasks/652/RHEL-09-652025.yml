@@ -53,7 +53,7 @@
         'status':
           'not_applicable' if (_652025_result.stdout is search('^NA:')
                               or (rhel9_attest_alt_log_offload | bool))
-          else ('not_a_finding' if 'STATUS: PASS' in _652025_result.stdout
+          else ('not_a_finding' if _652025_result.stdout is search('^STATUS: PASS', multiline=True)
           else ('not_a_finding' if (rhel9_attest_log_aggregation_server | bool)
           else 'open')),
         'finding_details':

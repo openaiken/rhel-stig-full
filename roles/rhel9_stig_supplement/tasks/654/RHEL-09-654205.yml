@@ -47,7 +47,7 @@
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-654205': {
         'status':
-          'not_a_finding' if 'STATUS: PASS' in _654205_result.stdout
+          'not_a_finding' if _654205_result.stdout is search('^STATUS: PASS', multiline=True)
           else 'open',
         'finding_details': _654205_result.stdout | trim,
         'comments':

@@ -22,6 +22,7 @@ import xml.dom.minidom
 import xml.etree.ElementTree as ET
 from time import gmtime, localtime, strftime
 
+from ansible import context
 from ansible.plugins.callback import CallbackBase
 
 
@@ -47,6 +48,10 @@ class CallbackModule(CallbackBase):
         self.rules = {}
         # cache for _get_rev to avoid re-reading the STIG XML per task
         self._rev_cache = {}
+        # {hostname: {rule_key: [error message, ...]}} from failed tasks, so the
+        # checklist can say a rule failed because its task errored (e.g. a file
+        # it manages is absent) rather than because the setting is wrong
+        self.errors = {}
 
         self.stig_path = os.environ.get("STIG_PATH") or self._get_stig_path()
         self._display.display("Using STIG_PATH: {}".format(self.stig_path))
@@ -59,7 +64,17 @@ class CallbackModule(CallbackBase):
         self._display.display("Writing XCCDF results to: {}".format(self.xml_dir))
 
         self.stig_name = os.path.basename(self.stig_path) if self.stig_path else "unknown"
-        self.run_ts = strftime("%y%b%d-%H:%M", localtime())
+        # four-digit year so it cannot be misread as a day; seconds so two
+        # runs in the same minute do not overwrite each other
+        self.run_ts = strftime("%Y%b%d-%H:%M:%S", localtime())
+        # formal-role.yml runs in check mode for the validate tag or --check,
+        # where changed means would-change, i.e. a finding. In a remediate run
+        # changed means was-fixed, which is not an assessment; those results
+        # get a different suffix so the checklist renderer (which merges
+        # every *-xccdf-results.xml per rule) never picks them up.
+        args = context.CLIARGS
+        tags = args.get("tags") or ()
+        self.assessing = "validate" in tags or bool(args.get("check"))
         ET.register_namespace("", "http://checklists.nist.gov/xccdf/1.2")
 
     def _get_rev(self, nid):
@@ -102,6 +117,10 @@ class CallbackModule(CallbackBase):
         host = result._host.get_name()
         # failed task always marks the rule as not passing
         self.rules.setdefault(host, {})[key] = True
+        msg = str(result._result.get("msg", "") or "").strip()
+        if msg:
+            self.errors.setdefault(host, {}).setdefault(key, []).append(
+                "{}: {}".format(name, msg[:300]))
 
     def v2_playbook_on_stats(self, stats):
         endtime = strftime("%Y-%m-%dT%H:%M:%S", gmtime())
@@ -131,6 +150,10 @@ class CallbackModule(CallbackBase):
                 rr.set("idref", "xccdf_mil.disa.stig_rule_SV-{}_rule".format(rule))
                 rs = ET.SubElement(rr, "{http://checklists.nist.gov/xccdf/1.2}result")
                 rs.text = state
+                for msg in self.errors.get(host, {}).get(rule, []):
+                    me = ET.SubElement(rr, "{http://checklists.nist.gov/xccdf/1.2}message")
+                    me.set("severity", "error")
+                    me.text = msg
 
             passing = sum(1 for v in host_rules.values() if not v)
             sc = ET.SubElement(tr, "{http://checklists.nist.gov/xccdf/1.2}score")
@@ -138,7 +161,8 @@ class CallbackModule(CallbackBase):
             sc.set("system", "urn:xccdf:scoring:flat-unweighted")
             sc.text = str(passing)
 
-            out_path = os.path.join(self.xml_dir, "{}-{}-xccdf-results.xml".format(self.run_ts, host))
+            suffix = "xccdf-results.xml" if self.assessing else "xccdf-remediate-run.xml"
+            out_path = os.path.join(self.xml_dir, "{}-{}-{}".format(self.run_ts, host, suffix))
             with open(out_path, "wb") as f:
                 out = ET.tostring(tr)
                 pretty = xml.dom.minidom.parseString(out).toprettyxml(encoding="utf-8")

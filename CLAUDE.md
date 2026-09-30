@@ -25,7 +25,21 @@ Consequences:
   It merges each source per rule across all of a host's result files, newest
   winning, and stamps each rule's comments with the run it came from. Older
   input is intentional; a tag-limited run (`-t RHEL-09-...`) must not blank
-  the other rules, which taking only the newest file whole did.
+  the other rules, which taking only the newest file whole did. Results for
+  rules switched off (`supp_rules`, `rhel9STIG_stigrule_<V>_Manage`) are
+  dropped, and files are matched to the exact host name.
+- Result files are named `YYYYMonDD-HH:MM:SS-<host>...` (four-digit year so
+  it is not misread as a day; seconds so a quick single-rule run cannot
+  overwrite a full run; the older `YYMonDD-HH:MM` form still parses). Only
+  files from the last `cklb_max_result_age_days` (default 30, run.sh
+  `--max-result-age`, 0 = no limit) are merged; older results are dropped,
+  not reported. Remediate runs write
+  `-xccdf-remediate-run.xml`, which never enters a checklist: in that mode
+  "changed" means fixed, not a finding.
+- `run.sh` exits 2 when some hosts failed or were unreachable but others
+  completed; it stops (exit 1) only when a stage fails outright. Exit code 4
+  from ansible-core means both "unreachable" and "parse/vault error", so
+  run.sh decides from the PLAY RECAP, not the code.
 - In `audit_coverage.py` output, a big gap between `formal role static tasks (# R-)`
   and `formal_role_covered` means many role tasks are being skipped on that host.
 

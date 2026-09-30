@@ -1,7 +1,9 @@
 ---
 - name: set supplement run timestamp
   set_fact:
-    supp_run_ts: "{{ '%y%b%d-%H:%M' | strftime }}"
+    # Four-digit year so it cannot be misread as a day; seconds so a
+    # tag-limited run in the same minute cannot overwrite a full run.
+    supp_run_ts: "{{ '%Y%b%d-%H:%M:%S' | strftime }}"
   delegate_to: localhost
   become: false
   tags: always
@@ -379,6 +381,38 @@
   tags: [RHEL-09-252075]
   when: supp_rules['RHEL-09-252075'] | default(true) | bool
 
+- import_tasks: 255/RHEL-09-255010.yml
+  tags: [RHEL-09-255010]
+  when: supp_rules['RHEL-09-255010'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255015.yml
+  tags: [RHEL-09-255015]
+  when: supp_rules['RHEL-09-255015'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255025.yml
+  tags: [RHEL-09-255025]
+  when: supp_rules['RHEL-09-255025'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255030.yml
+  tags: [RHEL-09-255030]
+  when: supp_rules['RHEL-09-255030'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255035.yml
+  tags: [RHEL-09-255035]
+  when: supp_rules['RHEL-09-255035'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255040.yml
+  tags: [RHEL-09-255040]
+  when: supp_rules['RHEL-09-255040'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255045.yml
+  tags: [RHEL-09-255045]
+  when: supp_rules['RHEL-09-255045'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255050.yml
+  tags: [RHEL-09-255050]
+  when: supp_rules['RHEL-09-255050'] | default(true) | bool
+
 - import_tasks: 255/RHEL-09-255064.yml
   tags: [RHEL-09-255064]
   when: supp_rules['RHEL-09-255064'] | default(true) | bool
@@ -395,6 +429,26 @@
   tags: [RHEL-09-255075]
   when: supp_rules['RHEL-09-255075'] | default(true) | bool
 
+- import_tasks: 255/RHEL-09-255080.yml
+  tags: [RHEL-09-255080]
+  when: supp_rules['RHEL-09-255080'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255085.yml
+  tags: [RHEL-09-255085]
+  when: supp_rules['RHEL-09-255085'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255090.yml
+  tags: [RHEL-09-255090]
+  when: supp_rules['RHEL-09-255090'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255095.yml
+  tags: [RHEL-09-255095]
+  when: supp_rules['RHEL-09-255095'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255100.yml
+  tags: [RHEL-09-255100]
+  when: supp_rules['RHEL-09-255100'] | default(true) | bool
+
 - import_tasks: 255/RHEL-09-255115.yml
   tags: [RHEL-09-255115]
   when: supp_rules['RHEL-09-255115'] | default(true) | bool
@@ -406,6 +460,38 @@
 - import_tasks: 255/RHEL-09-255125.yml
   tags: [RHEL-09-255125]
   when: supp_rules['RHEL-09-255125'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255135.yml
+  tags: [RHEL-09-255135]
+  when: supp_rules['RHEL-09-255135'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255140.yml
+  tags: [RHEL-09-255140]
+  when: supp_rules['RHEL-09-255140'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255145.yml
+  tags: [RHEL-09-255145]
+  when: supp_rules['RHEL-09-255145'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255150.yml
+  tags: [RHEL-09-255150]
+  when: supp_rules['RHEL-09-255150'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255155.yml
+  tags: [RHEL-09-255155]
+  when: supp_rules['RHEL-09-255155'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255160.yml
+  tags: [RHEL-09-255160]
+  when: supp_rules['RHEL-09-255160'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255165.yml
+  tags: [RHEL-09-255165]
+  when: supp_rules['RHEL-09-255165'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255175.yml
+  tags: [RHEL-09-255175]
+  when: supp_rules['RHEL-09-255175'] | default(true) | bool
 
 - import_tasks: 271/RHEL-09-271010.yml
   tags: [RHEL-09-271010]
@@ -776,10 +862,8 @@
   when: supp_rules['RHEL-09-672050'] | default(true) | bool
 
 # Every rule task is tagged [validate], so a run with --tags remediate assesses
-# nothing and leaves supp_facts empty. Writing that empty result would create the
-# newest supp-facts file, and cklb.py selects the latest one -- a checklist
-# rendered afterwards would report almost every rule not_reviewed. Skip the write
-# instead, leaving the previous real result as the most recent.
+# nothing and leaves supp_facts empty. cklb.py merges results per rule, so an
+# empty file would do no harm, but it would be noise; skip the write.
 - name: write supplement facts to disk
   copy:
     content: "{{ supp_facts | to_nice_json(indent=2) }}"

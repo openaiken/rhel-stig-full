@@ -4,10 +4,14 @@
 # week's worth of audit records.
 # CAT II (Medium) | CCI-001849, CCI-001851
 
-# Checks available space on the partition hosting audit logs against a
-# site-configurable threshold. The STIG cites 10GB as typical; set
-# rhel9_audit_min_storage_gb to reflect actual site requirements (default 2GB
-# is appropriate for low-activity systems or those with remote offload).
+# Checks the SIZE of the partition holding the audit logs against the site
+# threshold rhel9_audit_min_storage_gb (default 2GB, the owner decision; the
+# STIG only calls 10GB typical). Free space is deliberately not the measure:
+# auditd is expected to roll off old logs, so a full-but-rotating partition is
+# fine. Size is taken from the block device, as provisioned; the filesystem
+# size df reports is a few percent smaller (a 2GiB volume shows 1.94GiB), so
+# comparing that would fail a volume created at exactly the threshold. Falls
+# back to the df size when the source is not a block device.
 #
 # Not applicable when audit records are forwarded immediately to a remote
 # facility (audisp-remote, SPLUNK heavy forwarder, etc.) such that extended
@@ -26,24 +30,32 @@
     log_file=${log_file:-/var/log/audit/audit.log}
     log_dir=$(dirname "$log_file")
 
-    avail_kb=$(df -P "$log_dir" 2>/dev/null | awk 'NR==2{print $4}')
-    if [ -z "$avail_kb" ]; then
-      echo "STATUS: FAIL"
-      echo "FAIL: could not determine available space for $log_dir"
-      exit 0
-    fi
-
-    avail_gb=$(awk "BEGIN{printf \"%.1f\", $avail_kb / 1048576}")
-    min_gb=${AUDIT_MIN_STORAGE_GB:-2}
-
-    if awk "BEGIN{exit ($avail_gb >= $min_gb ? 0 : 1)}"; then
-      echo "STATUS: PASS"
-      echo "PASS: ${avail_gb}GB available on partition hosting $log_dir (threshold: ${min_gb}GB)"
+    src=$(findmnt -no SOURCE --target "$log_dir" 2>/dev/null)
+    mnt=$(findmnt -no TARGET --target "$log_dir" 2>/dev/null)
+    dev_bytes=$(lsblk -bdno SIZE "$src" 2>/dev/null | head -1)
+    fs_kb=$(df -P "$log_dir" 2>/dev/null | awk 'NR==2{print $2}')
+    if [ -n "$dev_bytes" ]; then
+      size_gb=$(awk -v b="$dev_bytes" 'BEGIN{printf "%.2f", b / 1073741824}')
+      basis="block device"
+    elif [ -n "$fs_kb" ]; then
+      size_gb=$(awk -v k="$fs_kb" 'BEGIN{printf "%.2f", k / 1048576}')
+      basis="filesystem (df)"
     else
       echo "STATUS: FAIL"
-      echo "FAIL: only ${avail_gb}GB available on partition hosting $log_dir (threshold: ${min_gb}GB)"
+      echo "FAIL: could not determine the size of the partition holding $log_dir"
+      exit 0
     fi
-    df -P "$log_dir" | awk 'NR==2{printf "PARTITION: %s  SIZE: %.1fGB  AVAIL: %.1fGB\n", $1, $2/1048576, $4/1048576}'
+    min_gb=${AUDIT_MIN_STORAGE_GB:-2}
+
+    if awk -v s="$size_gb" -v m="$min_gb" 'BEGIN{exit (s >= m ? 0 : 1)}'; then
+      echo "STATUS: PASS"
+      echo "PASS: ${size_gb}GB partition holds $log_dir (threshold: ${min_gb}GB, from ${basis})"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: only a ${size_gb}GB partition holds $log_dir (threshold: ${min_gb}GB, from ${basis})"
+    fi
+    echo "PARTITION: ${src:-unknown} mounted at ${mnt:-unknown}"
+    df -P "$log_dir" | awk 'NR==2{printf "FILESYSTEM SIZE: %.2fGB  AVAIL: %.2fGB\n", $2/1048576, $4/1048576}'
   register: _653030_result
   changed_when: false
   failed_when: false
@@ -57,7 +69,7 @@
       'RHEL-09-653030': {
         'status':
           'not_applicable' if (rhel9_attest_audit_immediate_offload | default(false) | bool)
-          else ('not_a_finding' if 'STATUS: PASS' in _653030_result.stdout
+          else ('not_a_finding' if _653030_result.stdout is search('^STATUS: PASS', multiline=True)
           else 'open'),
         'finding_details':
           _653030_result.stdout | trim
@@ -72,8 +84,8 @@
         'comments':
           'Resize the partition hosting /var/log/audit/ or relocate audit logs '
           ~ 'to a larger dedicated partition. Adjust rhel9_audit_min_storage_gb '
-          ~ 'to match site requirements (STIG cites 10GB; 2GB default appropriate '
-          ~ 'for low-activity or remote-offload systems).'
+          ~ 'to match site requirements (default 2GB; the STIG calls 10GB typical). '
+          ~ 'The partition size is checked, not free space: rotation is expected.'
       }
     }) }}"
   tags: [validate]

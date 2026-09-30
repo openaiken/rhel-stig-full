@@ -58,7 +58,7 @@
   set_fact:
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-411040': {
-        'status': 'not_a_finding' if 'STATUS: PASS' in _411040_result.stdout else 'open',
+        'status': 'not_a_finding' if _411040_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
         'finding_details': _411040_result.stdout | trim,
         'comments':
           'List temporary account usernames in rhel9_temporary_accounts (group_vars/all/stig_attestation.yml). '

@@ -35,7 +35,7 @@
   set_fact:
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-251020': {
-        'status': 'not_a_finding' if 'STATUS: PASS' in _251020_result.stdout else 'open',
+        'status': 'not_a_finding' if _251020_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
         'finding_details': _251020_result.stdout | trim,
         'comments':
           'Set the default zone target to DROP in the permanent configuration and '

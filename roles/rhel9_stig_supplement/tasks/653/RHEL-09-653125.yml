@@ -70,7 +70,7 @@
       'RHEL-09-653125': {
         'status':
           'not_applicable' if _653125_result.stdout is search('^NA:')
-          else ('not_a_finding' if ('STATUS: PASS' in _653125_result.stdout
+          else ('not_a_finding' if (_653125_result.stdout is search('^STATUS: PASS', multiline=True)
                                     or (rhel9_attest_audit_notification_compliant | bool))
           else 'open'),
         'finding_details':

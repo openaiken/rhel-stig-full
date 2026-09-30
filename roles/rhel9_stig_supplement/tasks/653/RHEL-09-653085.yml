@@ -41,7 +41,7 @@
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-653085': {
         'status':
-          'not_a_finding' if 'STATUS: PASS' in _653085_result.stdout
+          'not_a_finding' if _653085_result.stdout is search('^STATUS: PASS', multiline=True)
           else 'open',
         'finding_details': _653085_result.stdout | trim,
         'comments': 'Run: chown root /var/log/audit'

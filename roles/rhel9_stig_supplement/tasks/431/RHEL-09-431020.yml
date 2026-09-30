@@ -53,7 +53,7 @@
       'RHEL-09-431020': {
         'status':
           'not_applicable' if _431020_result.stdout is search('^NA:')
-          else ('not_a_finding' if 'STATUS: PASS' in _431020_result.stdout
+          else ('not_a_finding' if _431020_result.stdout is search('^STATUS: PASS', multiline=True)
           else 'open'),
         'finding_details': _431020_result.stdout | trim,
         'comments':

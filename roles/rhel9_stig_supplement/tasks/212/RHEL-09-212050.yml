@@ -45,7 +45,7 @@
   set_fact:
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-212050': {
-        'status': 'not_a_finding' if 'STATUS: PASS' in _212050_pti.stdout else 'open',
+        'status': 'not_a_finding' if _212050_pti.stdout is search('^STATUS: PASS', multiline=True) else 'open',
         'finding_details': _212050_pti.stdout | trim,
         'comments':
           'To remediate: sudo grubby --update-kernel=ALL --args=pti=on && '

@@ -37,7 +37,7 @@
   set_fact:
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-411050': {
-        'status': 'not_a_finding' if 'STATUS: PASS' in _411050_result.stdout else 'open',
+        'status': 'not_a_finding' if _411050_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
         'finding_details': _411050_result.stdout | trim,
         'comments': 'Set with: sudo useradd -D -f 35 (sets INACTIVE=35 in /etc/default/useradd)'
       }

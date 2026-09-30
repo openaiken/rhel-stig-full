@@ -78,7 +78,7 @@
       'RHEL-09-631010': {
         'status':
           'not_applicable' if (rhel9_attest_alt_mfa_no_pki | bool)
-          else ('not_a_finding' if 'STATUS: PASS' in _631010_result.stdout
+          else ('not_a_finding' if _631010_result.stdout is search('^STATUS: PASS', multiline=True)
           else 'open'),
         'finding_details':
           _631010_result.stdout | trim
