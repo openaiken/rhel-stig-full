@@ -7,7 +7,9 @@
 # Compliant when smtpd_client_restrictions = permit_mynetworks,reject exactly.
 
 - name: RHEL-09-252050 | check if postfix is installed
-  shell: rpm -q postfix 2>/dev/null && echo installed || echo not_installed
+  # --quiet: without it rpm prints the package name too, the output never
+  # equalled installed, and dependent checks were always skipped
+  shell: rpm -q --quiet postfix && echo installed || echo not_installed
   register: _252050_postfix
   changed_when: false
   failed_when: false

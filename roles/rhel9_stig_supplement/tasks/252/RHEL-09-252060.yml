@@ -11,7 +11,9 @@
 # which hid the missing notification path.
 
 - name: RHEL-09-252060 | check if postfix is installed
-  shell: rpm -q postfix 2>/dev/null && echo installed || echo not_installed
+  # --quiet: without it rpm prints the package name too, the output never
+  # equalled installed, and dependent checks were always skipped
+  shell: rpm -q --quiet postfix && echo installed || echo not_installed
   register: _252060_postfix
   changed_when: false
   failed_when: false
