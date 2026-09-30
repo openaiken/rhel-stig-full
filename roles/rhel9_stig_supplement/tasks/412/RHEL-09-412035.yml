@@ -40,7 +40,10 @@
     if [ -z "$tmout_val" ]; then
       echo "STATUS: FAIL"
       echo "RAW: TMOUT is not set in any global profile source"
-    elif [ "$tmout_val" -gt 600 ] 2>/dev/null; then
+    elif [ "$tmout_val" -eq 0 ]; then
+      echo "STATUS: FAIL"
+      echo "RAW: TMOUT=0 disables the idle timeout"
+    elif [ "$tmout_val" -gt 600 ]; then
       echo "STATUS: FAIL"
       echo "RAW: TMOUT=$tmout_val (must be <= 600)"
       $is_readonly || echo "RAW: TMOUT is not declared readonly"

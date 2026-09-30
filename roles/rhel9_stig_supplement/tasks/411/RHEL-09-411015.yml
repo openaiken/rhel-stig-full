@@ -10,9 +10,17 @@
     while IFS=: read -r username _ uid _ _ homedir shell; do
       [ "$uid" -lt 1000 ] 2>/dev/null && continue
       [[ "$shell" =~ nologin|/false$ ]] && continue
-      max=$(awk -F: -v u="$username" '$1==u{print $5}' /etc/shadow 2>/dev/null)
-      [ -z "$max" ] && continue
-      if [ "$max" -gt 60 ] 2>/dev/null; then
+      entry=$(awk -F: -v u="$username" '$1==u{print "x" $5}' /etc/shadow 2>/dev/null)
+      if [ -z "$entry" ]; then
+        findings="${findings}FAIL: ${username}: no /etc/shadow entry\n"
+        continue
+      fi
+      max=${entry#x}
+      # A blank field means no maximum age, which the STIG awk ($5 <= 0) flags.
+      # It used to be skipped, passing accounts whose passwords never expire.
+      if [ -z "$max" ]; then
+        findings="${findings}FAIL: ${username}: PASS_MAX_DAYS blank (no expiry)\n"
+      elif [ "$max" -gt 60 ] 2>/dev/null; then
         findings="${findings}FAIL: ${username}: PASS_MAX_DAYS=${max} (> 60)\n"
       elif [ "$max" -le 0 ] 2>/dev/null; then
         findings="${findings}FAIL: ${username}: PASS_MAX_DAYS=${max} (<= 0, unlimited)\n"
