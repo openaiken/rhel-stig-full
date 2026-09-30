@@ -48,6 +48,10 @@ class CallbackModule(CallbackBase):
         self.rules = {}
         # cache for _get_rev to avoid re-reading the STIG XML per task
         self._rev_cache = {}
+        # {hostname: {rule_key: [error message, ...]}} from failed tasks, so the
+        # checklist can say a rule failed because its task errored (e.g. a file
+        # it manages is absent) rather than because the setting is wrong
+        self.errors = {}
 
         self.stig_path = os.environ.get("STIG_PATH") or self._get_stig_path()
         self._display.display("Using STIG_PATH: {}".format(self.stig_path))
@@ -112,6 +116,10 @@ class CallbackModule(CallbackBase):
         host = result._host.get_name()
         # failed task always marks the rule as not passing
         self.rules.setdefault(host, {})[key] = True
+        msg = str(result._result.get("msg", "") or "").strip()
+        if msg:
+            self.errors.setdefault(host, {}).setdefault(key, []).append(
+                "{}: {}".format(name, msg[:300]))
 
     def v2_playbook_on_stats(self, stats):
         endtime = strftime("%Y-%m-%dT%H:%M:%S", gmtime())
@@ -141,6 +149,10 @@ class CallbackModule(CallbackBase):
                 rr.set("idref", "xccdf_mil.disa.stig_rule_SV-{}_rule".format(rule))
                 rs = ET.SubElement(rr, "{http://checklists.nist.gov/xccdf/1.2}result")
                 rs.text = state
+                for msg in self.errors.get(host, {}).get(rule, []):
+                    me = ET.SubElement(rr, "{http://checklists.nist.gov/xccdf/1.2}message")
+                    me.set("severity", "error")
+                    me.text = msg
 
             passing = sum(1 for v in host_rules.values() if not v)
             sc = ET.SubElement(tr, "{http://checklists.nist.gov/xccdf/1.2}score")

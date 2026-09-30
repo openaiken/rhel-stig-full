@@ -66,12 +66,18 @@ def _parse_xccdf(path):
             continue
         raw = result_el.text or ''
         rule_id = m.group(0)
+        errors = [e.text.strip() for e in rr.findall(f'{{{XCCDF_NS}}}message') if e.text]
         rules[rule_id] = {
             'status': _XCCDF_TO_CKLB.get(raw, 'not_reviewed'),
             'finding_details': (
                 f"Benchmark: {benchmark}\n"
                 f"Scan completed: {end_time}\n"
                 f"Result: {raw}"
+                + (
+                    "\nThe formal role task errored, so the setting could not be "
+                    "checked:\n" + "\n".join(errors)
+                    if errors else ""
+                )
             ),
             'comments': f"{_XCCDF_COMMENTS}\n{stamp}",
         }
