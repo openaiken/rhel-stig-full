@@ -20,9 +20,11 @@
       # It used to be skipped, passing accounts whose passwords never expire.
       if [ -z "$max" ]; then
         findings="${findings}FAIL: ${username}: PASS_MAX_DAYS blank (no expiry)\n"
-      elif [ "$max" -gt 60 ] 2>/dev/null; then
+      elif ! [[ "$max" =~ ^-?[0-9]+$ ]]; then
+        findings="${findings}FAIL: ${username}: PASS_MAX_DAYS=${max} is not a number\n"
+      elif [ "$max" -gt 60 ]; then
         findings="${findings}FAIL: ${username}: PASS_MAX_DAYS=${max} (> 60)\n"
-      elif [ "$max" -le 0 ] 2>/dev/null; then
+      elif [ "$max" -le 0 ]; then
         findings="${findings}FAIL: ${username}: PASS_MAX_DAYS=${max} (<= 0, unlimited)\n"
       else
         findings="${findings}PASS: ${username}: PASS_MAX_DAYS=${max}\n"
