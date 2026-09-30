@@ -45,7 +45,7 @@
   set_fact:
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-212055': {
-        'status': 'not_a_finding' if 'STATUS: PASS' in _212055_audit.stdout else 'open',
+        'status': 'not_a_finding' if _212055_audit.stdout is search('^STATUS: PASS', multiline=True) else 'open',
         'finding_details': _212055_audit.stdout | trim,
         'comments':
           'To remediate: sudo grubby --update-kernel=ALL --args=audit=1 && '

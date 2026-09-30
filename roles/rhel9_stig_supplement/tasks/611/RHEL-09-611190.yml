@@ -64,7 +64,7 @@
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-611190': {
         'status':
-          'not_a_finding' if 'STATUS: PASS' in _611190_result.stdout
+          'not_a_finding' if _611190_result.stdout is search('^STATUS: PASS', multiline=True)
           else ('not_a_finding' if (rhel9_attest_no_ssh_key_auth | bool)
           else 'open'),
         'finding_details':

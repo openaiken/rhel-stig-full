@@ -25,7 +25,7 @@
   set_fact:
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-411100': {
-        'status': 'not_a_finding' if 'STATUS: PASS' in _411100_result.stdout else 'open',
+        'status': 'not_a_finding' if _411100_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
         'finding_details': _411100_result.stdout | trim,
         'comments': 'No account other than root may have UID 0. Remove or reassign any such accounts.'
       }

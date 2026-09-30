@@ -47,7 +47,7 @@
   set_fact:
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-611010': {
-        'status': 'not_a_finding' if 'STATUS: PASS' in _611010_result.stdout else 'open',
+        'status': 'not_a_finding' if _611010_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
         'finding_details': _611010_result.stdout | trim,
         'comments':
           'Add retry = 3 to /etc/security/pwquality.conf.d/stig.conf'

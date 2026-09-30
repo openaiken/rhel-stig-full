@@ -68,7 +68,7 @@
   set_fact:
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-411055': {
-        'status': 'not_a_finding' if 'STATUS: PASS' in _411055_result.stdout else 'open',
+        'status': 'not_a_finding' if _411055_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
         'finding_details': _411055_result.stdout | trim,
         'comments':
           'Remove PATH components outside the user home from user init files, '

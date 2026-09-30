@@ -40,8 +40,8 @@
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-271090': {
         'status':
-          'not_applicable' if 'NA:' in _271090_result.stdout
-          else ('not_a_finding' if 'PASS:' in _271090_result.stdout
+          'not_applicable' if _271090_result.stdout is search('^NA:', multiline=True)
+          else ('not_a_finding' if _271090_result.stdout is search('^PASS:', multiline=True)
           else 'open'),
         'finding_details': _271090_result.stdout | trim,
         'comments': 'Run: sudo dconf update — to recompile all dconf databases.'

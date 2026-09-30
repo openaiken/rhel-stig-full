@@ -52,6 +52,7 @@ CHECKS = {
     "UNDEF-REF":    "variable referenced but never registered in this file",
     "SHELL-APOS":   "apostrophe in a shell comment (Ansible parse_kv sees unbalanced quotes)",
     "OCTAL-MAGNITUDE": "file mode converted to a number and compared by size; use a bitmask of forbidden bits",
+    "UNANCHORED-MARKER": "status decided by a substring test such as 'STATUS: PASS' in x.stdout; anchor it: x.stdout is search('^STATUS: PASS', multiline=True)",
     "JINJA-COMMENT": "'{#' opens a Jinja comment (e.g. bash ${#arr[@]}); Ansible fails to parse the role",
     "FILE-NOT-EFFECTIVE":
                     "greps config files for a setting whose effective value can differ "
@@ -137,6 +138,12 @@ def lint(sid, path):
             continue
         if re.search(r"""printf\s+['"]%d['"]\s+['"]?0\$""", l) or re.search(r"-(le|lt|ge|gt)\s+(384|420|448|416|493)\b", l):
             hits.append(("OCTAL-MAGNITUDE", i, l.strip()[:70]))
+
+    # C3c: a status marker matched anywhere in stdout. Echoed data (config
+    # lines, file names, banner text) could contain it and flip the status.
+    for i, l in enumerate(lines, 1):
+        if re.search(r"'(STATUS: PASS|NA:|PASS:)' in _\d{6}\w*\.stdout", l):
+            hits.append(("UNANCHORED-MARKER", i, l.strip()[:70]))
 
     # C6b: "{#" anywhere opens a Jinja comment. Bash ${#var} / ${#arr[@]} is the
     # usual culprit. Ansible then cannot split the task's arguments and the

@@ -30,7 +30,7 @@
   set_fact:
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-432035': {
-        'status': 'not_a_finding' if 'STATUS: PASS' in _432035_result.stdout else 'open',
+        'status': 'not_a_finding' if _432035_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
         'finding_details': _432035_result.stdout | trim,
         'comments':
           'Add to /etc/pam.d/su: auth required pam_wheel.so use_uid'

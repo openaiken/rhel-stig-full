@@ -27,7 +27,7 @@
   set_fact:
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-611145': {
-        'status': 'not_a_finding' if 'STATUS: PASS' in _611145_result.stdout else 'open',
+        'status': 'not_a_finding' if _611145_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
         'finding_details': _611145_result.stdout | trim,
         'comments': 'Remove pam_succeed_if lines from /etc/pam.d/sudo'
       }

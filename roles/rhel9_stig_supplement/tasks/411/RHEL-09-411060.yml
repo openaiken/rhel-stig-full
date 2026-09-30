@@ -34,7 +34,7 @@
   set_fact:
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-411060': {
-        'status': 'not_a_finding' if 'STATUS: PASS' in _411060_result.stdout else 'open',
+        'status': 'not_a_finding' if _411060_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
         'finding_details': _411060_result.stdout | trim,
         'comments': 'Assign a home directory: usermod -d /home/<username> -m <username>'
       }

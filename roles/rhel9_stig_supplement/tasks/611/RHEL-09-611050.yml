@@ -43,7 +43,7 @@
   set_fact:
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-611050': {
-        'status': 'not_a_finding' if 'STATUS: PASS' in _611050_result.stdout else 'open',
+        'status': 'not_a_finding' if _611050_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
         'finding_details': _611050_result.stdout | trim,
         'comments':
           'Add rounds=100000 to the pam_unix.so password line in /etc/pam.d/password-auth. '

@@ -45,7 +45,7 @@
   set_fact:
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-212040': {
-        'status': 'not_a_finding' if 'STATUS: PASS' in _212040_poison.stdout else 'open',
+        'status': 'not_a_finding' if _212040_poison.stdout is search('^STATUS: PASS', multiline=True) else 'open',
         'finding_details': _212040_poison.stdout | trim,
         'comments':
           'To remediate: sudo grubby --update-kernel=ALL --args=page_poison=1 && '

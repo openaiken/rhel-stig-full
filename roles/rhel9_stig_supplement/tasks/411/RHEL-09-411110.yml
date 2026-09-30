@@ -25,7 +25,7 @@
   set_fact:
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-411110': {
-        'status': 'not_a_finding' if 'STATUS: PASS' in _411110_result.stdout else 'open',
+        'status': 'not_a_finding' if _411110_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
         'finding_details': _411110_result.stdout | trim,
         'comments': 'Each group must have a unique GID in /etc/group'
       }

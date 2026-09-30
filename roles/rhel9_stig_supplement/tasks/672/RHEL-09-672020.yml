@@ -70,7 +70,7 @@
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-672020': {
         'status':
-          'not_a_finding' if 'STATUS: PASS' in _672020_result.stdout
+          'not_a_finding' if _672020_result.stdout is search('^STATUS: PASS', multiline=True)
           else ('not_a_finding'
                 if ((rhel9_attest_crypto_subpolicy_approved | default(false) | bool)
                     and 'FAIL: policy mismatch' not in _672020_result.stdout)

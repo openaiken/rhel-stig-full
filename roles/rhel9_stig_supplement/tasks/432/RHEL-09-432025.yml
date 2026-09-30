@@ -31,7 +31,7 @@
   set_fact:
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-432025': {
-        'status': 'not_a_finding' if 'STATUS: PASS' in _432025_result.stdout else 'open',
+        'status': 'not_a_finding' if _432025_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
         'finding_details': _432025_result.stdout | trim,
         'comments': 'Remove all !authenticate entries from sudoers files. Use NOPASSWD if passwordless sudo is required.'
       }

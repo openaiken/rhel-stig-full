@@ -103,7 +103,7 @@
       'RHEL-09-651015': {
         'status':
           'not_applicable' if (rhel9_attest_alt_fim_tool | bool)
-          else ('not_a_finding' if 'STATUS: PASS' in _651015_result.stdout
+          else ('not_a_finding' if _651015_result.stdout is search('^STATUS: PASS', multiline=True)
           else 'open'),
         'finding_details': _651015_result.stdout | trim,
         'comments':

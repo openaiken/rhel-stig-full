@@ -86,7 +86,7 @@
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-431016': {
         'status':
-          'not_a_finding' if ('STATUS: PASS' in _431016_result.stdout)
+          'not_a_finding' if (_431016_result.stdout is search('^STATUS: PASS', multiline=True))
           else ('not_a_finding' if (rhel9_attest_sel_sudo_context_compliant | bool)
           else 'open'),
         'finding_details':

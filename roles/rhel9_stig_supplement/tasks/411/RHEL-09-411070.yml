@@ -45,7 +45,7 @@
   set_fact:
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-411070': {
-        'status': 'not_a_finding' if 'STATUS: PASS' in _411070_result.stdout else 'open',
+        'status': 'not_a_finding' if _411070_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
         'finding_details': _411070_result.stdout | trim,
         'comments': 'Fix with: chgrp $(id -gn <username>) /home/<username>'
       }

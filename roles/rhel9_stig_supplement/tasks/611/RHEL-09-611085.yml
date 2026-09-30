@@ -41,7 +41,7 @@
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-611085': {
         'status':
-          'not_a_finding' if 'STATUS: PASS' in _611085_result.stdout
+          'not_a_finding' if _611085_result.stdout is search('^STATUS: PASS', multiline=True)
           else ('not_a_finding' if (rhel9_attest_nopasswd_isso_approved | bool)
           else 'open'),
         'finding_details':

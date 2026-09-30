@@ -60,7 +60,7 @@
   set_fact:
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-432030': {
-        'status': 'not_a_finding' if 'STATUS: PASS' in _432030_result.stdout else 'open',
+        'status': 'not_a_finding' if _432030_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
         'finding_details': _432030_result.stdout | trim,
         'comments':
           'Replace ALL user-spec entries with named groups (e.g. %wheel). '

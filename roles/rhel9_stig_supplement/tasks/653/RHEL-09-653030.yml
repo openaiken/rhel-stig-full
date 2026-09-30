@@ -57,7 +57,7 @@
       'RHEL-09-653030': {
         'status':
           'not_applicable' if (rhel9_attest_audit_immediate_offload | default(false) | bool)
-          else ('not_a_finding' if 'STATUS: PASS' in _653030_result.stdout
+          else ('not_a_finding' if _653030_result.stdout is search('^STATUS: PASS', multiline=True)
           else 'open'),
         'finding_details':
           _653030_result.stdout | trim

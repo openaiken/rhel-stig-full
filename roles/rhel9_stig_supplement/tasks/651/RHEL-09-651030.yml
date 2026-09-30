@@ -69,7 +69,7 @@
         'status':
           'not_applicable' if (_651030_result.stdout is search('^NA:')
                               or (rhel9_attest_alt_fim_tool | bool))
-          else ('not_a_finding' if 'STATUS: PASS' in _651030_result.stdout
+          else ('not_a_finding' if _651030_result.stdout is search('^STATUS: PASS', multiline=True)
           else 'open'),
         'finding_details': _651030_result.stdout | trim,
         'comments': 'Add acl to the rule macro in /etc/aide.conf, e.g.: NORMAL = ...+acl+...'

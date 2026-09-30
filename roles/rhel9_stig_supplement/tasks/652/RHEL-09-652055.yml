@@ -69,7 +69,7 @@
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-652055': {
         'status':
-          'not_a_finding' if 'STATUS: PASS' in _652055_result.stdout
+          'not_a_finding' if _652055_result.stdout is search('^STATUS: PASS', multiline=True)
           else ('open' if 'PLACEHOLDER: true' in _652055_result.stdout
           else ('not_a_finding' if (rhel9_attest_alt_log_offload | bool)
           else 'open')),

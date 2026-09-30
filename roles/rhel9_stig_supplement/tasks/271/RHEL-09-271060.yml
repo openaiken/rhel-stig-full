@@ -29,7 +29,7 @@
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-271060': {
         'status':
-          'not_applicable' if 'NA:' in _271060_result.stdout
+          'not_applicable' if _271060_result.stdout is search('^NA:', multiline=True)
           else ('not_a_finding' if _271060_result.stdout is search('^PASS:', multiline=True)
           else 'open'),
         'finding_details': _271060_result.stdout | trim,
