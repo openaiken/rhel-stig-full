@@ -11,11 +11,19 @@
   shell: |
     rpm -q gdm &>/dev/null || { echo "NA: gdm not installed"; exit 0; }
     stale=""
-    for db in $(find /etc/dconf/db -maxdepth 1 -type f 2>/dev/null); do
-      db_mtime=$(stat -c %Y "$db" 2>/dev/null)
-      keyfile_mtime=$(stat -c %Y "${db}.d"/* 2>/dev/null | sort -n | tail -1)
-      if [ -n "$db_mtime" ] && [ -n "$keyfile_mtime" ] && \
-         [ "$db_mtime" -lt "$keyfile_mtime" ]; then
+    # Walk the keyfile directories rather than the compiled databases, as the
+    # STIG loop does: a directory with keyfiles but no compiled database was
+    # never compiled at all, and iterating databases alone missed it. Lock
+    # files are compared too, since an uncompiled lock is not in effect.
+    for dir in /etc/dconf/db/*.d; do
+      [ -d "$dir" ] || continue
+      db="${dir%.d}"
+      newest=$(find "$dir" -type f -printf '%T@\n' 2>/dev/null | sort -n | tail -1)
+      newest=${newest%.*}
+      [ -n "$newest" ] || continue
+      if [ ! -f "$db" ]; then
+        stale="${stale}${db} missing but ${dir} has keyfiles\n"
+      elif [ "$(stat -c %Y "$db")" -lt "$newest" ]; then
         stale="${stale}${db} needs update\n"
       fi
     done
