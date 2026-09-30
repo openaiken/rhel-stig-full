@@ -188,6 +188,22 @@ supp_rules:
   RHEL-09-252070: true
   # CAT I    There must be no .shosts files on RHEL 9.
   RHEL-09-252075: true
+  # CAT II   All RHEL 9 networked systems must have SSH installed.
+  RHEL-09-255010: true
+  # CAT II   All RHEL 9 networked systems must have and implement SSH to protect t
+  RHEL-09-255015: true
+  # CAT II   RHEL 9 must display the Standard Mandatory DOD Notice and Consent Ban
+  RHEL-09-255025: true
+  # CAT II   RHEL 9 must log SSH connection attempts and failures to the server.
+  RHEL-09-255030: true
+  # CAT II   RHEL 9 SSHD must accept public key authentication.
+  RHEL-09-255035: true
+  # CAT I    RHEL 9 SSHD must not allow blank passwords.
+  RHEL-09-255040: true
+  # CAT II   RHEL 9 must not permit direct logons to the root account using remote
+  RHEL-09-255045: true
+  # CAT I    RHEL 9 must enable the Pluggable Authentication Module (PAM) interfac
+  RHEL-09-255050: true
   # CAT I    The RHEL 9 SSH client must be configured to use only DOD-approved encr
   RHEL-09-255064: true
   # CAT I    The RHEL 9 SSH server must be configured to use only DOD-approved encr
@@ -196,12 +212,38 @@ supp_rules:
   RHEL-09-255070: true
   # CAT I    The RHEL 9 SSH server must be configured to use only Message Authentic
   RHEL-09-255075: true
+  # CAT II   RHEL 9 must not allow a noncertificate trusted host SSH logon to the
+  RHEL-09-255080: true
+  # CAT II   RHEL 9 must not allow users to override SSH environment variables.
+  RHEL-09-255085: true
+  # CAT II   RHEL 9 must force a frequent session key renegotiation for SSH connec
+  RHEL-09-255090: true
+  # CAT II   RHEL 9 must be configured so that all network connections associated
+  RHEL-09-255095: true
+  # CAT II   RHEL 9 must be configured so that all network connections associated
+  RHEL-09-255100: true
   # CAT II   RHEL 9 SSH server configuration files' permissions must not be modifie
   RHEL-09-255115: true
   # CAT II   RHEL 9 SSH private host key files must have mode 0600 or less permissi
   RHEL-09-255120: true
   # CAT II   RHEL 9 SSH public host key files must have mode 0644 or less permissiv
   RHEL-09-255125: true
+  # CAT II   RHEL 9 SSH daemon must not allow GSSAPI authentication.
+  RHEL-09-255135: true
+  # CAT II   RHEL 9 SSH daemon must not allow Kerberos authentication.
+  RHEL-09-255140: true
+  # CAT II   RHEL 9 SSH daemon must not allow rhosts authentication.
+  RHEL-09-255145: true
+  # CAT II   RHEL 9 SSH daemon must not allow known hosts authentication.
+  RHEL-09-255150: true
+  # CAT II   RHEL 9 SSH daemon must disable remote X connections for interactive u
+  RHEL-09-255155: true
+  # CAT II   RHEL 9 SSH daemon must perform strict mode checking of home directory
+  RHEL-09-255160: true
+  # CAT II   RHEL 9 SSH daemon must display the date and time of the last successf
+  RHEL-09-255165: true
+  # CAT II   RHEL 9 SSH daemon must prevent remote hosts from connecting to the pr
+  RHEL-09-255175: true
   # CAT II   RHEL 9 must display the Standard Mandatory DOD Notice and Consent Bann
   RHEL-09-271010: true
   # CAT II   RHEL 9 must prevent a user from overriding the banner-message-enable s

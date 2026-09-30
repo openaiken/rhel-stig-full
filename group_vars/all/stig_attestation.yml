@@ -253,3 +253,15 @@ rhel9_attest_audit_immediate_offload_method: ""
 # requires resolving the underlying override regardless of AO approval.
 rhel9_attest_crypto_subpolicy_approved: false
 rhel9_attest_crypto_subpolicy_approved_method: ""
+#
+# ┄┄ RHEL-09-255010 / 255015 | RHEL 9 V2R9 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# A host that must not run SSH, with a documented exception. With this set
+# and openssh-server not installed, 255010 and 255015 are not applicable (the
+# sshd configuration rules are not applicable anyway without the package).
+rhel9_attest_no_sshd: false
+rhel9_attest_no_sshd_method: ""
+#
+# ┄┄ RHEL-09-255155 | V-258007 | RHEL 9 V2R9 | CAT II ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+# X11 forwarding documented with the ISSO as an operational requirement.
+rhel9_attest_ssh_x11_forwarding_approved: false
+rhel9_attest_ssh_x11_forwarding_approved_method: ""

@@ -1,0 +1,43 @@
+---
+# RHEL-09-255010 | V-257978
+# All RHEL 9 networked systems must have SSH installed.
+# CAT II (Medium) | CCI-002418, CCI-002420, CCI-002421, CCI-002422
+
+# The formal role installs openssh-server in remediate mode; in validate its
+# result depends on the package task. This check also honours a documented
+# exception for hosts that must not run SSH (rhel9_attest_no_sshd + _method):
+# with the exception attested and the package absent, not applicable.
+
+- name: RHEL-09-255010 | check openssh-server package
+  shell: |
+    if rpm -q openssh-server &>/dev/null; then
+      echo "STATUS: PASS"
+      echo "PASS: $(rpm -q openssh-server)"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: openssh-server is not installed"
+    fi
+  register: _255010_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-255010 | record status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-255010': {
+        'status':
+          'not_a_finding' if _255010_result.stdout is search('^STATUS: PASS', multiline=True)
+          else ('not_applicable' if (rhel9_attest_no_sshd | bool)
+          else 'open'),
+        'finding_details':
+          _255010_result.stdout | trim
+          ~ '\nAttestation (rhel9_attest_no_sshd): '
+          ~ (rhel9_attest_no_sshd | bool | string | lower)
+          ~ '\nDocumented exception: '
+          ~ (rhel9_attest_no_sshd_method if rhel9_attest_no_sshd_method else '(not provided)'),
+        'comments':
+          'Install openssh-server, or document the exception and set rhel9_attest_no_sshd: true with rhel9_attest_no_sshd_method.'
+      }
+    }) }}"
+  tags: [validate]
