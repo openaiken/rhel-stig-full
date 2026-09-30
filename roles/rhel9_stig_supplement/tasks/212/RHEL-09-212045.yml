@@ -7,7 +7,9 @@
 # This check follows the STIG method (grub default file, not grubby runtime).
 
 - name: RHEL-09-212045 | check init_on_free=1 in /etc/default/grub
-  command: grep -i GRUB_CMDLINE_LINUX /etc/default/grub
+  # Uncommented GRUB_CMDLINE_LINUX= only: a plain grep also matched a
+  # commented-out line (which the STIG calls a finding) and _DEFAULT.
+  shell: grep -E '^[[:space:]]*GRUB_CMDLINE_LINUX=' /etc/default/grub 2>/dev/null || true
   register: _212045_cmdline
   changed_when: false
   failed_when: false
@@ -19,7 +21,7 @@
       'RHEL-09-212045': {
         'status':
           'not_a_finding'
-          if 'init_on_free=1' in (_212045_cmdline.stdout | default(''))
+          if (_212045_cmdline.stdout | default('')) is search('(?<![\\w.])init_on_free=1(?!\\w)')
           else 'open',
         'finding_details':
           'GRUB_CMDLINE_LINUX: '
@@ -27,7 +29,7 @@
              if _212045_cmdline.stdout | default('') | trim else '(not found)')
           ~ '\nResult: '
           ~ ('not_a_finding - init_on_free=1 present in GRUB_CMDLINE_LINUX'
-             if 'init_on_free=1' in (_212045_cmdline.stdout | default(''))
+             if (_212045_cmdline.stdout | default('')) is search('(?<![\\w.])init_on_free=1(?!\\w)')
              else 'OPEN - init_on_free=1 missing from GRUB_CMDLINE_LINUX in /etc/default/grub'),
         'comments':
           'To remediate: sudo grubby --update-kernel=ALL --args=init_on_free=1 && '
