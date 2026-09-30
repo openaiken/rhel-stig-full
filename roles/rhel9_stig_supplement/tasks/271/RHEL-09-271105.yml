@@ -5,18 +5,21 @@
 # CAT II (Medium) | CCI-000366
 
 # Not Applicable if GDM is not installed.
-# Compliant when the logout key is empty ([''] or @as []).
+# Compliant when the logout key is explicitly empty ([''] or @as []). Unset is
+# a finding: the GNOME default binds Ctrl-Alt-Del to logout.
 
 - name: RHEL-09-271105 | check Ctrl-Alt-Del logout key in dconf keyfiles
   shell: |
     rpm -q gdm &>/dev/null || { echo "NA: gdm not installed"; exit 0; }
+    # Strip whitespace only; xargs would strip the quotes and turn the
+    # compliant value [''] into [], which then failed the comparison.
     val=$(grep -rh '^logout=' /etc/dconf/db/local.d/ 2>/dev/null \
-          | grep -v '/locks/' | head -1 | cut -d= -f2- | xargs)
-    if [ -z "$val" ] || [ "$val" = "['']" ] || [ "$val" = "@as []" ]; then
-      echo "PASS: ${val:-NOTSET (default, no action)}"
-    else
-      echo "FAIL: $val"
-    fi
+          | grep -v '/locks/' | head -1 | cut -d= -f2- | tr -d '[:space:]')
+    case "$val" in
+      "['']"|'[""]'|'[]'|'@as[]') echo "PASS: $val" ;;
+      '') echo "FAIL: NOTSET (GNOME default binds Ctrl-Alt-Del to logout)" ;;
+      *) echo "FAIL: $val" ;;
+    esac
   register: _271105_result
   changed_when: false
   failed_when: false

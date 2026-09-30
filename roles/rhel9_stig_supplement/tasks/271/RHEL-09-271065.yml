@@ -13,9 +13,11 @@
     rpm -q gdm &>/dev/null || { echo "NA: gdm not installed"; exit 0; }
     raw=$(grep -rh '^idle-delay=' /etc/dconf/db/local.d/ 2>/dev/null \
           | grep -v '/locks/' | head -1 | cut -d= -f2-)
-    val=$(echo "$raw" | grep -oP '\d+' | head -1)
+    # dconf stores a GVariant such as uint32 600. Take the number after the
+    # optional type prefix: the first digit run in the value is the 32 of uint32.
+    val=$(echo "$raw" | sed -nE 's/^[[:space:]]*(uint32[[:space:]]+)?([0-9]+)[[:space:]]*$/\2/p')
     if [ -z "$val" ]; then
-      echo "FAIL: NOTSET"
+      echo "FAIL: not set or unparseable (raw: ${raw:-NOTSET})"
     elif [ "$val" -eq 0 ] || [ "$val" -gt 600 ]; then
       echo "FAIL: $val seconds (raw: $raw)"
     else
