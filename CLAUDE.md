@@ -28,8 +28,12 @@ Consequences:
   the other rules, which taking only the newest file whole did. Results for
   rules switched off (`supp_rules`, `rhel9STIG_stigrule_<V>_Manage`) are
   dropped, and files are matched to the exact host name.
-- Result files are named `YYMonDD-HH:MM:SS-<host>...` (seconds, so a quick
-  single-rule run cannot overwrite a full run). Remediate runs write
+- Result files are named `YYYYMonDD-HH:MM:SS-<host>...` (four-digit year so
+  it is not misread as a day; seconds so a quick single-rule run cannot
+  overwrite a full run; the older `YYMonDD-HH:MM` form still parses). Only
+  files from the last `cklb_max_result_age_days` (default 30, run.sh
+  `--max-result-age`, 0 = no limit) are merged; older results are dropped,
+  not reported. Remediate runs write
   `-xccdf-remediate-run.xml`, which never enters a checklist: in that mode
   "changed" means fixed, not a finding.
 - `run.sh` exits 2 when some hosts failed or were unreachable but others
