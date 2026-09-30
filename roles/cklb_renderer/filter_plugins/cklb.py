@@ -6,7 +6,7 @@ import json
 import os
 import re
 import xml.etree.ElementTree as ET
-from datetime import datetime
+from datetime import datetime, timedelta
 
 XCCDF_NS = "http://checklists.nist.gov/xccdf/1.2"
 
@@ -19,15 +19,23 @@ _MONTHS = {
 _XCCDF_TO_CKLB = {'pass': 'not_a_finding', 'fail': 'open'}
 
 
+_STAMP_RE = r'(\d{4}|\d{2})([A-Za-z]{3})(\d{2})-(\d{2}):(\d{2})(?::(\d{2}))?-'
+
+
 def _filename_datetime(path):
-    """Parse the YYMonDD-HH:MM[:SS] filename prefix for chronological sorting."""
+    """Parse the YYYYMonDD-HH:MM:SS filename prefix for chronological sorting.
+
+    Also accepts the older YYMonDD-HH:MM[:SS] form, so existing files keep
+    their place in the ordering.
+    """
     name = os.path.basename(path)
-    m = re.match(r'(\d{2})([A-Za-z]{3})(\d{2})-(\d{2}):(\d{2})(?::(\d{2}))?', name)
+    m = re.match(_STAMP_RE, name)
     if not m:
         return datetime.min
     yy, mon, dd, hh, mm, ss = m.groups()
+    year = int(yy) if len(yy) == 4 else 2000 + int(yy)
     month = _MONTHS.get(mon.lower(), 0)
-    return datetime(2000 + int(yy), month, int(dd), int(hh), int(mm), int(ss or 0))
+    return datetime(year, month, int(dd), int(hh), int(mm), int(ss or 0))
 
 
 _BENCH_PREFIX = 'xccdf_mil.disa.stig_testresult_scap_mil.disa_comp_'
@@ -92,7 +100,7 @@ def _truthy(v):
 
 
 def cklb_render(template_json, hostname, xccdf_paths, supp_paths, fqdn='', ip_address='',
-                supp_rules=None, formal_manage=None):
+                supp_rules=None, formal_manage=None, max_age_days=30):
     """
     Merge XCCDF results and supplement facts into the CKLB template for a single host.
 
@@ -119,13 +127,20 @@ def cklb_render(template_json, hostname, xccdf_paths, supp_paths, fqdn='', ip_ad
     # The find patterns are globs (*-<host>.json), which also match another
     # host whose name ends in -<host>: bindtest would absorb delta-bindtest.
     # Keep only files whose host part is exactly this host.
-    stamp_re = r'\d{2}[A-Za-z]{3}\d{2}-\d{2}:\d{2}(?::\d{2})?-'
     own = lambda paths, tail: [
         p for p in (paths or [])
-        if re.fullmatch(stamp_re + re.escape(hostname) + re.escape(tail), os.path.basename(p))
+        if re.fullmatch(_STAMP_RE + re.escape(hostname) + re.escape(tail), os.path.basename(p))
     ]
     xccdf_paths = own(xccdf_paths, '-xccdf-results.xml')
     supp_paths = own(supp_paths, '.json')
+
+    # Only files inside the age window take part in the merge (0: no limit).
+    max_age_days = int(max_age_days or 0)
+    if max_age_days > 0:
+        cutoff = datetime.now() - timedelta(days=max_age_days)
+        recent = lambda paths: [p for p in paths if _filename_datetime(p) >= cutoff]
+        xccdf_paths = recent(xccdf_paths)
+        supp_paths = recent(supp_paths)
 
     xccdf_accum = {}
     for path in sorted(xccdf_paths or [], key=lambda p: (_filename_datetime(p), p)):

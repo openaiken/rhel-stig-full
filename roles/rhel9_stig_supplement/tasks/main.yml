@@ -1,9 +1,9 @@
 ---
 - name: set supplement run timestamp
   set_fact:
-    # Seconds included: a tag-limited run in the same minute as a full run
-    # otherwise overwrote the full results file.
-    supp_run_ts: "{{ '%y%b%d-%H:%M:%S' | strftime }}"
+    # Four-digit year so it cannot be misread as a day; seconds so a
+    # tag-limited run in the same minute cannot overwrite a full run.
+    supp_run_ts: "{{ '%Y%b%d-%H:%M:%S' | strftime }}"
   delegate_to: localhost
   become: false
   tags: always

@@ -1,7 +1,7 @@
 ---
 - name: set run timestamp
   set_fact:
-    cklb_run_ts: "{{ '%y%b%d-%H:%M' | strftime }}"
+    cklb_run_ts: "{{ '%Y%b%d-%H:%M:%S' | strftime }}"
   run_once: true
   delegate_to: localhost
   tags: [validate]
@@ -39,6 +39,7 @@
         xccdf_paths=xccdf_files.files | map(attribute='path') | list,
         supp_paths=supp_files.files | map(attribute='path') | list,
         supp_rules=supp_rules | default({}),
+        max_age_days=cklb_max_result_age_days | int,
         formal_manage=dict(
           query('varnames', '^rhel9STIG_stigrule_[0-9]+_Manage$')
           | map('regex_replace', '^rhel9STIG_stigrule_([0-9]+)_Manage$', '\\1')

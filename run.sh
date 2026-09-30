@@ -12,6 +12,7 @@ HOST="default_host_group"
 SKIP_FORMAL=false
 SKIP_SUPPLEMENT=false
 SKIP_CKLB=false
+MAX_RESULT_AGE=
 VERBOSITY="-v"
 VAULT_MODE=""        # "file" or "prompt"
 VAULT_FILE=""        # path supplied with --vault-pass-file
@@ -52,6 +53,11 @@ Skip plays:
   --skip-formal             Skip the rhel9STIG formal role play
   --skip-supplement         Skip the supplement checks/remediation play
   --skip-cklb               Skip the CKLB renderer (validate mode only)
+
+Checklist:
+  --max-result-age DAYS     Merge only result files from the last DAYS days
+                            into the checklist (default 30; 0 = no limit).
+                            Older results are left out rather than reported.
 
 Other:
   -v, -vv, -vvv, -vvvv     Ansible verbosity level (default: -v)
@@ -94,6 +100,10 @@ while [[ $# -gt 0 ]]; do
       SKIP_SUPPLEMENT=true; shift ;;
     --skip-cklb)
       SKIP_CKLB=true; shift ;;
+    --max-result-age)
+      [[ $# -lt 2 ]] && die "--max-result-age requires a number of days"
+      [[ "$2" =~ ^[0-9]+$ ]] || die "--max-result-age takes a whole number of days, got: $2"
+      MAX_RESULT_AGE="$2"; shift 2 ;;
     --vault-pass-file)
       [[ $# -lt 2 ]] && die "--vault-pass-file requires a path argument"
       [[ -f "$2" ]] || die "Vault password file not found: $2"
@@ -197,7 +207,9 @@ fi
 
 if [[ "$SKIP_CKLB" == false && "$TAG" == "validate" ]]; then
   info "CKLB renderer → $HOST"
-  run_play "CKLB renderer" ./cklb.yml --tags validate "${COMMON[@]}"
+  CKLB_ARGS=()
+  [[ -n "$MAX_RESULT_AGE" ]] && CKLB_ARGS+=(-e "cklb_max_result_age_days=$MAX_RESULT_AGE")
+  run_play "CKLB renderer" ./cklb.yml --tags validate "${COMMON[@]}" "${CKLB_ARGS[@]}"
 fi
 
 if [[ ${#SKIPPED_HOSTS[@]} -gt 0 ]]; then

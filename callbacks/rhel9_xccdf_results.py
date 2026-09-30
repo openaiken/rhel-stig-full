@@ -64,8 +64,9 @@ class CallbackModule(CallbackBase):
         self._display.display("Writing XCCDF results to: {}".format(self.xml_dir))
 
         self.stig_name = os.path.basename(self.stig_path) if self.stig_path else "unknown"
-        # seconds included so two runs in the same minute do not overwrite
-        self.run_ts = strftime("%y%b%d-%H:%M:%S", localtime())
+        # four-digit year so it cannot be misread as a day; seconds so two
+        # runs in the same minute do not overwrite each other
+        self.run_ts = strftime("%Y%b%d-%H:%M:%S", localtime())
         # formal-role.yml runs in check mode for the validate tag or --check,
         # where changed means would-change, i.e. a finding. In a remediate run
         # changed means was-fixed, which is not an assessment; those results
