@@ -17,10 +17,11 @@ vs 259 on another — same role.
 
 Consequences:
 
-- The supplement deliberately carries more tasks (187) than any one host strictly
-  needs (167 here). **Never delete a supplement task because a scan shows the
-  formal role covering that rule.** The overlap is what makes coverage
-  host-independent.
+- The supplement deliberately carries far more tasks (378 of 445 rules) than the
+  167 the formal role never covers. **Never delete a supplement task because a
+  scan shows the formal role covering that rule.** The overlap is what makes
+  coverage host-independent, and it is also how results stay correct: see the
+  next section.
 - `cklb.py` gives supplement facts precedence over XCCDF for this reason.
   It merges each source per rule across all of a host's result files, newest
   winning, and stamps each rule's comments with the run it came from. Older
@@ -42,6 +43,37 @@ Consequences:
   run.sh decides from the PLAY RECAP, not the code.
 - In `audit_coverage.py` output, a big gap between `formal role static tasks (# R-)`
   and `formal_role_covered` means many role tasks are being skipped on that host.
+
+## The formal role's check mode is a text match, not an assessment
+
+In validate mode the DISA role runs in check mode, and a rule "fails" when a
+task *would change something*. Its tasks write one exact line into one exact
+file, or set one exact value. So on any host configured correctly but not by
+that role, it reports compliant settings as findings:
+
+- settings in a drop-in or other file (`sysctl.d`, `sshd_config.d`,
+  `rules.d/*.rules`, `pwquality.conf.d`, `modprobe.d/<other>.conf`);
+- the same value spelled differently (`halt` / `HALT`, `key = v` / `key=v`, a
+  tab, `/etc/issue` line breaks);
+- **stricter** values where the STIG sets a limit (`minlen = 16` against
+  "15 or more"; mode 0600 against "0640 or less": the role sets exactly 0640);
+- N/A conditions the role ignores (core-dump rules when `kernel.core_pattern`
+  is `|/bin/false`).
+
+On delta-bindtest (ComplianceAsCode) that was 124 of 156 open findings. The
+supplement now owns every rule where the role's check is a line or value
+match, and checks what the STIG checks: the running or effective value where
+one exists (`sysctl -n`, `sshd -T`, `auditctl -l` via the
+`rhel9_audit_coverage` filter, `gsettings`, `systemctl show`), files read the
+way their consumer reads them, thresholds compared as thresholds. What remains
+with the formal role are package, service, ownership and `0000`-mode rules,
+where check mode compares real state. When a new revision adds a rule the role
+implements with `lineinfile`, `ini_file`, `sysctl` or an exact `mode`, give it
+a supplement task.
+
+`rhel9_attest_documented_exceptions` (STIG ID -> documentation reference) is
+honoured only by rules whose check text allows an ISSO/ISSM-documented
+exception; each such task says so, and the var's comment lists them.
 
 ## Identifiers
 
