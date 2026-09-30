@@ -53,6 +53,7 @@ CHECKS = {
     "SHELL-APOS":   "apostrophe in a shell comment (Ansible parse_kv sees unbalanced quotes)",
     "OCTAL-MAGNITUDE": "file mode converted to a number and compared by size; use a bitmask of forbidden bits",
     "UNANCHORED-MARKER": "status decided by a substring test such as 'STATUS: PASS' in x.stdout; anchor it: x.stdout is search('^STATUS: PASS', multiline=True)",
+    "DQUOTE-IN-SETFACT": "double quote inside the supp_facts set_fact string, which is itself a double-quoted YAML scalar",
     "JINJA-COMMENT": "'{#' opens a Jinja comment (e.g. bash ${#arr[@]}); Ansible fails to parse the role",
     "FILE-NOT-EFFECTIVE":
                     "greps config files for a setting whose effective value can differ "
@@ -146,6 +147,14 @@ def lint(sid, path):
     for i, l in enumerate(lines, 1):
         if re.search(r"'(STATUS: PASS|NA:|PASS:)' in _\d{6}\w*\.stdout", l):
             hits.append(("UNANCHORED-MARKER", i, l.strip()[:70]))
+
+    # C6c: the supp_facts expression sits inside a double-quoted YAML scalar,
+    # so any further double quote in it ends the scalar early.
+    for m in re.finditer(r'supp_facts:\s*"\{\{(.*?)\}\}"\s*$', src, re.S | re.M):
+        body = m.group(1)
+        if '"' in body.replace('\\"', ''):
+            ln = src[:m.start()].count("\n") + 1
+            hits.append(("DQUOTE-IN-SETFACT", ln, "supp_facts string contains a double quote"))
 
     # C6b: "{#" anywhere opens a Jinja comment. Bash ${#var} / ${#arr[@]} is the
     # usual culprit. Ansible then cannot split the task's arguments and the

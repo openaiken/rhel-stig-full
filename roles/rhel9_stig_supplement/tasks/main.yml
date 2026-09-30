@@ -21,6 +21,10 @@
   tags: [RHEL-09-211015]
   when: supp_rules['RHEL-09-211015'] | default(true) | bool
 
+- import_tasks: 211/RHEL-09-211020.yml
+  tags: [RHEL-09-211020]
+  when: supp_rules['RHEL-09-211020'] | default(true) | bool
+
 - import_tasks: 211/RHEL-09-211030.yml
   tags: [RHEL-09-211030]
   when: supp_rules['RHEL-09-211030'] | default(true) | bool
@@ -105,6 +109,22 @@
   tags: [RHEL-09-213080]
   when: supp_rules['RHEL-09-213080'] | default(true) | bool
 
+- import_tasks: 213/RHEL-09-213085.yml
+  tags: [RHEL-09-213085]
+  when: supp_rules['RHEL-09-213085'] | default(true) | bool
+
+- import_tasks: 213/RHEL-09-213090.yml
+  tags: [RHEL-09-213090]
+  when: supp_rules['RHEL-09-213090'] | default(true) | bool
+
+- import_tasks: 213/RHEL-09-213095.yml
+  tags: [RHEL-09-213095]
+  when: supp_rules['RHEL-09-213095'] | default(true) | bool
+
+- import_tasks: 213/RHEL-09-213100.yml
+  tags: [RHEL-09-213100]
+  when: supp_rules['RHEL-09-213100'] | default(true) | bool
+
 - import_tasks: 213/RHEL-09-213105.yml
   tags: [RHEL-09-213105]
   when: supp_rules['RHEL-09-213105'] | default(true) | bool
@@ -117,6 +137,10 @@
   tags: [RHEL-09-214010]
   when: supp_rules['RHEL-09-214010'] | default(true) | bool
 
+- import_tasks: 214/RHEL-09-214020.yml
+  tags: [RHEL-09-214020]
+  when: supp_rules['RHEL-09-214020'] | default(true) | bool
+
 - import_tasks: 214/RHEL-09-214025.yml
   tags: [RHEL-09-214025]
   when: supp_rules['RHEL-09-214025'] | default(true) | bool
@@ -124,6 +148,10 @@
 - import_tasks: 214/RHEL-09-214030.yml
   tags: [RHEL-09-214030]
   when: supp_rules['RHEL-09-214030'] | default(true) | bool
+
+- import_tasks: 214/RHEL-09-214035.yml
+  tags: [RHEL-09-214035]
+  when: supp_rules['RHEL-09-214035'] | default(true) | bool
 
 - import_tasks: 215/RHEL-09-215015.yml
   tags: [RHEL-09-215015]
@@ -408,6 +436,10 @@
 - import_tasks: 252/RHEL-09-252035.yml
   tags: [RHEL-09-252035]
   when: supp_rules['RHEL-09-252035'] | default(true) | bool
+
+- import_tasks: 252/RHEL-09-252040.yml
+  tags: [RHEL-09-252040]
+  when: supp_rules['RHEL-09-252040'] | default(true) | bool
 
 - import_tasks: 252/RHEL-09-252045.yml
   tags: [RHEL-09-252045]
@@ -733,6 +765,10 @@
   tags: [RHEL-09-411015]
   when: supp_rules['RHEL-09-411015'] | default(true) | bool
 
+- import_tasks: 411/RHEL-09-411020.yml
+  tags: [RHEL-09-411020]
+  when: supp_rules['RHEL-09-411020'] | default(true) | bool
+
 - import_tasks: 411/RHEL-09-411025.yml
   tags: [RHEL-09-411025]
   when: supp_rules['RHEL-09-411025'] | default(true) | bool
@@ -788,6 +824,18 @@
 - import_tasks: 412/RHEL-09-412035.yml
   tags: [RHEL-09-412035]
   when: supp_rules['RHEL-09-412035'] | default(true) | bool
+
+- import_tasks: 412/RHEL-09-412040.yml
+  tags: [RHEL-09-412040]
+  when: supp_rules['RHEL-09-412040'] | default(true) | bool
+
+- import_tasks: 412/RHEL-09-412055.yml
+  tags: [RHEL-09-412055]
+  when: supp_rules['RHEL-09-412055'] | default(true) | bool
+
+- import_tasks: 412/RHEL-09-412060.yml
+  tags: [RHEL-09-412060]
+  when: supp_rules['RHEL-09-412060'] | default(true) | bool
 
 - import_tasks: 412/RHEL-09-412080.yml
   tags: [RHEL-09-412080]
@@ -865,6 +913,10 @@
   tags: [RHEL-09-611085]
   when: supp_rules['RHEL-09-611085'] | default(true) | bool
 
+- import_tasks: 611/RHEL-09-611135.yml
+  tags: [RHEL-09-611135]
+  when: supp_rules['RHEL-09-611135'] | default(true) | bool
+
 - import_tasks: 611/RHEL-09-611145.yml
   tags: [RHEL-09-611145]
   when: supp_rules['RHEL-09-611145'] | default(true) | bool
@@ -872,6 +924,10 @@
 - import_tasks: 611/RHEL-09-611155.yml
   tags: [RHEL-09-611155]
   when: supp_rules['RHEL-09-611155'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611160.yml
+  tags: [RHEL-09-611160]
+  when: supp_rules['RHEL-09-611160'] | default(true) | bool
 
 - import_tasks: 611/RHEL-09-611170.yml
   tags: [RHEL-09-611170]
@@ -896,6 +952,10 @@
 - import_tasks: 631/RHEL-09-631015.yml
   tags: [RHEL-09-631015]
   when: supp_rules['RHEL-09-631015'] | default(true) | bool
+
+- import_tasks: 631/RHEL-09-631020.yml
+  tags: [RHEL-09-631020]
+  when: supp_rules['RHEL-09-631020'] | default(true) | bool
 
 - import_tasks: 651/RHEL-09-651010.yml
   tags: [RHEL-09-651010]
@@ -929,13 +989,45 @@
   tags: [RHEL-09-652025]
   when: supp_rules['RHEL-09-652025'] | default(true) | bool
 
+- import_tasks: 652/RHEL-09-652030.yml
+  tags: [RHEL-09-652030]
+  when: supp_rules['RHEL-09-652030'] | default(true) | bool
+
+- import_tasks: 652/RHEL-09-652040.yml
+  tags: [RHEL-09-652040]
+  when: supp_rules['RHEL-09-652040'] | default(true) | bool
+
+- import_tasks: 652/RHEL-09-652045.yml
+  tags: [RHEL-09-652045]
+  when: supp_rules['RHEL-09-652045'] | default(true) | bool
+
+- import_tasks: 652/RHEL-09-652050.yml
+  tags: [RHEL-09-652050]
+  when: supp_rules['RHEL-09-652050'] | default(true) | bool
+
 - import_tasks: 652/RHEL-09-652055.yml
   tags: [RHEL-09-652055]
   when: supp_rules['RHEL-09-652055'] | default(true) | bool
 
+- import_tasks: 652/RHEL-09-652060.yml
+  tags: [RHEL-09-652060]
+  when: supp_rules['RHEL-09-652060'] | default(true) | bool
+
+- import_tasks: 653/RHEL-09-653020.yml
+  tags: [RHEL-09-653020]
+  when: supp_rules['RHEL-09-653020'] | default(true) | bool
+
+- import_tasks: 653/RHEL-09-653025.yml
+  tags: [RHEL-09-653025]
+  when: supp_rules['RHEL-09-653025'] | default(true) | bool
+
 - import_tasks: 653/RHEL-09-653030.yml
   tags: [RHEL-09-653030]
   when: supp_rules['RHEL-09-653030'] | default(true) | bool
+
+- import_tasks: 653/RHEL-09-653065.yml
+  tags: [RHEL-09-653065]
+  when: supp_rules['RHEL-09-653065'] | default(true) | bool
 
 - import_tasks: 653/RHEL-09-653080.yml
   tags: [RHEL-09-653080]

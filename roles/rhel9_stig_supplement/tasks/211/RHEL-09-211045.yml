@@ -50,8 +50,8 @@
         'comments':
           'To remediate: '
           ~ 'sudo mkdir -p /etc/systemd/system.conf.d && '
-          ~ 'sudo bash -c \"echo CtrlAltDelBurstAction=none > '
-          ~ '/etc/systemd/system.conf.d/55-CtrlAltDel-BurstAction.conf\" && '
+          ~ 'sudo bash -c \echo CtrlAltDelBurstAction=none > '
+          ~ '/etc/systemd/system.conf.d/55-CtrlAltDel-BurstAction.conf\ && '
           ~ 'sudo systemctl daemon-reload'
       }
     }) }}"

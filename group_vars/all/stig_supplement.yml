@@ -8,6 +8,8 @@ supp_rules:
   RHEL-09-211010: true
   # CAT II   RHEL 9 vendor packaged system security patches and updates must be ins
   RHEL-09-211015: true
+  # CAT II   RHEL 9 must display the Standard Mandatory DOD Notice and Consent Ban
+  RHEL-09-211020: true
   # CAT II   The graphical display manager must not be the default target on RHEL 9
   RHEL-09-211030: true
   # CAT III  RHEL 9 must enable the hardware random number generator entropy gather
@@ -50,16 +52,28 @@ supp_rules:
   RHEL-09-213075: true
   # CAT II   RHEL 9 must restrict usage of ptrace to descendant processes.
   RHEL-09-213080: true
+  # CAT II   RHEL 9 must disable core dump backtraces.
+  RHEL-09-213085: true
+  # CAT II   RHEL 9 must disable storing core dumps.
+  RHEL-09-213090: true
+  # CAT II   RHEL 9 must disable core dumps for all users.
+  RHEL-09-213095: true
+  # CAT II   RHEL 9 must disable acquiring, saving, and processing core dumps.
+  RHEL-09-213100: true
   # CAT II   RHEL 9 must disable the use of user namespaces.
   RHEL-09-213105: true
   # CAT II   RHEL 9 must implement nonexecutable data to protect its memory from un
   RHEL-09-213110: true
   # CAT II   RHEL 9 must ensure cryptographic verification of vendor software packa
   RHEL-09-214010: true
+  # CAT I    RHEL 9 must check the GPG signature of locally installed software pac
+  RHEL-09-214020: true
   # CAT I    RHEL 9 must have GPG signature verification enabled for all software r
   RHEL-09-214025: true
   # CAT II   RHEL 9 must be configured so that the cryptographic hashes of system f
   RHEL-09-214030: true
+  # CAT III  RHEL 9 must remove all software components after updated versions hav
+  RHEL-09-214035: true
   # CAT I    RHEL 9 must not have a File Transfer Protocol (FTP) server package ins
   RHEL-09-215015: true
   # CAT I    The Trivial File Transfer Protocol (TFTP) server must not be installed
@@ -202,6 +216,8 @@ supp_rules:
   RHEL-09-252020: true
   # CAT II   RHEL 9 systems using Domain Name Servers (DNS) resolution must have at
   RHEL-09-252035: true
+  # CAT II   RHEL 9 must configure a DNS processing mode in Network Manager.
+  RHEL-09-252040: true
   # CAT II   RHEL 9 must not have unauthorized IP tunnels configured.
   RHEL-09-252045: true
   # CAT II   RHEL 9 must be configured to prevent unrestricted mail relaying.
@@ -362,6 +378,8 @@ supp_rules:
   RHEL-09-291040: true
   # CAT II   RHEL 9 user account passwords must have a 60-day maximum password life
   RHEL-09-411015: true
+  # CAT II   All RHEL 9 local interactive user accounts must be assigned a home di
+  RHEL-09-411020: true
   # CAT II   RHEL 9 must set the umask value to 077 for all local interactive user 
   RHEL-09-411025: true
   # CAT II   RHEL 9 duplicate User IDs (UIDs) must not exist for interactive users.
@@ -390,6 +408,12 @@ supp_rules:
   RHEL-09-411110: true
   # CAT II   RHEL 9 must automatically exit interactive command shell user sessions
   RHEL-09-412035: true
+  # CAT III  RHEL 9 must limit the number of concurrent sessions to ten for all ac
+  RHEL-09-412040: true
+  # CAT II   RHEL 9 must define default permissions for the bash shell.
+  RHEL-09-412055: true
+  # CAT II   RHEL 9 must define default permissions for the c shell.
+  RHEL-09-412060: true
   # CAT II   RHEL 9 must terminate idle user sessions.
   RHEL-09-412080: true
   # CAT II   RHEL 9 must elevate the SELinux context when an administrator calls th
@@ -428,10 +452,14 @@ supp_rules:
   RHEL-09-611080: true
   # CAT II   RHEL 9 must require users to provide a password for privilege escalati
   RHEL-09-611085: true
+  # CAT II   RHEL 9 must be configured so that user and group account administrati
+  RHEL-09-611135: true
   # CAT II   RHEL 9 must not be configured to bypass password requirements for priv
   RHEL-09-611145: true
   # CAT II   RHEL 9 must not have accounts configured with blank or null passwords.
   RHEL-09-611155: true
+  # CAT II   RHEL 9 must use the common access card (CAC) smart card driver.
+  RHEL-09-611160: true
   # CAT II   RHEL 9 must implement certificate status checking for multifactor auth
   RHEL-09-611170: true
   # CAT II   The pcscd socket on RHEL 9 must be active.
@@ -444,6 +472,8 @@ supp_rules:
   RHEL-09-631010: true
   # CAT II   RHEL 9 must map the authenticated identity to the user or group accoun
   RHEL-09-631015: true
+  # CAT II   RHEL 9 must prohibit the use of cached authenticators after one day.
+  RHEL-09-631020: true
   # CAT II   RHEL 9 must have the AIDE package installed.
   RHEL-09-651010: true
   # CAT II   RHEL 9 must routinely check the baseline configuration for unauthorize
@@ -460,10 +490,26 @@ supp_rules:
   RHEL-09-652020: true
   # CAT II   RHEL 9 must be configured so that the rsyslog daemon does not accept l
   RHEL-09-652025: true
+  # CAT II   All RHEL 9 remote access methods must be monitored.
+  RHEL-09-652030: true
+  # CAT II   RHEL 9 must authenticate the remote logging server for offloading aud
+  RHEL-09-652040: true
+  # CAT II   RHEL 9 must encrypt the transfer of audit records offloaded onto a di
+  RHEL-09-652045: true
+  # CAT II   RHEL 9 must encrypt via the gtls driver the transfer of audit records
+  RHEL-09-652050: true
   # CAT II   RHEL 9 must be configured to forward audit records via TCP to a differ
   RHEL-09-652055: true
+  # CAT II   RHEL 9 must use cron logging.
+  RHEL-09-652060: true
+  # CAT II   RHEL 9 audit system must take appropriate action when an error writin
+  RHEL-09-653020: true
+  # CAT II   RHEL 9 audit system must take appropriate action when the audit stora
+  RHEL-09-653025: true
   # CAT II   RHEL 9 must allocate audit record storage capacity to store at least o
   RHEL-09-653030: true
+  # CAT II   RHEL 9 must take appropriate action when the internal event queue is
+  RHEL-09-653065: true
   # CAT II   RHEL 9 audit logs must be group-owned by root or by a restricted loggi
   RHEL-09-653080: true
   # CAT II   RHEL 9 audit log directory must be owned by root to prevent unauthoriz
