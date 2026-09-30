@@ -16,6 +16,11 @@
 - name: RHEL-09-212035 | check vsyscall=none in kernel args and grub defaults
   shell: |
     fail=0
+    # grubby printing no kernel entries would otherwise read as compliant
+    if [ "$(grubby --info=ALL 2>/dev/null | grep -c '^args=')" -eq 0 ]; then
+      fail=1
+      echo "FAIL: grubby --info=ALL returned no kernel entries; cannot verify"
+    fi
     missing=$(grubby --info=ALL | grep args | grep -v 'vsyscall=none')
     if [ -n "$missing" ]; then
       fail=1
