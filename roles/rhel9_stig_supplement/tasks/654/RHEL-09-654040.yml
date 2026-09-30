@@ -1,8 +1,7 @@
 ---
-# RHEL-09-654210 | V-258216
-# Successful/unsuccessful uses of the umount2 system call in RHEL 9 must
-# generate an audit record.
-# CAT II (Medium) | CCI-000130, CCI-000169, CCI-000172, CCI-002884
+# RHEL-09-654040 | V-258182
+# RHEL 9 must audit all uses of the setfacl command.
+# CAT II (Medium) | CCI-000130, CCI-000135, CCI-000169, CCI-000172, CCI-002884
 
 # Loaded rules (auditctl -l), as the STIG check reads them.
 # Each expected rule below (from the STIG check text) must be covered by a
@@ -11,27 +10,26 @@
 # filter_plugins/audit_rules.py. The formal role checked for its own lines in
 # /etc/audit/rules.d/audit.rules, so hosts hardened any other way were open.
 
-- name: RHEL-09-654210 | read audit rules
+- name: RHEL-09-654040 | read audit rules
   command: auditctl -l
-  register: _654210_rules
+  register: _654040_rules
   changed_when: false
   failed_when: false
   tags: [validate]
 
-- name: RHEL-09-654210 | record audit rule coverage
+- name: RHEL-09-654040 | record audit rule coverage
   vars:
-    _654210_expected:
-      - "-a always,exit -F arch=b64 -S umount2 -F auid>=1000 -F auid!=-1 -F key=privileged-umount"
-      - "-a always,exit -F arch=b32 -S umount2 -F auid>=1000 -F auid!=-1 -F key=privileged-umount"
-    _654210_cov: "{{ _654210_rules.stdout | default('') | rhel9_audit_coverage(_654210_expected) }}"
+    _654040_expected:
+      - "-a always,exit -S all -F path=/usr/bin/setfacl -F perm=x -F auid>=1000 -F auid!=-1 -F key=perm_mod"
+    _654040_cov: "{{ _654040_rules.stdout | default('') | rhel9_audit_coverage(_654040_expected) }}"
   set_fact:
     supp_facts: "{{ supp_facts | combine({
-      'RHEL-09-654210': {
+      'RHEL-09-654040': {
         'status':
           'not_a_finding'
-          if (_654210_rules.rc | default(1) == 0 and _654210_cov.loaded > 0 and _654210_cov.missing | length == 0)
+          if (_654040_rules.rc | default(1) == 0 and _654040_cov.loaded > 0 and _654040_cov.missing | length == 0)
           else 'open',
-        'finding_details': _654210_cov.report,
+        'finding_details': _654040_cov.report,
         'comments':
           'Add rules covering each MISSING line to a file in /etc/audit/rules.d/, '
           ~ 'then run augenrules --load. Any key may be used.'

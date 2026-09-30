@@ -410,10 +410,108 @@ supp_rules:
   RHEL-09-653120: true
   # CAT II   RHEL 9 must have mail aliases to notify the information system securit
   RHEL-09-653125: true
+  # CAT II   RHEL 9 must audit uses of the "execve" system call.
+  RHEL-09-654010: true
+  # CAT II   RHEL 9 must audit all uses of the chmod, fchmod, and fchmodat system
+  RHEL-09-654015: true
+  # CAT II   RHEL 9 must audit all uses of the chown, fchown, fchownat, and lchown
+  RHEL-09-654020: true
+  # CAT II   RHEL 9 must audit all uses of the setxattr, fsetxattr, lsetxattr, rem
+  RHEL-09-654025: true
+  # CAT II   RHEL 9 must audit all uses of umount system calls.
+  RHEL-09-654030: true
+  # CAT II   RHEL 9 must audit all uses of the chacl command.
+  RHEL-09-654035: true
+  # CAT II   RHEL 9 must audit all uses of the setfacl command.
+  RHEL-09-654040: true
+  # CAT II   RHEL 9 must audit all uses of the chcon command.
+  RHEL-09-654045: true
+  # CAT II   RHEL 9 must audit all uses of the semanage command.
+  RHEL-09-654050: true
+  # CAT II   RHEL 9 must audit all uses of the setfiles command.
+  RHEL-09-654055: true
+  # CAT II   RHEL 9 must audit all uses of the setsebool command.
+  RHEL-09-654060: true
+  # CAT II   RHEL 9 must audit all uses of the rename, unlink, rmdir, renameat, an
+  RHEL-09-654065: true
+  # CAT II   RHEL 9 must audit all uses of the truncate, ftruncate, creat, open, o
+  RHEL-09-654070: true
+  # CAT II   RHEL 9 must audit all uses of the delete_module system call.
+  RHEL-09-654075: true
+  # CAT II   RHEL 9 must audit all uses of the init_module and finit_module system
+  RHEL-09-654080: true
+  # CAT II   RHEL 9 must audit all uses of the chage command.
+  RHEL-09-654085: true
+  # CAT II   RHEL 9 must audit all uses of the chsh command.
+  RHEL-09-654090: true
+  # CAT II   RHEL 9 must audit all uses of the crontab command.
+  RHEL-09-654095: true
+  # CAT II   RHEL 9 must audit any script or executable called by cron as root or
+  RHEL-09-654097: true
+  # CAT II   RHEL 9 must audit all uses of the gpasswd command.
+  RHEL-09-654100: true
+  # CAT II   RHEL 9 must audit all uses of the kmod command.
+  RHEL-09-654105: true
+  # CAT II   RHEL 9 must audit all uses of the newgrp command.
+  RHEL-09-654110: true
+  # CAT II   RHEL 9 must audit all uses of the pam_timestamp_check command.
+  RHEL-09-654115: true
+  # CAT II   RHEL 9 must audit all uses of the passwd command.
+  RHEL-09-654120: true
+  # CAT II   RHEL 9 must audit all uses of the postdrop command.
+  RHEL-09-654125: true
+  # CAT II   RHEL 9 must audit all uses of the postqueue command.
+  RHEL-09-654130: true
+  # CAT II   RHEL 9 must audit all uses of the ssh-agent command.
+  RHEL-09-654135: true
+  # CAT II   RHEL 9 must audit all uses of the ssh-keysign command.
+  RHEL-09-654140: true
+  # CAT II   RHEL 9 must audit all uses of the su command.
+  RHEL-09-654145: true
+  # CAT II   RHEL 9 must audit all uses of the sudo command.
+  RHEL-09-654150: true
+  # CAT II   RHEL 9 must audit all uses of the sudoedit command.
+  RHEL-09-654155: true
+  # CAT II   RHEL 9 must audit all uses of the unix_chkpwd command.
+  RHEL-09-654160: true
+  # CAT II   RHEL 9 must audit all uses of the unix_update command.
+  RHEL-09-654165: true
+  # CAT II   RHEL 9 must audit all uses of the userhelper command.
+  RHEL-09-654170: true
+  # CAT II   RHEL 9 must audit all uses of the usermod command.
+  RHEL-09-654175: true
+  # CAT II   RHEL 9 must audit all uses of the mount command.
+  RHEL-09-654180: true
+  # CAT II   Successful/unsuccessful uses of the init command in RHEL 9 must gener
+  RHEL-09-654185: true
+  # CAT II   Successful/unsuccessful uses of the poweroff command in RHEL 9 must g
+  RHEL-09-654190: true
+  # CAT II   Successful/unsuccessful uses of the reboot command in RHEL 9 must gen
+  RHEL-09-654195: true
+  # CAT II   Successful/unsuccessful uses of the shutdown command in RHEL 9 must g
+  RHEL-09-654200: true
   # CAT II   Successful/unsuccessful uses of the umount system call in RHEL 9 must 
   RHEL-09-654205: true
   # CAT II   Successful/unsuccessful uses of the umount2 system call in RHEL 9 must
   RHEL-09-654210: true
+  # CAT II   RHEL 9 must generate audit records for all account creations, modific
+  RHEL-09-654215: true
+  # CAT II   RHEL 9 must generate audit records for all account creations, modific
+  RHEL-09-654220: true
+  # CAT II   RHEL 9 must generate audit records for all account creations, modific
+  RHEL-09-654225: true
+  # CAT II   RHEL 9 must generate audit records for all account creations, modific
+  RHEL-09-654230: true
+  # CAT II   RHEL 9 must generate audit records for all account creations, modific
+  RHEL-09-654235: true
+  # CAT II   RHEL 9 must generate audit records for all account creations, modific
+  RHEL-09-654240: true
+  # CAT II   RHEL 9 must generate audit records for all account creations, modific
+  RHEL-09-654245: true
+  # CAT II   RHEL 9 must generate audit records for all account creations, modific
+  RHEL-09-654250: true
+  # CAT II   RHEL 9 must generate audit records for all account creations, modific
+  RHEL-09-654255: true
   # CAT I    RHEL 9 must enable FIPS mode.
   RHEL-09-671010: true
   # CAT II   RHEL 9 must employ FIPS 140-3-approved cryptographic hashing algorithm

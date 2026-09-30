@@ -110,6 +110,8 @@ def lint(sid, path):
 
     # C4/C5: register vs reference
     reg = set(re.findall(r"^\s*register:\s*(\w+)", src, re.M))
+    # names defined as task-level vars (e.g. the audit rule coverage result)
+    reg |= set(re.findall(r"^\s{4}(_\d{6}\w*):", src, re.M))
     refs = set(re.findall(r"(_\d{6}\w*)", src)) - reg
     for r in sorted(reg):
         if len(re.findall(re.escape(r), src)) <= 1:

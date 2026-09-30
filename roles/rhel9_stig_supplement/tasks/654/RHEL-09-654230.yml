@@ -1,0 +1,40 @@
+---
+# RHEL-09-654230 | V-258220
+# RHEL 9 must generate audit records for all account creations, modifications,
+# disabling, and termination events that affect /etc/gshadow.
+# CAT II (Medium) | CCI-000018, CCI-000130, CCI-000135, CCI-000169, CCI-000172, CCI-001403, CCI-001404, CCI-001405, CCI-002130, CCI-000015, CCI-002884, CCI-002132
+
+# Loaded rules (auditctl -l), as the STIG check reads them.
+# Each expected rule below (from the STIG check text) must be covered by a
+# rule that records at least the same events; keys, syscall order, merged
+# syscall lists, -w watches and auid!=unset are all accepted. See
+# filter_plugins/audit_rules.py. The formal role checked for its own lines in
+# /etc/audit/rules.d/audit.rules, so hosts hardened any other way were open.
+
+- name: RHEL-09-654230 | read audit rules
+  command: auditctl -l
+  register: _654230_rules
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-654230 | record audit rule coverage
+  vars:
+    _654230_expected:
+      - "-a always,exit -F arch=b32 -F path=/etc/gshadow -F perm=wa -k identity"
+      - "-a always,exit -F arch=b64 -F path=/etc/gshadow -F perm=wa -k identity"
+    _654230_cov: "{{ _654230_rules.stdout | default('') | rhel9_audit_coverage(_654230_expected) }}"
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-654230': {
+        'status':
+          'not_a_finding'
+          if (_654230_rules.rc | default(1) == 0 and _654230_cov.loaded > 0 and _654230_cov.missing | length == 0)
+          else 'open',
+        'finding_details': _654230_cov.report,
+        'comments':
+          'Add rules covering each MISSING line to a file in /etc/audit/rules.d/, '
+          ~ 'then run augenrules --load. Any key may be used.'
+      }
+    }) }}"
+  tags: [validate]
