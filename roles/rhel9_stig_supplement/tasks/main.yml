@@ -659,6 +659,10 @@
   tags: [RHEL-09-611170]
   when: supp_rules['RHEL-09-611170'] | default(true) | bool
 
+- import_tasks: 611/RHEL-09-611180.yml
+  tags: [RHEL-09-611180]
+  when: supp_rules['RHEL-09-611180'] | default(true) | bool
+
 - import_tasks: 611/RHEL-09-611190.yml
   tags: [RHEL-09-611190]
   when: supp_rules['RHEL-09-611190'] | default(true) | bool
