@@ -84,9 +84,12 @@ class CallbackModule(CallbackBase):
         key = "{}r{}".format(nid, rev)
         host = result._host.get_name()
         host_rules = self.rules.setdefault(host, {})
-        # once False (changed/failed), don't let a later ok task overwrite it
-        if host_rules.get(key, None) is not False:
-            host_rules[key] = result.is_changed()
+        # True means changed or failed (fail), False means unchanged (pass).
+        # A rule fails if any of its tasks fails, so True must stick. This used
+        # to keep the first False instead: once one task passed, a later task
+        # that would change the host was ignored, and a later ok task
+        # overwrote an earlier failure. 33 formal rules have several tasks.
+        host_rules[key] = host_rules.get(key, False) or result.is_changed()
 
     def v2_runner_on_failed(self, result, ignore_errors=False):  # noqa: ARG002
         name = result._task.get_name()
