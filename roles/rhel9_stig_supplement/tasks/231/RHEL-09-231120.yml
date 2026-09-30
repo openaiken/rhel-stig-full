@@ -10,6 +10,7 @@
   shell: awk '$2 == "/dev/shm" { print $4 }' /proc/mounts
   register: _231120_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-231120 | record /dev/shm nosuid mount option status

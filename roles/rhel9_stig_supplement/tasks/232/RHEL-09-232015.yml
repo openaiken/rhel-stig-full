@@ -9,6 +9,7 @@
     -xdev -type d -perm /022 2>/dev/null || true
   register: _232015_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-232015 | record library directory mode status

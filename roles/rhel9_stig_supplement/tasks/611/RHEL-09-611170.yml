@@ -22,15 +22,26 @@
 
 - name: RHEL-09-611170 | check SSSD OCSP certificate verification
   shell: |
+    # Without sssd there is no certificate handling to verify. The STIG is
+    # not applicable only when the SA demonstrates alternate MFA, which is
+    # the attestation (rhel9_attest_alt_mfa_cert_verification); otherwise this is open.
     if ! rpm -q sssd &>/dev/null; then
-      echo "NA: sssd not installed"
+      echo "STATUS: FAIL"
+      echo "FAIL: sssd not installed"
       exit 0
     fi
 
-    # Check all conf sources for certificate_verification = ocsp_dgst=sha512
-    result=$(grep -sir 'certificate_verification' \
-               /etc/sssd/sssd.conf /etc/sssd/conf.d/ 2>/dev/null \
-             | grep -v '^\s*#' || true)
+    # certificate_verification in the [sssd] section of sssd.conf or a conf.d
+    # snippet, comments excluded. This was grep -r piped to grep -v on a comment
+    # anchor, but grep -r prefixes each line with its file name, so a
+    # commented-out setting passed. The STIG also requires the [sssd] section.
+    shopt -s nullglob
+    result=$(awk '
+      FNR == 1 { sec = "" }
+      /^[[:space:]]*[#;]/ { next }
+      /^[[:space:]]*\[/ { sec = tolower($0); gsub(/[][[:space:]]/, "", sec); next }
+      sec == "sssd" && tolower($0) ~ /^[[:space:]]*certificate_verification[[:space:]]*=/ { print FILENAME ": " $0 }
+    ' /etc/sssd/sssd.conf /etc/sssd/conf.d/*.conf 2>/dev/null)
 
     if echo "$result" | grep -qi 'ocsp_dgst=sha512'; then
       echo "STATUS: PASS"
@@ -46,6 +57,7 @@
     fi
   register: _611170_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-611170 | record SSSD OCSP status

@@ -7,13 +7,11 @@
 # Files group-owned by root or a system group (GID < 1000) are acceptable.
 
 - name: RHEL-09-232195 | find system commands group-owned by non-system accounts
-  shell: >
-    find -L /bin /sbin /usr/bin /usr/sbin /usr/local/bin /usr/local/sbin
-    -xdev -type f ! -group root
-    -exec stat -c '%n %G %g' {} \; 2>/dev/null |
-    awk '$3 >= 1000 {print $1, "(group:", $2, "GID:", $3 ")"}' || true
+  shell: >-
+    find -L /bin /sbin /usr/bin /usr/sbin /usr/libexec /usr/local/bin /usr/local/sbin ! -group root -exec stat -L -c '%n %G %g' {} \; 2>/dev/null | awk '$3 >= 1000 {print $1, "(group:", $2, "GID:", $3 ")"}' || true
   register: _232195_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-232195 | record system commands group ownership status

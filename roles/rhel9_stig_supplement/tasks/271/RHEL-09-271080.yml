@@ -5,17 +5,23 @@
 # CAT II (Medium) | CCI-000057
 
 # Not Applicable if GDM is not installed.
+# Queries the effective setting the way the STIG check does (gsettings),
+# through the user dconf profile, rather than grepping keyfiles. A keyfile grep
+# cannot see GNOME defaults, which of several keyfiles wins, whether dconf
+# update has compiled them, or whether a lock line is commented out.
+# XDG_CONFIG_HOME points at nothing so the root user db cannot mask a value.
+# An empty or error result is a finding: an unverifiable control is open.
 
-- name: RHEL-09-271080 | check screensaver lock-delay is locked in dconf
+- name: RHEL-09-271080 | check screensaver lock-delay is locked (gsettings writable)
   shell: |
     rpm -q gdm &>/dev/null || { echo "NA: gdm not installed"; exit 0; }
-    result=$(grep -r '/screensaver/lock-delay' \
-             /etc/dconf/db/local.d/locks/ 2>/dev/null | head -1)
-    if [ -n "$result" ]; then echo "LOCKED: $result"
-    else echo "NOT_LOCKED"
+    w=$(XDG_CONFIG_HOME=/nonexistent DCONF_PROFILE=user gsettings writable org.gnome.desktop.screensaver lock-delay 2>&1)
+    if [ "$w" = "false" ]; then echo "PASS: org.gnome.desktop.screensaver lock-delay is locked (writable=false)"
+    else echo "FAIL: org.gnome.desktop.screensaver lock-delay is not locked (writable=${w:-no output})"
     fi
   register: _271080_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-271080 | record screensaver lock-delay lock status
@@ -24,7 +30,7 @@
       'RHEL-09-271080': {
         'status':
           'not_applicable' if 'NA:' in _271080_result.stdout
-          else ('not_a_finding' if 'LOCKED:' in _271080_result.stdout
+          else ('not_a_finding' if _271080_result.stdout is search('^PASS:', multiline=True)
           else 'open'),
         'finding_details': _271080_result.stdout | trim,
         'comments':

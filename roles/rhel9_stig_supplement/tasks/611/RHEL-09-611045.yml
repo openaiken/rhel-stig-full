@@ -21,6 +21,7 @@
     fi
   register: _611045_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-611045 | record pam_pwquality system-auth status

@@ -10,6 +10,7 @@
   shell: awk '$2 == "/boot" { print $4 }' /proc/mounts
   register: _231095_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-231095 | record /boot nodev mount option status

@@ -4,9 +4,11 @@
 # CAT II (Medium) | CCI-000366
 
 - name: RHEL-09-232250 | find files and directories with no valid group owner
-  shell: find / -xdev -nogroup 2>/dev/null | head -40 || true
+  shell: >-
+    df --local -P | awk 'NR > 1 {print $6}' | xargs -I{} find {} -xdev -nogroup 2>/dev/null | head -40 || true
   register: _232250_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-232250 | record invalid group owner status

@@ -7,6 +7,20 @@
 #   1. All CPU flags lines in /proc/cpuinfo must include the nx (NX/XD) feature flag.
 #   2. noexec must not appear in any kernel's args (would disable NX enforcement).
 
+- name: RHEL-09-213110 | count kernel entries grubby reports
+  shell: grubby --info=ALL 2>/dev/null | grep -c '^args=' || true
+  register: _213110_kernels
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-213110 | count CPU flags lines
+  shell: grep -c '^flags' /proc/cpuinfo || true
+  register: _213110_cpus
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
 - name: RHEL-09-213110 | check for CPUs missing nx flag
   shell: grep ^flags /proc/cpuinfo | grep -Ev '([^[:alnum:]])(nx)([^[:alnum:]]|$)'
   register: _213110_nx
@@ -27,7 +41,7 @@
       'RHEL-09-213110': {
         'status':
           'not_a_finding'
-          if (not (_213110_nx.stdout | trim) and not (_213110_noexec.stdout | trim))
+          if (not (_213110_nx.stdout | trim) and not (_213110_noexec.stdout | trim) and (_213110_cpus.stdout | trim | int) > 0 and (_213110_kernels.stdout | trim | int) > 0)
           else 'open',
         'finding_details':
           'CPUs missing nx flag: '
@@ -36,10 +50,12 @@
           ~ (_213110_noexec.stdout | trim if _213110_noexec.stdout | trim else '(none)')
           ~ '\nResult: '
           ~ ('not_a_finding - nx flag present on all CPUs and noexec not in kernel args'
-             if (not (_213110_nx.stdout | trim) and not (_213110_noexec.stdout | trim))
-             else ('OPEN - one or more CPUs missing nx flag; verify NX/XD is enabled in BIOS/UEFI'
+             if (not (_213110_nx.stdout | trim) and not (_213110_noexec.stdout | trim) and (_213110_cpus.stdout | trim | int) > 0 and (_213110_kernels.stdout | trim | int) > 0)
+             else ('OPEN - could not read CPU flags or kernel entries; cannot verify'
+                   if ((_213110_cpus.stdout | trim | int) == 0 or (_213110_kernels.stdout | trim | int) == 0)
+                   else ('OPEN - one or more CPUs missing nx flag; verify NX/XD is enabled in BIOS/UEFI'
                    if _213110_nx.stdout | trim
-                   else 'OPEN - noexec found in kernel args; ExecShield is disabled')),
+                   else 'OPEN - noexec found in kernel args; ExecShield is disabled'))),
         'comments':
           'If NX/XD is disabled in BIOS/UEFI, enable it there. '
           ~ 'To remove noexec from kernel args: sudo grubby --update-kernel=ALL --remove-args=noexec'

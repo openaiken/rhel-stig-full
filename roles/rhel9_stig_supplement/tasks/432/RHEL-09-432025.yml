@@ -24,6 +24,7 @@
     fi
   register: _432025_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-432025 | record !authenticate check status

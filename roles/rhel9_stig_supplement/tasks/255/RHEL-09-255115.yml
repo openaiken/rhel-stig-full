@@ -13,6 +13,7 @@
     awk '! ($2 == "c" && $1 ~ /^.\..\.\.\.\..\./) {print $0}' || true
   register: _255115_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-255115 | record sshd config permission status

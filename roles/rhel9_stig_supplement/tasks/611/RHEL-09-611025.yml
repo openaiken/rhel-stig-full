@@ -28,6 +28,7 @@
     fi
   register: _611025_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-611025 | record nullok status

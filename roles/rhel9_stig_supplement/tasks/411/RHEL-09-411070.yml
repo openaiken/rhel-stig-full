@@ -38,6 +38,7 @@
     fi
   register: _411070_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-411070 | record home directory group ownership status

@@ -3,18 +3,27 @@
 # RHEL 9 must prevent files with the setuid and setgid bit set from being executed on file systems that are used with removable media.
 # CAT II (Medium) | CCI-000366
 
-# Checks that removable media fstab entries (vfat, fat, ntfs, exfat) have nosuid.
+# Removable media: fstab entries whose type (vfat, fat, msdos, ntfs, ntfs3, exfat, iso9660, udf)
+# is used for removable media, excluding /boot and /boot/efi, which are fixed
+# disks (on UEFI, /boot/efi is always vfat). Fields are parsed exactly: the
+# option must be a whole comma-separated token, not a substring of the line.
+# This formerly missed CD/DVD types (iso9660, udf), and 231085/231090 did not
+# exclude /boot/efi, reporting every stock host a finding.
 
 - name: RHEL-09-231090 | get removable media entries from fstab
-  shell: grep -Ei '^[^#]' /etc/fstab | grep -Ei '\b(vfat|fat|ntfs|exfat)\b' || true
+  shell: >-
+    awk '!/^[[:space:]]*#/ && NF >= 4 && $3 ~ /^(vfat|fat|msdos|ntfs|ntfs3|exfat|iso9660|udf)$/ && $2 != "/boot" && $2 != "/boot/efi"' /etc/fstab
   register: _231090_result_all
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-231090 | get removable media fstab entries missing nosuid
-  shell: grep -Ei '^[^#]' /etc/fstab | grep -Ei '\b(vfat|fat|ntfs|exfat)\b' | grep -v 'nosuid' || true
+  shell: >-
+    awk '!/^[[:space:]]*#/ && NF >= 4 && $3 ~ /^(vfat|fat|msdos|ntfs|ntfs3|exfat|iso9660|udf)$/ && $2 != "/boot" && $2 != "/boot/efi" && ("," $4 ",") !~ /,nosuid,/' /etc/fstab
   register: _231090_result_bad
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-231090 | record removable media nosuid status
@@ -22,20 +31,20 @@
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-231090': {
         'status':
-          'not_applicable' if not (_231090_result_all.stdout | trim)
+          'not_a_finding' if not (_231090_result_all.stdout | trim)
           else ('not_a_finding' if not (_231090_result_bad.stdout | trim) else 'open'),
         'finding_details':
           'Removable media fstab entries: '
-          ~ (_231090_result_all.stdout | trim if _231090_result_all.stdout | trim else '(none - not applicable)')
+          ~ (_231090_result_all.stdout | trim if _231090_result_all.stdout | trim else '(none)')
           ~ '\nEntries missing nosuid: '
           ~ (_231090_result_bad.stdout | trim if _231090_result_bad.stdout | trim else '(none)')
           ~ '\nResult: '
-          ~ ('not_applicable - no removable media entries in fstab'
+          ~ ('not_a_finding - no removable media entries in fstab'
              if not (_231090_result_all.stdout | trim)
              else ('not_a_finding - all removable media entries have nosuid'
                    if not (_231090_result_bad.stdout | trim)
                    else 'OPEN - one or more removable media entries missing nosuid')),
-        'comments': 'Add nosuid to all removable media (vfat/ntfs) entries in /etc/fstab.'
+        'comments': 'Add nosuid to all removable media entries in /etc/fstab.'
       }
     }) }}"
   tags: [validate]

@@ -16,9 +16,9 @@
 # Unlike 652025 (which is not_applicable with an alt tool), this rule IS
 # being met by the alt tool, so the status is not_a_finding.
 #
-# Note: this check verifies a forwarding rule EXISTS; it does not verify
-# the destination is reachable or that TLS is configured. Those are
-# operational concerns validated separately.
+# A forward to logcollector, the DISA role default placeholder, is a finding
+# regardless of attestation. Otherwise this checks a forwarding rule exists;
+# it does not verify the destination is reachable or that TLS is configured.
 
 - name: RHEL-09-652055 | check rsyslog is forwarding audit records via TCP
   shell: |
@@ -36,10 +36,24 @@
     rainer=$(grep -rh 'type="omfwd"' /etc/rsyslog.conf /etc/rsyslog.d/ 2>/dev/null \
              | grep -v '^\s*#' || true)
 
-    if [ -n "$legacy" ] || [ -n "$rainer" ]; then
+    # Forwarding targets: the host after @@ (optionally @@(options)) in legacy
+    # syntax, and target="..." in Rainer script.
+    targets=$( { echo "$legacy" | sed -nE 's/.*@@(\([^)]*\))?\[?([^]:; ]+).*/\2/p'
+                 echo "$rainer" | sed -nE 's/.*target="([^"]+)".*/\1/p'; } | sort -u)
+    [ -n "$legacy" ] && echo "LEGACY (@@): $legacy"
+    [ -n "$rainer" ] && echo "RAINER (omfwd): $rainer"
+    echo "TARGETS: $(echo $targets)"
+
+    # logcollector is the DISA role default target, a placeholder. Its
+    # presence is a finding whatever else is configured; a forward to it does
+    # not offload anything. Any /etc/hosts entry for it is shown for context.
+    if echo "$targets" | grep -qix 'logcollector'; then
+      echo "STATUS: FAIL"
+      echo "FAIL: forwarding target logcollector is the DISA role placeholder"
+      echo "/etc/hosts entry for logcollector: $(awk '!/^[[:space:]]*#/ {for (i = 2; i <= NF; i++) if (tolower($i) == "logcollector") print $0}' /etc/hosts | head -1)"
+      echo "PLACEHOLDER: true"
+    elif [ -n "$targets" ]; then
       echo "STATUS: PASS"
-      [ -n "$legacy" ] && echo "LEGACY (@@): $legacy"
-      [ -n "$rainer" ] && echo "RAINER (omfwd): $rainer"
     else
       echo "STATUS: FAIL"
       echo "FAIL: no TCP remote forwarding found in rsyslog configuration"
@@ -56,8 +70,9 @@
       'RHEL-09-652055': {
         'status':
           'not_a_finding' if 'STATUS: PASS' in _652055_result.stdout
+          else ('open' if 'PLACEHOLDER: true' in _652055_result.stdout
           else ('not_a_finding' if (rhel9_attest_alt_log_offload | bool)
-          else 'open'),
+          else 'open')),
         'finding_details':
           _652055_result.stdout | trim
           ~ '\nAttestation (rhel9_attest_alt_log_offload): '

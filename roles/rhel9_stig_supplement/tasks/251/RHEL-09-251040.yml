@@ -7,6 +7,7 @@
   shell: ip link show | grep PROMISC || true
   register: _251040_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-251040 | record promiscuous mode status

@@ -5,26 +5,30 @@
 # CAT II (Medium) | CCI-000048
 
 # Not Applicable if GDM is not installed.
-# Checks that banner-message-text is set and contains key DOD consent phrases.
-# The full configured text is captured in finding_details for manual comparison
-# against the exact required text, since whitespace/encoding may differ.
+# Queries the effective setting the way the STIG check does (gsettings),
+# through the user dconf profile, rather than grepping keyfiles. A keyfile grep
+# cannot see GNOME defaults, which of several keyfiles wins, whether dconf
+# update has compiled them, or whether a lock line is commented out.
+# XDG_CONFIG_HOME points at nothing so the root user db cannot mask a value.
+# An empty or error result is a finding: an unverifiable control is open.
 
-- name: RHEL-09-171011 | collect configured banner message text
+- name: RHEL-09-171011 | check banner message text matches exactly (effective value)
   shell: |
     rpm -q gdm &>/dev/null || { echo "NA: gdm not installed"; exit 0; }
-    val=$(grep -rh '^banner-message-text=' /etc/dconf/db/local.d/ 2>/dev/null \
-          | grep -v '/locks/' | head -1 | cut -d= -f2-)
-    if [ -z "$val" ]; then
-      echo "FAIL: banner-message-text not configured"
-    elif echo "$val" | grep -q 'USG-authorized use only'; then
-      echo "PASS"
-      echo "TEXT: $val"
+    required='You are accessing a U.S. Government (USG) Information System (IS) that is provided for USG-authorized use only.\nBy using this IS (which includes any device attached to this IS), you consent to the following conditions:\n-The USG routinely intercepts and monitors communications on this IS for purposes including, but not limited to, penetration testing, COMSEC monitoring, network operations and defense, personnel misconduct (PM), law enforcement (LE), and counterintelligence (CI) investigations.\n-At any time, the USG may inspect and seize data stored on this IS.\n-Communications using, or data stored on, this IS are not private, are subject to routine monitoring, interception, and search, and may be disclosed or used for any USG-authorized purpose.\n-This IS includes security measures (e.g., authentication and access controls) to protect USG interests--not for your personal benefit or privacy.\n-Notwithstanding the above, using this IS does not constitute consent to PM, LE or CI investigative searching or monitoring of the content of privileged communications, or work product, related to personal representation or services by attorneys, psychotherapists, or clergy, and their assistants. Such communications and work product are private and confidential. See User Agreement for details. '
+    val=$(XDG_CONFIG_HOME=/nonexistent DCONF_PROFILE=user gsettings get org.gnome.login-screen banner-message-text 2>&1)
+    # The STIG says the \n sequences are formatting only, so compare with
+    # each \n turned into a space and whitespace runs collapsed.
+    norm() { sed -e "s/^'//; s/'\$//" -e 's/\\n/ /g' | tr -s '[:space:]' ' ' | sed 's/^ //; s/ $//'; }
+    if [ "$(printf '%s' "$val" | norm)" = "$(printf '%s' "$required" | norm)" ]; then
+      echo "PASS: banner-message-text matches the required banner exactly"
     else
-      echo "FAIL: banner text does not contain required DOD consent language"
-      echo "TEXT: $val"
+      echo "FAIL: banner-message-text does not match the required banner"
     fi
+    echo "TEXT: $val"
   register: _171011_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-171011 | record banner message text status
@@ -33,7 +37,7 @@
       'RHEL-09-171011': {
         'status':
           'not_applicable' if 'NA:' in _171011_result.stdout
-          else ('not_a_finding' if _171011_result.stdout | trim | regex_search('^PASS')
+          else ('not_a_finding' if _171011_result.stdout is search('^PASS:', multiline=True)
           else 'open'),
         'finding_details': _171011_result.stdout | trim,
         'comments':

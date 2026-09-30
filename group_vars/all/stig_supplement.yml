@@ -246,6 +246,8 @@ supp_rules:
   RHEL-09-271110: true
   # CAT II   RHEL 9 must disable the user list at logon for graphical user interfac
   RHEL-09-271115: true
+  # CAT II   RHEL 9 must have the USBGuard package enabled.
+  RHEL-09-291020: true
   # CAT II   RHEL 9 must block unauthorized peripherals before establishing a conne
   RHEL-09-291030: true
   # CAT II   RHEL 9 wireless network adapters must be disabled.
@@ -294,6 +296,8 @@ supp_rules:
   RHEL-09-432030: true
   # CAT II   RHEL 9 must restrict the use of the "su" command.
   RHEL-09-432035: true
+  # CAT II   RHEL 9 fapolicy module must be enabled.
+  RHEL-09-433015: true
   # CAT II   The RHEL 9 fapolicy module must be configured to employ a deny-all, pe
   RHEL-09-433016: true
   # CAT II   RHEL 9 must ensure the password complexity module in the system-auth f
@@ -322,6 +326,8 @@ supp_rules:
   RHEL-09-611155: true
   # CAT II   RHEL 9 must implement certificate status checking for multifactor auth
   RHEL-09-611170: true
+  # CAT II   The pcscd socket on RHEL 9 must be active.
+  RHEL-09-611180: true
   # CAT II   RHEL 9, for PKI-based authentication, must enforce authorized access t
   RHEL-09-611190: true
   # CAT II   RHEL 9 must require authentication to access single-user mode.
@@ -342,6 +348,8 @@ supp_rules:
   RHEL-09-651030: true
   # CAT III  RHEL 9 must be configured so that the file integrity tool verifies ext
   RHEL-09-651035: true
+  # CAT II   The rsyslog service on RHEL 9 must be active.
+  RHEL-09-652020: true
   # CAT II   RHEL 9 must be configured so that the rsyslog daemon does not accept l
   RHEL-09-652025: true
   # CAT II   RHEL 9 must be configured to forward audit records via TCP to a differ

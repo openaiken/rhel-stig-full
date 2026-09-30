@@ -4,11 +4,11 @@
 # CAT II (Medium) | CCI-001494
 
 - name: RHEL-09-232200 | find library files not owned by root
-  shell: >
-    find -L /lib /lib64 /usr/lib /usr/lib64
-    -xdev -type f ! -user root 2>/dev/null || true
+  shell: >-
+    find -L /lib /lib64 /usr/lib /usr/lib64 -type f -name '*.so*' ! -user root 2>/dev/null || true
   register: _232200_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-232200 | record library files ownership status

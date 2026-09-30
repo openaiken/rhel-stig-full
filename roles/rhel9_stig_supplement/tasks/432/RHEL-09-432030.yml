@@ -53,6 +53,7 @@
       || echo "(none)"
   register: _432030_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-432030 | record privilege elevation restriction status

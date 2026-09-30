@@ -4,9 +4,8 @@
 # unauthorized access to the audit log.
 # CAT II (Medium) | CCI-000162
 
-# Checks all files in the audit log directory. Mode converted to decimal via
-# printf '%d' "0NNN" so octal comparison works portably in sh arithmetic.
-# 0600 octal = 384 decimal; anything higher (more permissive) fails.
+# Checks all files in the audit log directory against a bitmask of the bits
+# 0600 forbids (8#177): any group or other bit, or owner execute, fails.
 
 - name: RHEL-09-653090 | check audit log file permissions
   shell: |
@@ -30,8 +29,9 @@
     findings=""
     while IFS= read -r f; do
       mode=$(stat -c '%a' "$f" 2>/dev/null)
-      mode_dec=$(printf '%d' "0${mode}")
-      if [ "$mode_dec" -le 384 ]; then
+      # Bitmask of the bits 0600 forbids. This compared the mode as a number
+      # (-le 384, i.e. 0600), so 0006, 0060 and 0444 all passed.
+      if [ -n "$mode" ] && [ $(( 8#$mode & 8#177 )) -eq 0 ]; then
         findings="${findings}PASS: $f ($mode)\n"
       else
         findings="${findings}FAIL: $f ($mode) - must be 0600 or less permissive\n"

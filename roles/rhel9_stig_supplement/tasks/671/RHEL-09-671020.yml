@@ -17,8 +17,10 @@
 
     target="include /etc/crypto-policies/back-ends/libreswan.config"
 
-    # Check primary config and any conf.d files
-    found=$(grep -rh "$target" /etc/ipsec.conf /etc/ipsec.d/*.conf 2>/dev/null || true)
+    # Check primary config and any conf.d files. Anchored to an uncommented
+    # line: a substring match passed a commented-out include.
+    found=$(grep -hE '^[[:space:]]*include[[:space:]]+/etc/crypto-policies/back-ends/libreswan\.config[[:space:]]*$' \
+              /etc/ipsec.conf /etc/ipsec.d/*.conf 2>/dev/null || true)
 
     if [ -n "$found" ]; then
       echo "STATUS: PASS"

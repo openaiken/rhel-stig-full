@@ -4,16 +4,16 @@
 # application user.
 # CAT II (Medium) | CCI-000366
 
-# World-writable dirs not owned by root, sys, or bin are flagged. If owned by
-# an application user, the reviewer must verify that ownership is documented
-# and intentional.
+# Follows the STIG command: world-writable directories owned by UID >= 1000,
+# on every local filesystem. System accounts (UID < 1000) are acceptable per
+# the rule title. An application user owner must be documented by the ISSO.
 
-- name: RHEL-09-232240 | find world-writable directories not owned by root/sys/bin
-  shell: >
-    find / -xdev -type d -perm -0002
-    ! -user root ! -user sys ! -user bin 2>/dev/null | head -40 || true
+- name: RHEL-09-232240 | find world-writable directories owned by UID >= 1000
+  shell: >-
+    df --local -P | awk 'NR > 1 {print $6}' | xargs -I{} find {} -xdev -type d -perm -0002 -uid +999 -exec stat -c '%U, %u, %A, %n' {} \; 2>/dev/null | head -40 || true
   register: _232240_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-232240 | record world-writable directory ownership status
@@ -24,7 +24,7 @@
           'not_a_finding' if not (_232240_result.stdout | trim)
           else 'open',
         'finding_details':
-          'World-writable directories not owned by root, sys, or bin:\n'
+          'World-writable directories owned by UID >= 1000 (owner, uid, mode, path):\n'
           ~ (_232240_result.stdout | trim if _232240_result.stdout | trim else '(none)'),
         'comments':
           'Verify each listed directory is owned by a documented application user. '

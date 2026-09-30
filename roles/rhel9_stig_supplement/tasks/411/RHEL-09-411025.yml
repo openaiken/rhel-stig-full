@@ -15,33 +15,25 @@
         while IFS= read -r line; do
           # skip comments
           [[ "$line" =~ ^[[:space:]]*# ]] && continue
-          [[ "$line" =~ [Uu][Mm][Aa][Ss][Kk] ]] || continue
-          mask=$(echo "$line" | grep -oP '0?[0-7]{3,4}' | tail -1)
+          [[ "$line" =~ (^|[^[:alnum:]_])umask([[:space:]]|$) ]] || continue
+          mask=$(echo "$line" | grep -oP '\bumask\s+\K0?[0-7]{3,4}\b' | tail -1)
+          # 077 or stricter: every group and other bit must be masked. An
+          # unreadable value (symbolic, variable) cannot be verified, so it is a
+          # finding; it used to be a WARN that still ended in PASS.
           if [ -z "$mask" ]; then
-            findings="${findings}WARN: ${initfile}: umask line found but value unreadable: $line\n"
-          elif [ "$mask" != "077" ] && [ "$mask" != "0077" ]; then
-            findings="${findings}FAIL: ${initfile}: umask=$mask (must be 077)\n"
+            findings="${findings}FAIL: ${initfile}: umask value not verifiable: $line\n"
+          elif [ $(( 8#$mask & 8#077 )) -ne $(( 8#077 )) ]; then
+            findings="${findings}FAIL: ${initfile}: umask=$mask (less restrictive than 077)\n"
           else
             findings="${findings}PASS: ${initfile}: umask=$mask\n"
           fi
         done < "$initfile"
       done < <(find "$homedir" -maxdepth 1 -type f -name ".[^.]*" 2>/dev/null)
     done < /etc/passwd
-    # also check /etc/profile and /etc/profile.d/*.sh
-    for f in /etc/profile /etc/bashrc /etc/profile.d/*.sh; do
-      [ -f "$f" ] || continue
-      while IFS= read -r line; do
-        [[ "$line" =~ ^[[:space:]]*# ]] && continue
-        [[ "$line" =~ [Uu][Mm][Aa][Ss][Kk] ]] || continue
-        mask=$(echo "$line" | grep -oP '0?[0-7]{3,4}' | tail -1)
-        [ -z "$mask" ] && continue
-        if [ "$mask" != "077" ] && [ "$mask" != "0077" ]; then
-          findings="${findings}FAIL: ${f}: umask=$mask\n"
-        else
-          findings="${findings}PASS: ${f}: umask=$mask\n"
-        fi
-      done < "$f"
-    done
+    # The STIG command covers user init files only. /etc/profile and /etc/bashrc
+    # were also scanned here; their stock umask 022 lines sit inside UID
+    # branches and are the subject of other rules, so they made this rule open
+    # on hosts whose user files comply.
     if [ -z "$findings" ]; then
       echo "STATUS: PASS (no umask lines found in init files)"
     elif echo -e "$findings" | grep -q '^FAIL:'; then
@@ -53,6 +45,7 @@
     fi
   register: _411025_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-411025 | record umask check status

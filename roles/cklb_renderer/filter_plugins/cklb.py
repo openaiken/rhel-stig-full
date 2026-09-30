@@ -30,12 +30,6 @@ def _filename_datetime(path):
     return datetime(2000 + int(yy), month, int(dd), int(hh), int(mm))
 
 
-def _latest(paths):
-    if not paths:
-        return None
-    return max(paths, key=_filename_datetime)
-
-
 _BENCH_PREFIX = 'xccdf_mil.disa.stig_testresult_scap_mil.disa_comp_'
 
 _XCCDF_COMMENTS = (
@@ -52,6 +46,14 @@ def _parse_xccdf(path):
     bench_href = bench_el.get('href', '') if bench_el is not None else ''
     benchmark = bench_href.removeprefix(_BENCH_PREFIX) or bench_href
     end_time = root.get('end-time', '')
+
+    # Provenance for the comments: the formal-role results may come from an
+    # earlier run than the supplement results, deliberately, so each rendered
+    # rule says when its source was produced.
+    stamp = (
+        f"Formal role scan: {end_time or 'unknown'} UTC "
+        f"(results file {os.path.basename(path)})"
+    )
 
     rules = {}
     for rr in root.findall(f'{{{XCCDF_NS}}}rule-result'):
@@ -71,7 +73,7 @@ def _parse_xccdf(path):
                 f"Scan completed: {end_time}\n"
                 f"Result: {raw}"
             ),
-            'comments': _XCCDF_COMMENTS,
+            'comments': f"{_XCCDF_COMMENTS}\n{stamp}",
         }
 
     return rules
@@ -85,6 +87,10 @@ def cklb_render(template_json, hostname, xccdf_paths, supp_paths, fqdn='', ip_ad
       1. supplement facts — manually assessed rules not covered by the formal role
       2. XCCDF            — rules the formal role remediated and the callback recorded
       3. template         — not_reviewed (untouched)
+
+    Within each source, results are merged per rule across all of the host's
+    result files, the newest file winning; each rule's comments name the run
+    it came from.
     """
     cklb = json.loads(template_json)
     cklb['title'] = f"RHEL 9 STIG - {hostname}"
@@ -92,16 +98,29 @@ def cklb_render(template_json, hostname, xccdf_paths, supp_paths, fqdn='', ip_ad
     cklb['target_data']['fqdn'] = fqdn
     cklb['target_data']['ip_address'] = ip_address
 
+    # Merge per rule, newest file wins, oldest to newest. Taking only the
+    # newest file whole meant a run limited by tags (the single-rule
+    # verification loop) replaced every other rule with not_reviewed. Each
+    # rule keeps the provenance line of the file it came from, so a result
+    # carried over from an earlier run is visibly dated.
     xccdf_accum = {}
-    xccdf_file = _latest(xccdf_paths)
-    if xccdf_file:
-        xccdf_accum = _parse_xccdf(xccdf_file)
+    for path in sorted(xccdf_paths or [], key=lambda p: (_filename_datetime(p), p)):
+        xccdf_accum.update(_parse_xccdf(path))
 
     supp_accum = {}
-    supp_file = _latest(supp_paths)
-    if supp_file:
-        with open(supp_file, 'r') as f:
-            supp_accum = json.load(f)
+    for path in sorted(supp_paths or [], key=lambda p: (_filename_datetime(p), p)):
+        with open(path, 'r') as f:
+            facts = json.load(f)
+        run = _filename_datetime(path)
+        stamp = (
+            "Supplement check run: "
+            + (run.strftime('%Y-%m-%d %H:%M') if run != datetime.min else 'unknown')
+            + f" controller local time (results file {os.path.basename(path)})"
+        )
+        for stig_id, entry in facts.items():
+            entry = dict(entry)
+            entry['comments'] = '\n'.join(c for c in (entry.get('comments', ''), stamp) if c)
+            supp_accum[stig_id] = entry
 
     for stig in cklb['stigs']:
         for rule in stig['rules']:

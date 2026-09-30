@@ -22,6 +22,10 @@ Consequences:
   formal role covering that rule.** The overlap is what makes coverage
   host-independent.
 - `cklb.py` gives supplement facts precedence over XCCDF for this reason.
+  It merges each source per rule across all of a host's result files, newest
+  winning, and stamps each rule's comments with the run it came from. Older
+  input is intentional; a tag-limited run (`-t RHEL-09-...`) must not blank
+  the other rules, which taking only the newest file whole did.
 - In `audit_coverage.py` output, a big gap between `formal role static tasks (# R-)`
   and `formal_role_covered` means many role tasks are being skipped on that host.
 
@@ -79,16 +83,21 @@ report 0. Re-run it after touching any task.
   `"640"`; testing `$1+0 > 600` misses every mode whose owner digit is 0, so a
   world-readable private key at `0004` scores 4 and passes. Use a bitmask of the
   disallowed bits: `[ $(( 8#$mode & 8#177 )) -ne 0 ]` for "0600 or less
-  permissive", `8#133` for 0644. (`8#` is bash base-8.)
+  permissive", `8#133` for 0644. (`8#` is bash base-8.) Converting correctly
+  to decimal and comparing by size (`printf '%d' "0$mode"` then `-le 384`) is
+  the same bug: 0006 is numerically tiny. Lint rule OCTAL-MAGNITUDE.
 - **Grepping a config file does not prove the setting is in effect.** systemd
   ignores drop-ins whose name does not end in `.conf`, so a grep hit can reflect
   dead configuration — this is exactly what V2R9 renamed 211045's drop-in to fix.
   Prefer the effective value: `systemctl show -p X --value`, `sysctl -n`, `sshd -T`.
-- **A shell that can exit non-zero needs `failed_when: false`.** `supplement.yml`
-  does not ignore errors, so one failure aborts the play and every later rule
-  silently drops out of `supp_facts`. Watch the *last* command specifically:
-  `grep`, `findmnt`, `rpm -q`, `systemctl is-*`, `getent`, `stat`, `test` all exit
-  non-zero on a benign "found nothing". `awk` does not.
+- **Every shell/command task needs `failed_when: false` — no exceptions.**
+  `supplement.yml` does not ignore errors, so one non-zero exit aborts the play
+  and every later rule silently drops out of `supp_facts`. Deciding "this one
+  can't fail" by inspection does not work: 412035 ended in
+  `[ -n "$x" ] && echo ...`, which exits 1 when `$x` is empty, and aborted the
+  run on a less-hardened host. The linter used to guess and missed it; it now
+  requires the guard on every task. Status must come from stdout markers, and
+  empty stdout must land on `open`.
 - **An undeterminable result is `open`, never a pass.** If a lookup returns
   empty, do not let the status expression fall through to `not_a_finding`.
 - If an attestation var follows the bool+`_method` pattern, the `_method` string
@@ -101,6 +110,16 @@ report 0. Re-run it after touching any task.
   host passed while the setting was one `dnf update` from vanishing. The
   linter lists multi-condition rules as INFO — re-read that list each bump.
 - `process substitution` (`done < <(...)`) is fine — the shell module gets bash.
+- **`{#` opens a Jinja comment.** Bash `${#arr[@]}` / `${#var}` in a task makes
+  Ansible fail to parse the role, aborting the *whole* supplement run. Use
+  `set -- ...; $#` or `wc -l`. Lint rule JINJA-COMMENT catches it.
+- **Testing a shell body with plain `bash` does not prove the task works.**
+  Fixture tests bypass Ansible templating; that is how the `{#` bug shipped.
+  After any change, also run the task (or the whole supplement) through
+  `ansible-playbook` on a real host.
+- For GNOME/dconf rules, query `gsettings get|writable` (with
+  `DCONF_PROFILE=user XDG_CONFIG_HOME=/nonexistent`), as the STIG does. Keyfile
+  greps miss defaults, override order, uncompiled databases, and commented locks.
 
 ## Verification loop
 
@@ -116,7 +135,7 @@ ansible-playbook supplement.yml -t RHEL-09-XXXXXX -e my_host=stigging-sandbox2 \
 Then confirm the rendered CKLB has **0 `not_reviewed`** and 0 empty
 `finding_details`.
 
-Test host: `stigging-sandbox2` (192.168.1.65, user `claude`, key
+Test hosts (`demoserver` group): `stigging-sandbox3` is deliberately unhardened with GNOME (use it to find false negatives: any pass there is suspect); `delta-bindtest` is hardened. Primary: `stigging-sandbox2` (192.168.1.65, user `claude`, key
 `~/.ansible/stig-sandbox2`). **`ansible_pipelining=true` is mandatory there** —
 fapolicyd plus `noexec` on `/home`, `/tmp`, `/var/tmp` means Ansible cannot drop
 and execute a module file, and every module fails without it. It is set per-host

@@ -4,6 +4,11 @@
 # CAT II (Medium) | CCI-000213
 #
 # Not applicable on UEFI systems. UEFI is auto-detected via /sys/firmware/efi.
+#
+# The finding condition is GRUB2_PASSWORD not set in /boot/grub2/user.cfg.
+# Grepping grub.cfg for password_pbkdf2 proves nothing: the stock 01_users
+# template always emits that line inside a runtime if-block, password or not,
+# so the old check passed every BIOS host.
 
 - name: RHEL-09-212010 | check for UEFI firmware
   stat:
@@ -12,7 +17,12 @@
   tags: [validate]
 
 - name: RHEL-09-212010 | check grub superuser password (BIOS only)
-  command: grep password_pbkdf2 /etc/grub2.cfg
+  shell: |
+    if grep -qE '^GRUB2_PASSWORD=grub\.pbkdf2\.' /boot/grub2/user.cfg 2>/dev/null; then
+      echo "PASS: GRUB2_PASSWORD (pbkdf2 hash) set in /boot/grub2/user.cfg"
+    else
+      echo "FAIL: GRUB2_PASSWORD not set as a pbkdf2 hash in /boot/grub2/user.cfg"
+    fi
   register: _212010_password
   changed_when: false
   failed_when: false
@@ -25,16 +35,14 @@
       'RHEL-09-212010': {
         'status':
           'not_applicable' if _212010_efi.stat.exists
-          else ('not_a_finding' if (_212010_password.stdout | default('') | trim)
+          else ('not_a_finding' if 'PASS:' in (_212010_password.stdout | default(''))
                 else 'open'),
         'finding_details':
           'UEFI system: ' ~ (_212010_efi.stat.exists | string | lower)
           ~ '\nResult: '
           ~ ('not_applicable - UEFI systems are exempt per RHEL 9 V2R9'
              if _212010_efi.stat.exists
-             else ('not_a_finding - password_pbkdf2 entry found in /etc/grub2.cfg'
-                   if (_212010_password.stdout | default('') | trim)
-                   else 'OPEN - password_pbkdf2 not found in /etc/grub2.cfg')),
+             else (_212010_password.stdout | default('') | trim)),
         'comments':
           'Not applicable for UEFI systems per RHEL 9 V2R9. '
           ~ 'To remediate on BIOS: sudo grub2-setpassword'

@@ -17,6 +17,7 @@
     fi
   register: _411045_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-411045 | record primary group validity status

@@ -10,12 +10,14 @@
   shell: grep -Ei '^[^#].*\bnfs[0-9]?\b' /etc/fstab || true
   register: _231075_result_all
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-231075 | get NFS fstab entries missing nosuid
   shell: grep -Ei '^[^#].*\bnfs[0-9]?\b' /etc/fstab | grep -v 'nosuid' || true
   register: _231075_result_bad
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-231075 | record NFS nosuid status

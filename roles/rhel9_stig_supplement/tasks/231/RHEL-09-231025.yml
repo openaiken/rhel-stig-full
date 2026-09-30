@@ -9,6 +9,7 @@
   shell: awk '$2 == "/var/log"' /proc/mounts
   register: _231025_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-231025 | record /var/log separate filesystem status

@@ -12,15 +12,26 @@
 # approval in rhel9_attest_wifi_comment.
 
 - name: RHEL-09-291040 | check for wifi devices
-  shell: nmcli -t -f DEVICE,TYPE device status 2>/dev/null | grep ':wifi$' || true
+  # nmcli alone missed radios on hosts without NetworkManager running, and an
+  # empty result reads as not applicable. Also ask the kernel: any interface
+  # with a wireless/ or phy80211 entry in sysfs is a wireless radio.
+  shell: |
+    {
+      nmcli -t -f DEVICE,TYPE device status 2>/dev/null | awk -F: '$2 == "wifi" {print $1}'
+      for d in /sys/class/net/*; do
+        [ -e "$d/wireless" ] || [ -e "$d/phy80211" ] && echo "${d##*/}"
+      done
+    } | sort -u
   register: _291040_wifi_devices
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-291040 | check wifi radio state
   shell: nmcli radio wifi 2>/dev/null || echo "(nmcli unavailable)"
   register: _291040_radio
   changed_when: false
+  failed_when: false
   when: _291040_wifi_devices.stdout | trim
   tags: [validate]
 

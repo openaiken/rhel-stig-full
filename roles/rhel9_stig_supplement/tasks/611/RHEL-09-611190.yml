@@ -36,9 +36,13 @@
       while IFS= read -r keyfile; do
         # identify private key files by header
         head -1 "$keyfile" 2>/dev/null | grep -q 'PRIVATE KEY' || continue
-        # try with empty passphrase; exit 0 = unencrypted
-        if ssh-keygen -y -P '' -f "$keyfile" &>/dev/null; then
+        # try with empty passphrase; exit 0 = unencrypted. A failure only proves
+        # a passphrase if ssh-keygen says so: under FIPS it can refuse to load a
+        # key type outright, which used to be read as encrypted.
+        if err=$(ssh-keygen -y -P '' -f "$keyfile" 2>&1 >/dev/null); then
           unencrypted="${unencrypted}FAIL: $keyfile (${user}) has no passphrase\n"
+        elif ! echo "$err" | grep -qi 'passphrase'; then
+          unencrypted="${unencrypted}FAIL: $keyfile (${user}) could not be checked: $err\n"
         fi
       done < <(find "$homedir/.ssh" -maxdepth 1 -type f 2>/dev/null)
     done < /etc/passwd
@@ -52,6 +56,7 @@
     fi
   register: _611190_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-611190 | record SSH private key passphrase status

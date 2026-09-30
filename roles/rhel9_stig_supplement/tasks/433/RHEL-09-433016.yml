@@ -11,8 +11,11 @@
 
 - name: RHEL-09-433016 | check fapolicyd deny-all enforcement configuration
   shell: |
+    # No fapolicyd means no deny-all policy: a finding, not "not applicable".
+    # The STIG has no not-applicable clause for this rule.
     if ! rpm -q fapolicyd &>/dev/null; then
-      echo "NA: fapolicyd package not installed"
+      echo "STATUS: FAIL"
+      echo "FAIL: fapolicyd not installed; no deny-all, permit-by-exception policy"
       exit 0
     fi
 
@@ -63,6 +66,7 @@
     echo -e "$findings" | sed '/^$/d'
   register: _433016_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-433016 | record fapolicyd deny-all policy status

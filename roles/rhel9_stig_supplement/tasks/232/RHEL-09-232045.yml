@@ -3,16 +3,17 @@
 # All RHEL 9 local initialization files must have mode 0740 or less permissive.
 # CAT II (Medium) | CCI-000366
 
-# Checks dotfiles (init files) in home directories of local interactive users
-# (UID 1000-65533). Mode 0740 = rwxr-----; /033 mask catches group write/exec
-# and any other-user bits.
+# Follows the STIG command: dotfiles under /home and /root, maxdepth 2,
+# -perm /037. Mode 0740 allows no group write/exec and no other bits at all.
+# This used /033 over UID >= 1000 homes only, which missed other-read (the
+# stock 0644 .bashrc) and never looked at /root: a false negative on every
+# unhardened host.
 
 - name: RHEL-09-232045 | find local init files with mode more permissive than 0740
-  shell: >
-    awk -F: '$3 >= 1000 && $3 < 65534 {print $6}' /etc/passwd |
-    xargs -I {} find {} -maxdepth 1 -name ".[^.]*" -type f -perm /033 2>/dev/null || true
+  shell: find /home /root -maxdepth 2 -type f -name '.*' -perm /037 -printf '%m %p\n' 2>/dev/null || true
   register: _232045_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-232045 | record local init files mode status

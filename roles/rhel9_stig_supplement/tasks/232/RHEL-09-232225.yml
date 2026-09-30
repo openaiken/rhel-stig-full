@@ -10,6 +10,7 @@
     -maxdepth 0 ! -group root 2>/dev/null || true
   register: _232225_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-232225 | record audit tools group ownership status

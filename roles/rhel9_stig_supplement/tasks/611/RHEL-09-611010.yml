@@ -13,12 +13,14 @@
 - name: RHEL-09-611010 | check pwquality retry setting
   shell: |
     # Collect retry values from base config and all drop-in files.
-    # Last matching line wins (same precedence as the library applies).
-    val=$(grep -rh '^\s*retry\s*=' \
+    # Last matching line wins (same precedence as the library applies). Take the
+    # last line before trimming: xargs used to join several values into one
+    # string such as "3 5", the numeric tests then errored, and it passed.
+    val=$(grep -h '^\s*retry\s*=' \
             /etc/security/pwquality.conf \
             /etc/security/pwquality.conf.d/*.conf \
             2>/dev/null \
-          | awk -F= '{print $2}' | xargs | tail -1)
+          | tail -1 | cut -d= -f2 | tr -d '[:space:]')
 
     if [ -z "$val" ]; then
       echo "STATUS: FAIL"
@@ -26,7 +28,10 @@
       exit 0
     fi
 
-    if [ "$val" -eq 0 ] || [ "$val" -gt 3 ]; then
+    if ! [[ "$val" =~ ^[0-9]+$ ]]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: retry=$val is not a number"
+    elif [ "$val" -eq 0 ] || [ "$val" -gt 3 ]; then
       echo "STATUS: FAIL"
       echo "FAIL: retry=$val (must be 1-3; 0 means unlimited)"
     else
@@ -35,6 +40,7 @@
     fi
   register: _611010_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-611010 | record pwquality retry status

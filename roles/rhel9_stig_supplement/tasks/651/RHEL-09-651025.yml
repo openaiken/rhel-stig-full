@@ -13,8 +13,11 @@
 
 - name: RHEL-09-651025 | check AIDE audit tool integrity rules
   shell: |
+    # No AIDE is not "not applicable": the STIG asks how else this is done.
+    # rhel9_attest_alt_fim_tool is the not-applicable path; without it, open.
     if ! rpm -q aide &>/dev/null; then
-      echo "NA: aide not installed"
+      echo "STATUS: FAIL"
+      echo "FAIL: aide not installed and no alternate file integrity tool attested"
       exit 0
     fi
 
@@ -75,6 +78,7 @@
     echo -e "$findings" | sed '/^$/d'
   register: _651025_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-651025 | record AIDE audit tool integrity status

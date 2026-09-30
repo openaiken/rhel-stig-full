@@ -4,9 +4,11 @@
 # CAT II (Medium) | CCI-000366
 
 - name: RHEL-09-232255 | find files and directories with no valid owner
-  shell: find / -xdev -nouser 2>/dev/null | head -40 || true
+  shell: >-
+    df --local -P | awk 'NR > 1 {print $6}' | xargs -I{} find {} -xdev -nouser 2>/dev/null | head -40 || true
   register: _232255_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-232255 | record invalid owner status

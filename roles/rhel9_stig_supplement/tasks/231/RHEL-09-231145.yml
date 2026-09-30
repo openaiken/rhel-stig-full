@@ -10,6 +10,7 @@
   shell: awk '$2 == "/var/log" { print $4 }' /proc/mounts
   register: _231145_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-231145 | record /var/log nodev mount option status

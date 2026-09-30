@@ -5,24 +5,38 @@
 
 - name: RHEL-09-412080 | check StopIdleSessionSec in logind.conf
   shell: |
+    # Last line wins (cat-config prints drop-ins after the main file). Take it
+    # before trimming: xargs used to join several values into one string, and a
+    # time span such as 1h or 15min is not a number either; both made every
+    # numeric test error out and fall through to PASS.
     val=$(systemd-analyze cat-config systemd/logind.conf 2>/dev/null \
-          | grep -i '^\s*StopIdleSessionSec\s*=' \
-          | awk -F= '{print $2}' | xargs | tail -1)
+          | grep -i '^\s*StopIdleSessionSec\s*=' | tail -1 \
+          | cut -d= -f2- | tr -d '[:space:]')
+    sec=""
+    if [ -n "$val" ] && [ "$val" != "infinity" ]; then
+      # the microseconds line is labelled us: or, in a UTF-8 locale, with a mu
+      usec=$(systemd-analyze timespan "$val" 2>/dev/null | awk '$1 ~ /^.?.?s:$/ && $1 != "Original:" {print $2}')
+      [ -n "$usec" ] && sec=$(( usec / 1000000 ))
+    fi
     if [ -z "$val" ]; then
       echo "STATUS: FAIL"
       echo "RAW: StopIdleSessionSec not configured (default is infinity)"
     elif [ "$val" = "infinity" ]; then
       echo "STATUS: FAIL"
       echo "RAW: StopIdleSessionSec=infinity (sessions never terminated)"
-    elif [ "$val" -gt 600 ] 2>/dev/null; then
+    elif [ -z "$sec" ]; then
       echo "STATUS: FAIL"
-      echo "RAW: StopIdleSessionSec=$val (must be <= 600)"
+      echo "RAW: StopIdleSessionSec=$val could not be parsed as a time span"
+    elif [ "$sec" -gt 600 ] || [ "$sec" -eq 0 ]; then
+      echo "STATUS: FAIL"
+      echo "RAW: StopIdleSessionSec=$val (${sec}s; must be 1-600 seconds)"
     else
       echo "STATUS: PASS"
-      echo "RAW: StopIdleSessionSec=$val"
+      echo "RAW: StopIdleSessionSec=$val (${sec}s)"
     fi
   register: _412080_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-412080 | record idle session termination status

@@ -4,12 +4,11 @@
 # CAT II (Medium) | CCI-001493, CCI-001494
 
 - name: RHEL-09-232035 | find audit tools with mode more permissive than 755
-  shell: >
-    find /sbin/auditctl /sbin/aureport /sbin/ausearch /sbin/autrace
-    /sbin/auditd /sbin/rsyslogd /sbin/augenrules
-    -maxdepth 0 -perm /022 2>/dev/null || true
+  shell: >-
+    find /sbin/auditctl /sbin/aureport /sbin/ausearch /sbin/autrace /sbin/auditd /sbin/rsyslogd /sbin/augenrules -maxdepth 0 -perm /7022 2>/dev/null || true
   register: _232035_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-232035 | record audit tools mode status
@@ -18,7 +17,7 @@
       'RHEL-09-232035': {
         'status': 'not_a_finding' if not (_232035_result.stdout | trim) else 'open',
         'finding_details':
-          'Audit tools with mode > 755:\n'
+          'Audit tools more permissive than 0755 (incl. setuid/setgid/sticky):\n'
           ~ (_232035_result.stdout | trim if _232035_result.stdout | trim else '(none)'),
         'comments': 'Run chmod 755 <tool> for each listed file.'
       }

@@ -27,6 +27,7 @@
     fi
   register: _255075_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-255075 | record SSH server MAC status

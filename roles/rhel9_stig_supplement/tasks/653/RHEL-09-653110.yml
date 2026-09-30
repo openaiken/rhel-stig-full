@@ -16,9 +16,9 @@
       [ -f "$f" ] || return 0
       local mode
       mode=$(stat -c '%a' "$f" 2>/dev/null)
-      local mode_dec
-      mode_dec=$(printf '%d' "0${mode}")
-      if [ "$mode_dec" -le 384 ]; then
+      # Bitmask of the bits 0600 forbids. This compared the mode as a number
+      # (-le 384, i.e. 0600), so 0006, 0060 and 0444 all passed.
+      if [ -n "$mode" ] && [ $(( 8#$mode & 8#177 )) -eq 0 ]; then
         findings="${findings}PASS: $f ($mode)\n"
       else
         findings="${findings}FAIL: $f ($mode) - must be 0600 or less permissive\n"
@@ -30,7 +30,7 @@
     check_mode /etc/audit/audit.rules
     while IFS= read -r f; do
       check_mode "$f"
-    done < <(find /etc/audit/rules.d/ -type f -name '*.rules' 2>/dev/null)
+    done < <(find /etc/audit/rules.d/ -type f 2>/dev/null)
 
     if [ -z "$findings" ]; then
       echo "STATUS: FAIL"
