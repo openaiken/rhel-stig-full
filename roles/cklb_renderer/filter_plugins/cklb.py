@@ -79,7 +79,14 @@ def _parse_xccdf(path):
     return rules
 
 
-def cklb_render(template_json, hostname, xccdf_paths, supp_paths, fqdn='', ip_address=''):
+def _truthy(v):
+    if isinstance(v, str):
+        return v.strip().lower() in ('1', 'true', 'yes', 'on')
+    return bool(v)
+
+
+def cklb_render(template_json, hostname, xccdf_paths, supp_paths, fqdn='', ip_address='',
+                supp_rules=None, formal_manage=None):
     """
     Merge XCCDF results and supplement facts into the CKLB template for a single host.
 
@@ -117,6 +124,13 @@ def cklb_render(template_json, hostname, xccdf_paths, supp_paths, fqdn='', ip_ad
     xccdf_accum = {}
     for path in sorted(xccdf_paths or [], key=lambda p: (_filename_datetime(p), p)):
         xccdf_accum.update(_parse_xccdf(path))
+    # Likewise a formal rule switched off with rhel9STIG_stigrule_<V>_Manage
+    # must not keep an old result. formal_manage maps the V number to the flag.
+    if formal_manage:
+        for rid in list(xccdf_accum):
+            m = re.match(r'SV-(\d+)r', rid)
+            if m and not _truthy(formal_manage.get(m.group(1), True)):
+                del xccdf_accum[rid]
 
     supp_accum = {}
     for path in sorted(supp_paths or [], key=lambda p: (_filename_datetime(p), p)):
@@ -129,6 +143,10 @@ def cklb_render(template_json, hostname, xccdf_paths, supp_paths, fqdn='', ip_ad
             + f" controller local time (results file {os.path.basename(path)})"
         )
         for stig_id, entry in facts.items():
+            # A rule switched off in supp_rules must not keep winning over the
+            # formal role through a result left in an older file.
+            if supp_rules and not _truthy(supp_rules.get(stig_id, True)):
+                continue
             entry = dict(entry)
             entry['comments'] = '\n'.join(c for c in (entry.get('comments', ''), stamp) if c)
             supp_accum[stig_id] = entry
