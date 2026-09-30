@@ -6,7 +6,9 @@
 
 # The STIG says: if audit_backlog_limit is present AND < 8192, that is a
 # finding. If not set at all, the kernel default (~64) is far below 8192 and
-# is treated as a finding here. Checks all boot entries via grubby --info=ALL
+# is treated as a finding here. This is a deliberate, owner-confirmed
+# reading (2026-09-30): unset means a small limit, not no limit, so do not
+# relax it to the literal check text. Checks all boot entries via grubby --info=ALL
 # and reports the minimum value found (the worst-case kernel wins).
 
 - name: RHEL-09-653120 | check audit_backlog_limit in kernel parameters
