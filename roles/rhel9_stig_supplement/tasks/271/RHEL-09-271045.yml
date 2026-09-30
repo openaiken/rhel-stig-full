@@ -5,14 +5,20 @@
 # CAT II (Medium) | CCI-000056
 
 # Not Applicable if GDM is not installed.
-# Compliant when removal-action='lock-screen' in dconf keyfiles.
+# Queries the effective setting the way the STIG check does (gsettings),
+# through the user dconf profile, rather than grepping keyfiles. A keyfile grep
+# cannot see GNOME defaults, which of several keyfiles wins, whether dconf
+# update has compiled them, or whether a lock line is commented out.
+# XDG_CONFIG_HOME points at nothing so the root user db cannot mask a value.
+# An empty or error result is a finding: an unverifiable control is open.
 
-- name: RHEL-09-271045 | check smartcard removal-action in dconf keyfiles
+- name: RHEL-09-271045 | check smartcard removal-action (effective value)
   shell: |
     rpm -q gdm &>/dev/null || { echo "NA: gdm not installed"; exit 0; }
-    val=$(grep -rh '^removal-action=' /etc/dconf/db/local.d/ 2>/dev/null \
-          | grep -v '/locks/' | head -1 | cut -d= -f2- | xargs)
-    echo "${val:-NOTSET}"
+    val=$(XDG_CONFIG_HOME=/nonexistent DCONF_PROFILE=user gsettings get org.gnome.settings-daemon.peripherals.smartcard removal-action 2>&1)
+    if [ "$val" = "'lock-screen'" ]; then echo "PASS: removal-action=$val"
+    else echo "FAIL: removal-action=${val:-no output} (required: 'lock-screen')"
+    fi
   register: _271045_result
   changed_when: false
   failed_when: false
@@ -24,8 +30,7 @@
       'RHEL-09-271045': {
         'status':
           'not_applicable' if 'NA:' in _271045_result.stdout
-          else ('not_a_finding'
-                if _271045_result.stdout | trim in ['lock-screen', \"'lock-screen'\"]
+          else ('not_a_finding' if _271045_result.stdout is search('^PASS:', multiline=True)
           else 'open'),
         'finding_details': _271045_result.stdout | trim,
         'comments':
