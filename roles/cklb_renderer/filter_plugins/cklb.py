@@ -103,6 +103,17 @@ def cklb_render(template_json, hostname, xccdf_paths, supp_paths, fqdn='', ip_ad
     # verification loop) replaced every other rule with not_reviewed. Each
     # rule keeps the provenance line of the file it came from, so a result
     # carried over from an earlier run is visibly dated.
+    # The find patterns are globs (*-<host>.json), which also match another
+    # host whose name ends in -<host>: bindtest would absorb delta-bindtest.
+    # Keep only files whose host part is exactly this host.
+    stamp_re = r'\d{2}[A-Za-z]{3}\d{2}-\d{2}:\d{2}-'
+    own = lambda paths, tail: [
+        p for p in (paths or [])
+        if re.fullmatch(stamp_re + re.escape(hostname) + re.escape(tail), os.path.basename(p))
+    ]
+    xccdf_paths = own(xccdf_paths, '-xccdf-results.xml')
+    supp_paths = own(supp_paths, '.json')
+
     xccdf_accum = {}
     for path in sorted(xccdf_paths or [], key=lambda p: (_filename_datetime(p), p)):
         xccdf_accum.update(_parse_xccdf(path))
