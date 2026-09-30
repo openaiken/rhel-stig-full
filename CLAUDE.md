@@ -104,6 +104,16 @@ report 0. Re-run it after touching any task.
   host passed while the setting was one `dnf update` from vanishing. The
   linter lists multi-condition rules as INFO — re-read that list each bump.
 - `process substitution` (`done < <(...)`) is fine — the shell module gets bash.
+- **`{#` opens a Jinja comment.** Bash `${#arr[@]}` / `${#var}` in a task makes
+  Ansible fail to parse the role, aborting the *whole* supplement run. Use
+  `set -- ...; $#` or `wc -l`. Lint rule JINJA-COMMENT catches it.
+- **Testing a shell body with plain `bash` does not prove the task works.**
+  Fixture tests bypass Ansible templating; that is how the `{#` bug shipped.
+  After any change, also run the task (or the whole supplement) through
+  `ansible-playbook` on a real host.
+- For GNOME/dconf rules, query `gsettings get|writable` (with
+  `DCONF_PROFILE=user XDG_CONFIG_HOME=/nonexistent`), as the STIG does. Keyfile
+  greps miss defaults, override order, uncompiled databases, and commented locks.
 
 ## Verification loop
 
@@ -119,7 +129,7 @@ ansible-playbook supplement.yml -t RHEL-09-XXXXXX -e my_host=stigging-sandbox2 \
 Then confirm the rendered CKLB has **0 `not_reviewed`** and 0 empty
 `finding_details`.
 
-Test host: `stigging-sandbox2` (192.168.1.65, user `claude`, key
+Test hosts (`demoserver` group): `stigging-sandbox3` is deliberately unhardened with GNOME (use it to find false negatives: any pass there is suspect); `delta-bindtest` is hardened. Primary: `stigging-sandbox2` (192.168.1.65, user `claude`, key
 `~/.ansible/stig-sandbox2`). **`ansible_pipelining=true` is mandatory there** —
 fapolicyd plus `noexec` on `/home`, `/tmp`, `/var/tmp` means Ansible cannot drop
 and execute a module file, and every module fails without it. It is set per-host
