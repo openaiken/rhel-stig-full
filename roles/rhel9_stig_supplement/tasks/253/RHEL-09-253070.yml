@@ -1,0 +1,50 @@
+---
+# RHEL-09-253070 | V-257969
+# RHEL 9 must not allow interfaces to perform Internet Control Message
+# Protocol (ICMP) redirects by default.
+# CAT II (Medium) | CCI-000366
+
+# The STIG checks the running value (sysctl). The formal role's sysctl task
+# compares against /etc/sysctl.conf, so a host setting this in
+# /etc/sysctl.d/ (as ComplianceAsCode does) was reported open while
+# compliant. The value persisted by the sysctl configuration is shown for
+# context.
+# A documented operational exception (ISSO/ISSM, per the STIG) is accepted:
+# rhel9_attest_sysctl_exceptions['RHEL-09-253070'] = "<documentation>".
+
+- name: RHEL-09-253070 | check net.ipv4.conf.default.send_redirects (running value)
+  shell: |
+    want='0'
+    got=$(sysctl -n net.ipv4.conf.default.send_redirects 2>&1)
+    persisted=$(/usr/lib/systemd/systemd-sysctl --cat-config 2>/dev/null \
+      | grep -E '^[[:space:]]*-?net[.]ipv4[.]conf[.]default[.]send_redirects[[:space:]]*=' | tail -1 | cut -d= -f2- | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    echo "RUNTIME: net.ipv4.conf.default.send_redirects = $got"
+    echo "PERSISTED (systemd-sysctl --cat-config, last wins): ${persisted:-(not set)}"
+    if [ "$got" = "$want" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: running value must be $want"
+    fi
+  register: _253070_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-253070 | record net.ipv4.conf.default.send_redirects status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-253070': {
+        'status':
+          'not_a_finding' if _253070_result.stdout is search('^STATUS: PASS', multiline=True)
+          else ('not_a_finding' if (rhel9_attest_sysctl_exceptions | default({})).get('RHEL-09-253070')
+          else 'open'),
+        'finding_details':
+          _253070_result.stdout | trim
+          ~ '\nDocumented exception (rhel9_attest_sysctl_exceptions): '
+          ~ ((rhel9_attest_sysctl_exceptions | default({})).get('RHEL-09-253070') or '(none)'),
+        'comments':
+          'Set net.ipv4.conf.default.send_redirects = 0 in a file in /etc/sysctl.d/ and apply it: sysctl --system'
+      }
+    }) }}"
+  tags: [validate]

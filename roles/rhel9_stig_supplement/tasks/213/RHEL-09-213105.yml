@@ -1,0 +1,49 @@
+---
+# RHEL-09-213105 | V-257816
+# RHEL 9 must disable the use of user namespaces.
+# CAT II (Medium) | CCI-000366
+
+# The STIG checks the running value (sysctl). The formal role's sysctl task
+# compares against /etc/sysctl.conf, so a host setting this in
+# /etc/sysctl.d/ (as ComplianceAsCode does) was reported open while
+# compliant. The value persisted by the sysctl configuration is shown for
+# context.
+# A documented operational exception (ISSO/ISSM, per the STIG) is accepted:
+# rhel9_attest_sysctl_exceptions['RHEL-09-213105'] = "<documentation>".
+
+- name: RHEL-09-213105 | check user.max_user_namespaces (running value)
+  shell: |
+    want='0'
+    got=$(sysctl -n user.max_user_namespaces 2>&1)
+    persisted=$(/usr/lib/systemd/systemd-sysctl --cat-config 2>/dev/null \
+      | grep -E '^[[:space:]]*-?user[.]max_user_namespaces[[:space:]]*=' | tail -1 | cut -d= -f2- | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    echo "RUNTIME: user.max_user_namespaces = $got"
+    echo "PERSISTED (systemd-sysctl --cat-config, last wins): ${persisted:-(not set)}"
+    if [ "$got" = "$want" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: running value must be $want"
+    fi
+  register: _213105_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-213105 | record user.max_user_namespaces status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-213105': {
+        'status':
+          'not_a_finding' if _213105_result.stdout is search('^STATUS: PASS', multiline=True)
+          else ('not_a_finding' if (rhel9_attest_sysctl_exceptions | default({})).get('RHEL-09-213105')
+          else 'open'),
+        'finding_details':
+          _213105_result.stdout | trim
+          ~ '\nDocumented exception (rhel9_attest_sysctl_exceptions): '
+          ~ ((rhel9_attest_sysctl_exceptions | default({})).get('RHEL-09-213105') or '(none)'),
+        'comments':
+          'Set user.max_user_namespaces = 0 in a file in /etc/sysctl.d/ and apply it: sysctl --system'
+      }
+    }) }}"
+  tags: [validate]

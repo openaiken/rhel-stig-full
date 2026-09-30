@@ -30,6 +30,28 @@ supp_rules:
   RHEL-09-212050: true
   # CAT III  RHEL 9 must enable auditing of processes that start prior to the audit
   RHEL-09-212055: true
+  # CAT II   RHEL 9 must restrict access to the kernel message buffer.
+  RHEL-09-213010: true
+  # CAT II   RHEL 9 must prevent kernel profiling by nonprivileged users.
+  RHEL-09-213015: true
+  # CAT II   RHEL 9 must prevent the loading of a new kernel for later execution.
+  RHEL-09-213020: true
+  # CAT II   RHEL 9 must restrict exposed kernel pointer addresses access.
+  RHEL-09-213025: true
+  # CAT II   RHEL 9 must enable kernel parameters to enforce discretionary access
+  RHEL-09-213030: true
+  # CAT II   RHEL 9 must enable kernel parameters to enforce discretionary access
+  RHEL-09-213035: true
+  # CAT II   RHEL 9 must disable the kernel.core_pattern.
+  RHEL-09-213040: true
+  # CAT II   RHEL 9 must implement address space layout randomization (ASLR) to pr
+  RHEL-09-213070: true
+  # CAT II   RHEL 9 must disable access to network bpf system call from nonprivile
+  RHEL-09-213075: true
+  # CAT II   RHEL 9 must restrict usage of ptrace to descendant processes.
+  RHEL-09-213080: true
+  # CAT II   RHEL 9 must disable the use of user namespaces.
+  RHEL-09-213105: true
   # CAT II   RHEL 9 must implement nonexecutable data to protect its memory from un
   RHEL-09-213110: true
   # CAT II   RHEL 9 must ensure cryptographic verification of vendor software packa
@@ -174,6 +196,8 @@ supp_rules:
   RHEL-09-251035: true
   # CAT II   RHEL 9 network interfaces must not be in promiscuous mode.
   RHEL-09-251040: true
+  # CAT II   RHEL 9 must enable hardening for the Berkeley Packet Filter just-in-t
+  RHEL-09-251045: true
   # CAT II   RHEL 9 must securely compare internal information system clocks at lea
   RHEL-09-252020: true
   # CAT II   RHEL 9 systems using Domain Name Servers (DNS) resolution must have at
@@ -188,6 +212,48 @@ supp_rules:
   RHEL-09-252070: true
   # CAT I    There must be no .shosts files on RHEL 9.
   RHEL-09-252075: true
+  # CAT II   RHEL 9 must be configured to use TCP syncookies.
+  RHEL-09-253010: true
+  # CAT II   RHEL 9 must ignore Internet Protocol version 4 (IPv4) Internet Contro
+  RHEL-09-253015: true
+  # CAT II   RHEL 9 must not forward Internet Protocol version 4 (IPv4) source-rou
+  RHEL-09-253020: true
+  # CAT II   RHEL 9 must log IPv4 packets with impossible addresses.
+  RHEL-09-253025: true
+  # CAT II   RHEL 9 must log IPv4 packets with impossible addresses by default.
+  RHEL-09-253030: true
+  # CAT II   RHEL 9 must use reverse path filtering on all IPv4 interfaces.
+  RHEL-09-253035: true
+  # CAT II   RHEL 9 must prevent IPv4 Internet Control Message Protocol (ICMP) red
+  RHEL-09-253040: true
+  # CAT II   RHEL 9 must not forward IPv4 source-routed packets by default.
+  RHEL-09-253045: true
+  # CAT II   RHEL 9 must use a reverse-path filter for IPv4 network traffic when p
+  RHEL-09-253050: true
+  # CAT II   RHEL 9 must not respond to Internet Control Message Protocol (ICMP) e
+  RHEL-09-253055: true
+  # CAT II   RHEL 9 must limit the number of bogus Internet Control Message Protoc
+  RHEL-09-253060: true
+  # CAT II   RHEL 9 must not send Internet Control Message Protocol (ICMP) redirec
+  RHEL-09-253065: true
+  # CAT II   RHEL 9 must not allow interfaces to perform Internet Control Message
+  RHEL-09-253070: true
+  # CAT II   RHEL 9 must not enable IPv4 packet forwarding unless the system is a
+  RHEL-09-253075: true
+  # CAT II   RHEL 9 must not accept router advertisements on all IPv6 interfaces.
+  RHEL-09-254010: true
+  # CAT II   RHEL 9 must ignore IPv6 Internet Control Message Protocol (ICMP) redi
+  RHEL-09-254015: true
+  # CAT II   RHEL 9 must not forward IPv6 source-routed packets.
+  RHEL-09-254020: true
+  # CAT II   RHEL 9 must not enable IPv6 packet forwarding unless the system is a
+  RHEL-09-254025: true
+  # CAT II   RHEL 9 must not accept router advertisements on all IPv6 interfaces b
+  RHEL-09-254030: true
+  # CAT II   RHEL 9 must prevent IPv6 Internet Control Message Protocol (ICMP) red
+  RHEL-09-254035: true
+  # CAT II   RHEL 9 must not forward IPv6 source-routed packets by default.
+  RHEL-09-254040: true
   # CAT II   All RHEL 9 networked systems must have SSH installed.
   RHEL-09-255010: true
   # CAT II   All RHEL 9 networked systems must have and implement SSH to protect t

@@ -1,0 +1,45 @@
+---
+# RHEL-09-254015 | V-257972
+# RHEL 9 must ignore IPv6 Internet Control Message Protocol (ICMP) redirect
+# messages.
+# CAT II (Medium) | CCI-000366
+
+# The STIG checks the running value (sysctl). The formal role's sysctl task
+# compares against /etc/sysctl.conf, so a host setting this in
+# /etc/sysctl.d/ (as ComplianceAsCode does) was reported open while
+# compliant. The value persisted by the sysctl configuration is shown for
+# context.
+
+- name: RHEL-09-254015 | check net.ipv6.conf.all.accept_redirects (running value)
+  shell: |
+    want='0'
+    got=$(sysctl -n net.ipv6.conf.all.accept_redirects 2>&1)
+    persisted=$(/usr/lib/systemd/systemd-sysctl --cat-config 2>/dev/null \
+      | grep -E '^[[:space:]]*-?net[.]ipv6[.]conf[.]all[.]accept_redirects[[:space:]]*=' | tail -1 | cut -d= -f2- | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    echo "RUNTIME: net.ipv6.conf.all.accept_redirects = $got"
+    echo "PERSISTED (systemd-sysctl --cat-config, last wins): ${persisted:-(not set)}"
+    if [ "$got" = "$want" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: running value must be $want"
+    fi
+  register: _254015_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-254015 | record net.ipv6.conf.all.accept_redirects status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-254015': {
+        'status':
+          'not_a_finding' if _254015_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _254015_result.stdout | trim,
+        'comments':
+          'Set net.ipv6.conf.all.accept_redirects = 0 in a file in /etc/sysctl.d/ and apply it: sysctl --system'
+      }
+    }) }}"
+  tags: [validate]
