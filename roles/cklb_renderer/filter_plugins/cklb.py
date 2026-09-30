@@ -20,14 +20,14 @@ _XCCDF_TO_CKLB = {'pass': 'not_a_finding', 'fail': 'open'}
 
 
 def _filename_datetime(path):
-    """Parse YYMonDD-HH:MM prefix from filename for chronological sorting."""
+    """Parse the YYMonDD-HH:MM[:SS] filename prefix for chronological sorting."""
     name = os.path.basename(path)
-    m = re.match(r'(\d{2})([A-Za-z]{3})(\d{2})-(\d{2}):(\d{2})', name)
+    m = re.match(r'(\d{2})([A-Za-z]{3})(\d{2})-(\d{2}):(\d{2})(?::(\d{2}))?', name)
     if not m:
         return datetime.min
-    yy, mon, dd, hh, mm = m.groups()
+    yy, mon, dd, hh, mm, ss = m.groups()
     month = _MONTHS.get(mon.lower(), 0)
-    return datetime(2000 + int(yy), month, int(dd), int(hh), int(mm))
+    return datetime(2000 + int(yy), month, int(dd), int(hh), int(mm), int(ss or 0))
 
 
 _BENCH_PREFIX = 'xccdf_mil.disa.stig_testresult_scap_mil.disa_comp_'
@@ -106,7 +106,7 @@ def cklb_render(template_json, hostname, xccdf_paths, supp_paths, fqdn='', ip_ad
     # The find patterns are globs (*-<host>.json), which also match another
     # host whose name ends in -<host>: bindtest would absorb delta-bindtest.
     # Keep only files whose host part is exactly this host.
-    stamp_re = r'\d{2}[A-Za-z]{3}\d{2}-\d{2}:\d{2}-'
+    stamp_re = r'\d{2}[A-Za-z]{3}\d{2}-\d{2}:\d{2}(?::\d{2})?-'
     own = lambda paths, tail: [
         p for p in (paths or [])
         if re.fullmatch(stamp_re + re.escape(hostname) + re.escape(tail), os.path.basename(p))
@@ -125,7 +125,7 @@ def cklb_render(template_json, hostname, xccdf_paths, supp_paths, fqdn='', ip_ad
         run = _filename_datetime(path)
         stamp = (
             "Supplement check run: "
-            + (run.strftime('%Y-%m-%d %H:%M') if run != datetime.min else 'unknown')
+            + (run.strftime('%Y-%m-%d %H:%M:%S') if run != datetime.min else 'unknown')
             + f" controller local time (results file {os.path.basename(path)})"
         )
         for stig_id, entry in facts.items():
