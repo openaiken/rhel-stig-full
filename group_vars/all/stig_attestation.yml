@@ -266,12 +266,14 @@ rhel9_attest_no_sshd_method: ""
 rhel9_attest_ssh_x11_forwarding_approved: false
 rhel9_attest_ssh_x11_forwarding_approved_method: ""
 #
-# ┄┄ sysctl rules with a documented-exception clause | RHEL 9 V2R9 ┄┄┄┄┄┄┄┄┄┄┄┄
-# RHEL-09-213040 (core dumps), 213105 (user namespaces, ISSM), 253065 /
-# 253070 (send_redirects), 253075 (IPv4 forwarding) are not a finding when the
-# setting is an operational requirement documented with the ISSO/ISSM. Map the
-# STIG ID to the documentation reference, e.g.
-#   rhel9_attest_sysctl_exceptions:
+# ┄┄ Rules whose check text allows a documented exception | RHEL 9 V2R9 ┄┄┄┄┄┄
+# Some rules are not a finding when the setting is an operational requirement
+# documented with the ISSO (or ISSM). Map the STIG ID to the documentation
+# reference; the entry is honoured only by rules whose check text allows it
+# (their task files say so) and ignored everywhere else. For example:
+#   rhel9_attest_documented_exceptions:
 #     RHEL-09-213105: "ISSM memo 2026-014: rootless podman needs user namespaces"
-# Ignored for any other rule.
-rhel9_attest_sysctl_exceptions: {}
+# Rules that honour it: 213040, 213105, 253065, 253070, 253075 (sysctl);
+# 213085, 213090, 213095, 213100 (core dumps); 412040 (maxlogins);
+# 252040 (DNS resolver other than NetworkManager).
+rhel9_attest_documented_exceptions: {}

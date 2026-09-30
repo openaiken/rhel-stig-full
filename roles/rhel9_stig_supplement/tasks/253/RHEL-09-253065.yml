@@ -9,7 +9,7 @@
 # compliant. The value persisted by the sysctl configuration is shown for
 # context.
 # A documented operational exception (ISSO/ISSM, per the STIG) is accepted:
-# rhel9_attest_sysctl_exceptions['RHEL-09-253065'] = "<documentation>".
+# rhel9_attest_documented_exceptions['RHEL-09-253065'] = "<documentation>".
 
 - name: RHEL-09-253065 | check net.ipv4.conf.all.send_redirects (running value)
   shell: |
@@ -36,12 +36,12 @@
       'RHEL-09-253065': {
         'status':
           'not_a_finding' if _253065_result.stdout is search('^STATUS: PASS', multiline=True)
-          else ('not_a_finding' if (rhel9_attest_sysctl_exceptions | default({})).get('RHEL-09-253065')
+          else ('not_a_finding' if (rhel9_attest_documented_exceptions | default({})).get('RHEL-09-253065')
           else 'open'),
         'finding_details':
           _253065_result.stdout | trim
-          ~ '\nDocumented exception (rhel9_attest_sysctl_exceptions): '
-          ~ ((rhel9_attest_sysctl_exceptions | default({})).get('RHEL-09-253065') or '(none)'),
+          ~ '\nDocumented exception (rhel9_attest_documented_exceptions): '
+          ~ ((rhel9_attest_documented_exceptions | default({})).get('RHEL-09-253065') or '(none)'),
         'comments':
           'Set net.ipv4.conf.all.send_redirects = 0 in a file in /etc/sysctl.d/ and apply it: sysctl --system'
       }
