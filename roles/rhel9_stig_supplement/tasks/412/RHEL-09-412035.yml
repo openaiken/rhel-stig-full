@@ -51,9 +51,12 @@
       echo "STATUS: PASS"
       echo "RAW: TMOUT=$tmout_val (readonly)"
     fi
-    [ -n "$findings" ] && echo -e "$findings" | sed '/^$/d'
+    # An if, not [ ] && ...: with no TMOUT lines the bare test was the last
+    # command, so the script exited 1 and aborted the play.
+    if [ -n "$findings" ]; then echo -e "$findings" | sed '/^$/d'; fi
   register: _412035_result
   changed_when: false
+  failed_when: false
   tags: [validate]
 
 - name: RHEL-09-412035 | record TMOUT setting status
