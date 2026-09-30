@@ -47,7 +47,7 @@ def multi_condition_rules():
 CHECKS = {
     "NO-OPEN":      "status expression can never yield 'open' -- check cannot report a finding",
     "PREFIX-ANCHOR":"grep -n/-rn output is prefixed 'file:lineno:'; a '^\\s*' anchor can never match",
-    "NO-GUARDS":    "shell/command task missing changed_when and/or failed_when",
+    "NO-GUARDS":    "shell/command task missing changed_when: false and/or failed_when: false",
     "DEAD-REGISTER":"registered variable is never referenced",
     "UNDEF-REF":    "variable referenced but never registered in this file",
     "SHELL-APOS":   "apostrophe in a shell comment (Ansible parse_kv sees unbalanced quotes)",
@@ -55,27 +55,6 @@ CHECKS = {
                     "greps config files for a setting whose effective value can differ "
                     "(systemd drop-in without .conf, sysctl override, sshd Match block)",
 }
-
-
-# Commands that exit non-zero simply because they matched nothing.
-_RISKY = re.compile(r"\b(grep|findmnt|rpm\s+-q|systemctl\s+is-|getent|stat|test|\[\s)")
-
-
-def _rc_can_fail(blk, mm):
-    """True if the task's exit status is decided by a command that can exit
-    non-zero on a benign 'nothing found', with no || fallback."""
-    if mm.group(2).strip() in ("|", ">", "|-", ">-"):
-        body = "\n".join(l for l in blk.splitlines()[1:] if l.startswith("    "))
-    else:
-        body = mm.group(2)
-    tail = [l.strip() for l in body.splitlines()
-            if l.strip() and not l.strip().startswith("#")]
-    if not tail:
-        return False
-    last = tail[-1]
-    if last.startswith(("fi", "done", "esac")):
-        return False
-    return bool(_RISKY.search(last)) and "|| true" not in last and "|| echo" not in last
 
 
 def task_files():
@@ -109,24 +88,22 @@ def lint(sid, path):
             if bad and not anchored:
                 hits.append(("PREFIX-ANCHOR", i, l.strip()[:80]))
 
-    # C3: a missing changed_when always matters; a missing failed_when matters
-    # only when the task's final command can exit non-zero on "found nothing",
-    # because supplement.yml does not ignore errors and one failure aborts the
-    # play, dropping every later rule out of supp_facts.
+    # C3: every shell/command task needs changed_when: false and
+    # failed_when: false. supplement.yml does not ignore errors, so one non-zero
+    # exit aborts the play and every later rule drops out of supp_facts. This
+    # used to be a heuristic over the final command, which missed a trailing
+    # `[ -n "$x" ] && ...` (412035) -- exit status is too easy to get wrong by
+    # inspection, so status comes from stdout markers only and rc is never used.
     for m in re.finditer(r"^- name: (.+)$", src, re.M):
         blk = src[m.start():]
         nxt = re.search(r"\n- name: ", blk)
         blk = blk[:nxt.start()] if nxt else blk
-        mm = re.search(r"^\s+(shell|command):\s*(.*)$", blk, re.M)
-        if not mm:
+        if not re.search(r"^\s+(shell|command):", blk, re.M):
             continue
         ln = src[:m.start()].count("\n") + 1
-        if "changed_when" not in blk:
-            hits.append(("NO-GUARDS", ln, f"{m.group(1)[:52]} -- missing changed_when"))
-        if "failed_when" not in blk and _rc_can_fail(blk, mm):
-            hits.append(("NO-GUARDS", ln,
-                         f"{m.group(1)[:52]} -- final command can exit non-zero, "
-                         "no failed_when"))
+        for guard in ("changed_when", "failed_when"):
+            if not re.search(rf"^\s+{guard}:\s*false\s*$", blk, re.M):
+                hits.append(("NO-GUARDS", ln, f"{m.group(1)[:52]} -- missing {guard}: false"))
 
     # C4/C5: register vs reference
     reg = set(re.findall(r"^\s*register:\s*(\w+)", src, re.M))

@@ -84,11 +84,14 @@ report 0. Re-run it after touching any task.
   ignores drop-ins whose name does not end in `.conf`, so a grep hit can reflect
   dead configuration — this is exactly what V2R9 renamed 211045's drop-in to fix.
   Prefer the effective value: `systemctl show -p X --value`, `sysctl -n`, `sshd -T`.
-- **A shell that can exit non-zero needs `failed_when: false`.** `supplement.yml`
-  does not ignore errors, so one failure aborts the play and every later rule
-  silently drops out of `supp_facts`. Watch the *last* command specifically:
-  `grep`, `findmnt`, `rpm -q`, `systemctl is-*`, `getent`, `stat`, `test` all exit
-  non-zero on a benign "found nothing". `awk` does not.
+- **Every shell/command task needs `failed_when: false` — no exceptions.**
+  `supplement.yml` does not ignore errors, so one non-zero exit aborts the play
+  and every later rule silently drops out of `supp_facts`. Deciding "this one
+  can't fail" by inspection does not work: 412035 ended in
+  `[ -n "$x" ] && echo ...`, which exits 1 when `$x` is empty, and aborted the
+  run on a less-hardened host. The linter used to guess and missed it; it now
+  requires the guard on every task. Status must come from stdout markers, and
+  empty stdout must land on `open`.
 - **An undeterminable result is `open`, never a pass.** If a lookup returns
   empty, do not let the status expression fall through to `not_a_finding`.
 - If an attestation var follows the bool+`_method` pattern, the `_method` string
