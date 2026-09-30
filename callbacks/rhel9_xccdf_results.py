@@ -22,6 +22,7 @@ import xml.dom.minidom
 import xml.etree.ElementTree as ET
 from time import gmtime, localtime, strftime
 
+from ansible import context
 from ansible.plugins.callback import CallbackBase
 
 
@@ -60,6 +61,14 @@ class CallbackModule(CallbackBase):
 
         self.stig_name = os.path.basename(self.stig_path) if self.stig_path else "unknown"
         self.run_ts = strftime("%y%b%d-%H:%M", localtime())
+        # formal-role.yml runs in check mode for the validate tag or --check,
+        # where changed means would-change, i.e. a finding. In a remediate run
+        # changed means was-fixed, which is not an assessment; those results
+        # get a different suffix so the checklist renderer (which merges
+        # every *-xccdf-results.xml per rule) never picks them up.
+        args = context.CLIARGS
+        tags = args.get("tags") or ()
+        self.assessing = "validate" in tags or bool(args.get("check"))
         ET.register_namespace("", "http://checklists.nist.gov/xccdf/1.2")
 
     def _get_rev(self, nid):
@@ -138,7 +147,8 @@ class CallbackModule(CallbackBase):
             sc.set("system", "urn:xccdf:scoring:flat-unweighted")
             sc.text = str(passing)
 
-            out_path = os.path.join(self.xml_dir, "{}-{}-xccdf-results.xml".format(self.run_ts, host))
+            suffix = "xccdf-results.xml" if self.assessing else "xccdf-remediate-run.xml"
+            out_path = os.path.join(self.xml_dir, "{}-{}-{}".format(self.run_ts, host, suffix))
             with open(out_path, "wb") as f:
                 out = ET.tostring(tr)
                 pretty = xml.dom.minidom.parseString(out).toprettyxml(encoding="utf-8")
