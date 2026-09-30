@@ -22,6 +22,10 @@ Consequences:
   formal role covering that rule.** The overlap is what makes coverage
   host-independent.
 - `cklb.py` gives supplement facts precedence over XCCDF for this reason.
+  It merges each source per rule across all of a host's result files, newest
+  winning, and stamps each rule's comments with the run it came from. Older
+  input is intentional; a tag-limited run (`-t RHEL-09-...`) must not blank
+  the other rules, which taking only the newest file whole did.
 - In `audit_coverage.py` output, a big gap between `formal role static tasks (# R-)`
   and `formal_role_covered` means many role tasks are being skipped on that host.
 
