@@ -10,14 +10,20 @@
 - name: RHEL-09-271040 | check GDM automatic login setting
   shell: |
     rpm -q gdm &>/dev/null || { echo "NA: gdm not installed"; exit 0; }
-    result=$(grep -i 'AutomaticLogin' /etc/gdm/custom.conf 2>/dev/null)
-    if [ -z "$result" ]; then
-      echo "FAIL: AutomaticLoginEnable line not found in /etc/gdm/custom.conf"
-    elif echo "$result" | grep -qi 'AutomaticLoginEnable=false'; then
-      echo "PASS: $result"
+    # GDM reads custom.conf as an ini file: only the [daemon] section counts,
+    # comments do not, and the last occurrence of a key wins. A plain grep
+    # passed a commented-out AutomaticLoginEnable=false.
+    val=$(awk -F= '
+      /^[[:space:]]*\[/ { sec=$0; gsub(/[][[:space:]]/, "", sec); next }
+      sec == "daemon" && $1 ~ /^[[:space:]]*AutomaticLoginEnable[[:space:]]*$/ {
+        v=$2; gsub(/^[[:space:]]+|[[:space:]]+$/, "", v) }
+      END { print v }' /etc/gdm/custom.conf 2>/dev/null)
+    if [ "${val,,}" = "false" ]; then
+      echo "PASS: [daemon] AutomaticLoginEnable=$val"
     else
-      echo "FAIL: $result"
+      echo "FAIL: [daemon] AutomaticLoginEnable=${val:-not set} (required: false)"
     fi
+    grep -in 'automaticlogin' /etc/gdm/custom.conf 2>/dev/null | sed 's/^/RAW: /'
   register: _271040_result
   changed_when: false
   failed_when: false
