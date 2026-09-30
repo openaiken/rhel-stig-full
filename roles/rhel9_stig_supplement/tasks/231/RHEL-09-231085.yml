@@ -31,15 +31,15 @@
     supp_facts: "{{ supp_facts | combine({
       'RHEL-09-231085': {
         'status':
-          'not_applicable' if not (_231085_result_all.stdout | trim)
+          'not_a_finding' if not (_231085_result_all.stdout | trim)
           else ('not_a_finding' if not (_231085_result_bad.stdout | trim) else 'open'),
         'finding_details':
           'Removable media fstab entries: '
-          ~ (_231085_result_all.stdout | trim if _231085_result_all.stdout | trim else '(none - not applicable)')
+          ~ (_231085_result_all.stdout | trim if _231085_result_all.stdout | trim else '(none)')
           ~ '\nEntries missing nodev: '
           ~ (_231085_result_bad.stdout | trim if _231085_result_bad.stdout | trim else '(none)')
           ~ '\nResult: '
-          ~ ('not_applicable - no removable media entries in fstab'
+          ~ ('not_a_finding - no removable media entries in fstab'
              if not (_231085_result_all.stdout | trim)
              else ('not_a_finding - all removable media entries have nodev'
                    if not (_231085_result_bad.stdout | trim)

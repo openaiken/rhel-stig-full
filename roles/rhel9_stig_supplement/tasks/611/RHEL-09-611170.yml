@@ -22,8 +22,12 @@
 
 - name: RHEL-09-611170 | check SSSD OCSP certificate verification
   shell: |
+    # Without sssd there is no certificate handling to verify. The STIG is
+    # not applicable only when the SA demonstrates alternate MFA, which is
+    # the attestation (rhel9_attest_alt_mfa_cert_verification); otherwise this is open.
     if ! rpm -q sssd &>/dev/null; then
-      echo "NA: sssd not installed"
+      echo "STATUS: FAIL"
+      echo "FAIL: sssd not installed"
       exit 0
     fi
 

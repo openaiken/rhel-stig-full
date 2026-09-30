@@ -16,8 +16,12 @@
 
 - name: RHEL-09-653125 | check mail alias for audit failure notification
   shell: |
+    # The STIG has no not-applicable clause: without postfix there is no
+    # alias to query, so notification must be attested
+    # (rhel9_attest_audit_notification_compliant) or this is open.
     if ! rpm -q postfix &>/dev/null; then
-      echo "NA: postfix not installed"
+      echo "STATUS: FAIL"
+      echo "FAIL: postfix not installed; no root alias to verify"
       exit 0
     fi
 
@@ -33,8 +37,8 @@
     for entry in $(echo "$alias_maps" | tr ',' ' '); do
       map_type=$(echo "$entry" | cut -d: -f1)
       map_path=$(echo "$entry" | cut -d: -f2-)
-      [ "$map_type" = "hash" ] || continue
-      val=$(postmap -q root "hash:${map_path}" 2>/dev/null || true)
+      # any map type postmap can read (hash, lmdb, ...), not only hash
+      val=$(postmap -q root "${map_type}:${map_path}" 2>/dev/null || true)
       if [ -n "$val" ]; then
         alias_val="$val"
         echo "INFO: alias map: $map_path"
@@ -42,7 +46,12 @@
       fi
     done
 
-    if [ -n "$alias_val" ]; then
+    # The DISA role default is the placeholder change_me@localhost, which
+    # notifies nobody; it used to pass.
+    if echo "$alias_val" | grep -qiE 'change_?me'; then
+      echo "STATUS: FAIL"
+      echo "FAIL: root -> $alias_val is a placeholder, not a monitored recipient"
+    elif [ -n "$alias_val" ]; then
       echo "STATUS: PASS"
       echo "PASS: root -> $alias_val"
     else
