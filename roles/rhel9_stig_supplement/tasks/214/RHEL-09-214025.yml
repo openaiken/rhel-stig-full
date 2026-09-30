@@ -14,10 +14,12 @@
 
 - name: RHEL-09-214025 | check gpgcheck in every repo section
   shell: |
+    # set -- and $# rather than an array length: a brace followed by a hash
+    # opens a Jinja comment, and Ansible then fails to parse the whole role.
     shopt -s nullglob
-    files=(/etc/yum.repos.d/*.repo)
-    echo "REPO FILES: ${#files[@]}"
-    [ ${#files[@]} -gt 0 ] && awk '
+    set -- /etc/yum.repos.d/*.repo
+    echo "REPO FILES: $#"
+    [ $# -gt 0 ] && awk '
       # fn: the file the open section came from; FILENAME has already moved on
       # to the next file by the time its first line flushes the old section.
       function flush() {
@@ -32,7 +34,7 @@
       /^[[:space:]]*\[/ { flush(); fn = FILENAME; sec = $0; gsub(/^[[:space:]]*\[|\][[:space:]]*$/, "", sec); next }
       sec != "" && /^[[:space:]]*gpgcheck[[:space:]]*=/ {
         v = $0; sub(/^[^=]*=[[:space:]]*/, "", v); sub(/[[:space:]]+$/, "", v); val[sec] = v }
-      END { flush(); print "REPO SECTIONS: " nsec + 0 }' "${files[@]}"
+      END { flush(); print "REPO SECTIONS: " nsec + 0 }' "$@"
   register: _214025_result
   changed_when: false
   failed_when: false

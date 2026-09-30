@@ -51,6 +51,7 @@ CHECKS = {
     "DEAD-REGISTER":"registered variable is never referenced",
     "UNDEF-REF":    "variable referenced but never registered in this file",
     "SHELL-APOS":   "apostrophe in a shell comment (Ansible parse_kv sees unbalanced quotes)",
+    "JINJA-COMMENT": "'{#' opens a Jinja comment (e.g. bash ${#arr[@]}); Ansible fails to parse the role",
     "FILE-NOT-EFFECTIVE":
                     "greps config files for a setting whose effective value can differ "
                     "(systemd drop-in without .conf, sysctl override, sshd Match block)",
@@ -127,6 +128,13 @@ def lint(sid, path):
             # only an ODD count is dangerous; balanced quotes parse fine
             if c.startswith("#") and c.count("'") % 2 == 1:
                 hits.append(("SHELL-APOS", i, c[:70]))
+
+    # C6b: "{#" anywhere opens a Jinja comment. Bash ${#var} / ${#arr[@]} is the
+    # usual culprit. Ansible then cannot split the task's arguments and the
+    # include_role fails, aborting the entire supplement run, not one rule.
+    for i, l in enumerate(lines, 1):
+        if "{#" in l:
+            hits.append(("JINJA-COMMENT", i, l.strip()[:70]))
 
     # C7: file-grep where the effective value can differ
     if re.search(r"/etc/systemd/[\w.]*\.conf\.d|/etc/sysctl\.d|sshd_config", src):
