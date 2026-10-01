@@ -22,6 +22,17 @@
 
 - name: RHEL-09-652055 | check rsyslog is forwarding audit records via TCP
   shell: |
+    # The configuration rsyslog actually runs: rsyslogd -N1 -o writes it with
+    # every include expanded. rsyslog.d files count only through an include
+    # (stock: rsyslog.d/*.conf), so reading the directory also counted .bak
+    # files, and a removed include line went unnoticed.
+    rs_full=$(mktemp 2>/dev/null)
+    trap 'rm -f "$rs_full"' EXIT
+    if [ -n "$rs_full" ] && rsyslogd -N1 -o "$rs_full" >/dev/null 2>&1 && [ -s "$rs_full" ]; then
+      rs_files=$rs_full
+    else
+      rs_files=$(ls /etc/rsyslog.conf /etc/rsyslog.d/*.conf 2>/dev/null)
+    fi
     if ! rpm -q rsyslog &>/dev/null; then
       echo "STATUS: FAIL"
       echo "FAIL: rsyslog not installed and no forwarding configured"
@@ -29,11 +40,11 @@
     fi
 
     # Legacy TCP forwarding: @@ prefix (double-@ = TCP, single-@ = UDP)
-    legacy=$(grep -rh '@@' /etc/rsyslog.conf /etc/rsyslog.d/ 2>/dev/null \
+    legacy=$(grep -h '@@' $rs_files /dev/null 2>/dev/null \
              | grep -v '^\s*#' || true)
 
     # Rainer script omfwd action
-    rainer=$(grep -rh 'type="omfwd"' /etc/rsyslog.conf /etc/rsyslog.d/ 2>/dev/null \
+    rainer=$(grep -h 'type="omfwd"' $rs_files /dev/null 2>/dev/null \
              | grep -v '^\s*#' || true)
 
     # Forwarding targets: the host after @@ (optionally @@(options)) in legacy

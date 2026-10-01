@@ -14,7 +14,18 @@
 - name: RHEL-09-652045 | check rsyslog TLS stream driver mode
   shell: |
     shopt -s nullglob
-    conf=(/etc/rsyslog.conf /etc/rsyslog.d/*.conf)
+    # The configuration rsyslog actually runs: rsyslogd -N1 -o writes it with
+    # every include expanded. rsyslog.d files count only through an include
+    # (stock: rsyslog.d/*.conf), so reading the directory also counted .bak
+    # files, and a removed include line went unnoticed.
+    rs_full=$(mktemp 2>/dev/null)
+    trap 'rm -f "$rs_full"' EXIT
+    if [ -n "$rs_full" ] && rsyslogd -N1 -o "$rs_full" >/dev/null 2>&1 && [ -s "$rs_full" ]; then
+      rs_files=$rs_full
+    else
+      rs_files=$(ls /etc/rsyslog.conf /etc/rsyslog.d/*.conf 2>/dev/null)
+    fi
+    conf=($rs_files)
     # RainerScript blocks, one per line: ACTION/MODULE/GLOBAL: <parameters>
     blocks=$(awk '
       { sub(/#.*/, ""); buf = buf " " $0 }

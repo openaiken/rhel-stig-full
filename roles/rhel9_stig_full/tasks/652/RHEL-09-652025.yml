@@ -19,6 +19,17 @@
 
 - name: RHEL-09-652025 | check rsyslog is not receiving remote logs
   shell: |
+    # The configuration rsyslog actually runs: rsyslogd -N1 -o writes it with
+    # every include expanded. rsyslog.d files count only through an include
+    # (stock: rsyslog.d/*.conf), so reading the directory also counted .bak
+    # files, and a removed include line went unnoticed.
+    rs_full=$(mktemp 2>/dev/null)
+    trap 'rm -f "$rs_full"' EXIT
+    if [ -n "$rs_full" ] && rsyslogd -N1 -o "$rs_full" >/dev/null 2>&1 && [ -s "$rs_full" ]; then
+      rs_files=$rs_full
+    else
+      rs_files=$(ls /etc/rsyslog.conf /etc/rsyslog.d/*.conf 2>/dev/null)
+    fi
     if ! rpm -q rsyslog &>/dev/null; then
       echo "NA: rsyslog not installed"
       exit 0
@@ -28,9 +39,9 @@
     listening=$(ss -tulnp 2>/dev/null | grep rsyslog || true)
 
     # Check 2: listener module directives in rsyslog config (uncommented)
-    listener_conf=$(grep -rEh \
+    listener_conf=$(grep -Eh \
       'InputTCPServerRun|UDPServerRun|RELPServerRun|imtcp|imudp|imrelp' \
-      /etc/rsyslog.conf /etc/rsyslog.d/ 2>/dev/null \
+      $rs_files /dev/null 2>/dev/null \
       | grep -v '^\s*#' || true)
 
     if [ -z "$listening" ] && [ -z "$listener_conf" ]; then

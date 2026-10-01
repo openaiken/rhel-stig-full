@@ -13,9 +13,20 @@
 - name: RHEL-09-652030 | check auth, authpriv and daemon logging
   shell: |
     shopt -s nullglob
+    # The configuration rsyslog actually runs: rsyslogd -N1 -o writes it with
+    # every include expanded. rsyslog.d files count only through an include
+    # (stock: rsyslog.d/*.conf), so reading the directory also counted .bak
+    # files, and a removed include line went unnoticed.
+    rs_full=$(mktemp 2>/dev/null)
+    trap 'rm -f "$rs_full"' EXIT
+    if [ -n "$rs_full" ] && rsyslogd -N1 -o "$rs_full" >/dev/null 2>&1 && [ -s "$rs_full" ]; then
+      rs_files=$rs_full
+    else
+      rs_files=$(ls /etc/rsyslog.conf /etc/rsyslog.d/*.conf 2>/dev/null)
+    fi
     # selector lines only: skip comments, directives, and anything inside a
     # parenthesised RainerScript block, which can span several lines
-    sel=$(cat /etc/rsyslog.conf /etc/rsyslog.d/*.conf 2>/dev/null | awk '
+    sel=$(cat $rs_files 2>/dev/null | awk '
       { sub(/#.*/, "") }
       depth == 0 && $0 ~ /^[[:space:]]*[a-z*][a-z0-9*,;.!=]*[[:space:]]/ && $0 !~ /^[[:space:]]*(module|global|input|template|if|action|ruleset|main_queue)[[:space:](]/ { print $1 }
       { n = gsub(/\(/, "("); m = gsub(/\)/, ")"); depth += n - m; if (depth < 0) depth = 0 }')
