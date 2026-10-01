@@ -4,24 +4,20 @@
 # are changed.
 # CAT II (Medium)
 #
-# Sets difok = 8 in /etc/security/pwquality.conf.d/zz-rhel9-stig-full.conf,
-# which sorts after pwquality.conf and the other drop-ins, so its value is the
-# one in effect.
+# Sets difok = 8 in /etc/security/pwquality.conf, replacing the last difok
+# line. libpwquality reads pwquality.conf.d/*.conf first and pwquality.conf
+# last, so this is the value in effect (a drop-in cannot override it).
 #
 # Runs only when the check reported open (tasks/remediate.yml); the rule is
 # re-checked afterwards. A failure is recorded, not fatal.
 
 - name: RHEL-09-611115 | fix
   block:
-    - name: RHEL-09-611115 | set difok in /etc/security/pwquality.conf.d/zz-rhel9-stig-full.conf
+    - name: RHEL-09-611115 | set difok in /etc/security/pwquality.conf
       ansible.builtin.lineinfile:
-        path: /etc/security/pwquality.conf.d/zz-rhel9-stig-full.conf
+        path: /etc/security/pwquality.conf
         regexp: '^[ \t]*difok[ \t]*='
         line: 'difok = 8'
-        create: true
-        owner: root
-        group: root
-        mode: '0644'
       register: _611115_fix
 
     - name: RHEL-09-611115 | note that the rule changed

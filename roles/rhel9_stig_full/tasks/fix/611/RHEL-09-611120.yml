@@ -4,24 +4,21 @@
 # character class be limited to four when passwords are changed.
 # CAT II (Medium)
 #
-# Sets maxclassrepeat = 4 in /etc/security/pwquality.conf.d/zz-rhel9-stig-
-# full.conf, which sorts after pwquality.conf and the other drop-ins, so its
-# value is the one in effect.
+# Sets maxclassrepeat = 4 in /etc/security/pwquality.conf, replacing the last
+# maxclassrepeat line. libpwquality reads pwquality.conf.d/*.conf first and
+# pwquality.conf last, so this is the value in effect (a drop-in cannot
+# override it).
 #
 # Runs only when the check reported open (tasks/remediate.yml); the rule is
 # re-checked afterwards. A failure is recorded, not fatal.
 
 - name: RHEL-09-611120 | fix
   block:
-    - name: RHEL-09-611120 | set maxclassrepeat in /etc/security/pwquality.conf.d/zz-rhel9-stig-full.conf
+    - name: RHEL-09-611120 | set maxclassrepeat in /etc/security/pwquality.conf
       ansible.builtin.lineinfile:
-        path: /etc/security/pwquality.conf.d/zz-rhel9-stig-full.conf
+        path: /etc/security/pwquality.conf
         regexp: '^[ \t]*maxclassrepeat[ \t]*='
         line: 'maxclassrepeat = 4'
-        create: true
-        owner: root
-        group: root
-        mode: '0644'
       register: _611120_fix
 
     - name: RHEL-09-611120 | note that the rule changed

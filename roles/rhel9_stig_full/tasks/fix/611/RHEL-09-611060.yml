@@ -3,23 +3,19 @@
 # RHEL 9 must enforce password complexity rules for the root account.
 # CAT II (Medium)
 #
-# Sets enforce_for_root in /etc/security/pwquality.conf.d/zz-rhel9-stig-
-# full.conf.
+# Sets enforce_for_root in /etc/security/pwquality.conf, which libpwquality
+# reads last.
 #
 # Runs only when the check reported open (tasks/remediate.yml); the rule is
 # re-checked afterwards. A failure is recorded, not fatal.
 
 - name: RHEL-09-611060 | fix
   block:
-    - name: RHEL-09-611060 | set enforce_for_root in /etc/security/pwquality.conf.d/zz-rhel9-stig-full.conf
+    - name: RHEL-09-611060 | set enforce_for_root in /etc/security/pwquality.conf
       ansible.builtin.lineinfile:
-        path: /etc/security/pwquality.conf.d/zz-rhel9-stig-full.conf
+        path: /etc/security/pwquality.conf
         regexp: '^[ \t]*enforce_for_root[ \t]*$'
         line: 'enforce_for_root'
-        create: true
-        owner: root
-        group: root
-        mode: '0644'
       register: _611060_fix
 
     - name: RHEL-09-611060 | note that the rule changed

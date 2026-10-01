@@ -7,18 +7,22 @@
 # The retry value controls how many failed complexity attempts pam_pwquality
 # allows before returning an error. 0 means unlimited (finding); >3 is also
 # a finding. Check both pwquality.conf and any drop-in conf.d file.
-# REMEDIATION NOTE: prefer drop-in under /etc/security/pwquality.conf.d/
+# REMEDIATION NOTE: set it in /etc/security/pwquality.conf, which is read last
 # rather than editing the base file, so upgrades don't clobber the setting.
 
 - name: RHEL-09-611010 | check pwquality retry setting
   shell: |
     # Collect retry values from base config and all drop-in files.
-    # Last matching line wins (same precedence as the library applies). Take the
+    # libpwquality reads pwquality.conf.d/*.conf first (sorted) and
+    # pwquality.conf last, later values overriding earlier ones, so the main
+    # file wins (man pwquality.conf; confirmed with pwscore). Reading them the
+    # other way round passed a drop-in minlen = 15 under a main-file minlen = 8.
+    # Last matching line wins. Take the
     # last line before trimming: xargs used to join several values into one
     # string such as "3 5", the numeric tests then errored, and it passed.
     val=$(grep -h '^\s*retry\s*=' \
-            /etc/security/pwquality.conf \
             /etc/security/pwquality.conf.d/*.conf \
+            /etc/security/pwquality.conf \
             2>/dev/null \
           | tail -1 | cut -d= -f2 | tr -d '[:space:]')
 
@@ -51,7 +55,7 @@
         'status': 'not_a_finding' if _611010_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
         'finding_details': _611010_result.stdout | trim,
         'comments':
-          'Add retry = 3 to /etc/security/pwquality.conf.d/stig.conf'
+          'Set retry = 3 in /etc/security/pwquality.conf (read last, so it overrides conf.d).'
       }
     }) }}"
   tags: [validate]

@@ -4,24 +4,21 @@
 # numeric character be used.
 # CAT II (Medium)
 #
-# Sets dcredit = -1 in /etc/security/pwquality.conf.d/zz-rhel9-stig-full.conf,
-# which sorts after pwquality.conf and the other drop-ins, so its value is the
-# one in effect.
+# Sets dcredit = -1 in /etc/security/pwquality.conf, replacing the last
+# dcredit line. libpwquality reads pwquality.conf.d/*.conf first and
+# pwquality.conf last, so this is the value in effect (a drop-in cannot
+# override it).
 #
 # Runs only when the check reported open (tasks/remediate.yml); the rule is
 # re-checked afterwards. A failure is recorded, not fatal.
 
 - name: RHEL-09-611070 | fix
   block:
-    - name: RHEL-09-611070 | set dcredit in /etc/security/pwquality.conf.d/zz-rhel9-stig-full.conf
+    - name: RHEL-09-611070 | set dcredit in /etc/security/pwquality.conf
       ansible.builtin.lineinfile:
-        path: /etc/security/pwquality.conf.d/zz-rhel9-stig-full.conf
+        path: /etc/security/pwquality.conf
         regexp: '^[ \t]*dcredit[ \t]*='
         line: 'dcredit = -1'
-        create: true
-        owner: root
-        group: root
-        mode: '0644'
       register: _611070_fix
 
     - name: RHEL-09-611070 | note that the rule changed

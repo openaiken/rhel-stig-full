@@ -14,7 +14,11 @@
 - name: RHEL-09-611060 | check pwquality enforce_for_root
   shell: |
     shopt -s nullglob
-    files=(/etc/security/pwquality.conf /etc/security/pwquality.conf.d/*.conf)
+    # libpwquality reads pwquality.conf.d/*.conf first (sorted) and
+    # pwquality.conf last, later values overriding earlier ones, so the main
+    # file wins (man pwquality.conf; confirmed with pwscore). Reading them the
+    # other way round passed a drop-in minlen = 15 under a main-file minlen = 8.
+    files=(/etc/security/pwquality.conf.d/*.conf /etc/security/pwquality.conf)
     isint() { [[ "$1" =~ ^-?[0-9]+$ ]]; }
     val=$(awk -v k="enforce_for_root" -v m="flag" '
       { line = $0; sub(/#.*/, "", line) }
@@ -50,7 +54,7 @@
         'finding_details':
           _611060_result.stdout | trim,
         'comments':
-          'Add enforce_for_root to /etc/security/pwquality.conf or a conf.d file.'
+          'Add enforce_for_root to /etc/security/pwquality.conf (read last, so it overrides conf.d).'
       }
     }) }}"
   tags: [validate]
