@@ -1,0 +1,61 @@
+---
+# RHEL-09-231160 | V-257873 | fix
+# RHEL 9 must mount /var/log/audit with the nodev option.
+# CAT II (Medium)
+#
+# Adds nodev to the /etc/fstab entry for /var/log/audit (keeping its other
+# options) and remounts it with nodev; the check reads the live mount table. A
+# host where /var/log/audit is not a separate file system, or is mounted by a
+# systemd unit rather than fstab, gets a recorded failure: that needs a
+# person.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-231160 | fix
+  block:
+    - name: RHEL-09-231160 | read how /var/log/audit is mounted
+      ansible.builtin.command: findmnt -rn -o OPTIONS --mountpoint /var/log/audit
+      register: _231160_mnt
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-231160 | stop if /var/log/audit is not a separate file system
+      ansible.builtin.fail:
+        msg: "/var/log/audit is not a separate file system; that needs repartitioning, not a mount option"
+      when: _231160_mnt.rc != 0
+
+    - name: RHEL-09-231160 | read the /etc/fstab entry for /var/log/audit
+      ansible.builtin.command: awk '$1 !~ /^#/ && $2 == "/var/log/audit"' /etc/fstab
+      register: _231160_fstab
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-231160 | stop if /var/log/audit has no /etc/fstab entry
+      ansible.builtin.fail:
+        msg: "/var/log/audit has no /etc/fstab entry (mounted by a systemd unit?); add nodev to the Options= of that unit"
+      when: _231160_fstab.stdout | trim == ''
+
+    - name: RHEL-09-231160 | add nodev to the /etc/fstab entry for /var/log/audit
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '^([ \t]*[^#\s]\S*\s+/var/log/audit\s+\S+\s+)(?!(?:\S*,)?nodev(?:,|\s))(\S+)'
+        replace: '\g<1>\g<2>,nodev'
+      register: _231160_fix
+
+    - name: RHEL-09-231160 | remount /var/log/audit with nodev
+      ansible.builtin.command: mount -o remount,nodev /var/log/audit
+      register: _231160_remount
+      when: _231160_mnt.stdout is not search('(^|,)nodev(,|$)')
+
+    - name: RHEL-09-231160 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-231160'] }}"
+      when: (_231160_fix is changed) or (_231160_remount is changed)
+  rescue:
+    - name: RHEL-09-231160 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-231160': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-231160'] }}"

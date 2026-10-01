@@ -1,0 +1,61 @@
+---
+# RHEL-09-231130 | V-257867 | fix
+# RHEL 9 must mount /tmp with the noexec option.
+# CAT II (Medium)
+#
+# Adds noexec to the /etc/fstab entry for /tmp (keeping its other options) and
+# remounts it with noexec; the check reads the live mount table. A host where
+# /tmp is not a separate file system, or is mounted by a systemd unit rather
+# than fstab, gets a recorded failure: that needs a person. Programs and
+# scripts can no longer be run from it.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-231130 | fix
+  block:
+    - name: RHEL-09-231130 | read how /tmp is mounted
+      ansible.builtin.command: findmnt -rn -o OPTIONS --mountpoint /tmp
+      register: _231130_mnt
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-231130 | stop if /tmp is not a separate file system
+      ansible.builtin.fail:
+        msg: "/tmp is not a separate file system; that needs repartitioning, not a mount option"
+      when: _231130_mnt.rc != 0
+
+    - name: RHEL-09-231130 | read the /etc/fstab entry for /tmp
+      ansible.builtin.command: awk '$1 !~ /^#/ && $2 == "/tmp"' /etc/fstab
+      register: _231130_fstab
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-231130 | stop if /tmp has no /etc/fstab entry
+      ansible.builtin.fail:
+        msg: "/tmp has no /etc/fstab entry (mounted by a systemd unit?); add noexec to the Options= of that unit"
+      when: _231130_fstab.stdout | trim == ''
+
+    - name: RHEL-09-231130 | add noexec to the /etc/fstab entry for /tmp
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '^([ \t]*[^#\s]\S*\s+/tmp\s+\S+\s+)(?!(?:\S*,)?noexec(?:,|\s))(\S+)'
+        replace: '\g<1>\g<2>,noexec'
+      register: _231130_fix
+
+    - name: RHEL-09-231130 | remount /tmp with noexec
+      ansible.builtin.command: mount -o remount,noexec /tmp
+      register: _231130_remount
+      when: _231130_mnt.stdout is not search('(^|,)noexec(,|$)')
+
+    - name: RHEL-09-231130 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-231130'] }}"
+      when: (_231130_fix is changed) or (_231130_remount is changed)
+  rescue:
+    - name: RHEL-09-231130 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-231130': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-231130'] }}"

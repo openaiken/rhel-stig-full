@@ -1,0 +1,63 @@
+---
+# RHEL-09-231115 | V-257864 | fix
+# RHEL 9 must mount /dev/shm with the noexec option.
+# CAT II (Medium)
+#
+# Adds noexec to the /etc/fstab entry for /dev/shm (keeping its other options)
+# and remounts it with noexec; the check reads the live mount table. /dev/shm
+# has no fstab entry on a stock system, so the STIG fix line (tmpfs /dev/shm
+# tmpfs defaults,nodev,nosuid,noexec 0 0) is added. Programs and scripts can
+# no longer be run from it.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-231115 | fix
+  block:
+    - name: RHEL-09-231115 | read how /dev/shm is mounted
+      ansible.builtin.command: findmnt -rn -o OPTIONS --mountpoint /dev/shm
+      register: _231115_mnt
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-231115 | stop if /dev/shm is not a separate file system
+      ansible.builtin.fail:
+        msg: "/dev/shm is not a separate file system; that needs repartitioning, not a mount option"
+      when: _231115_mnt.rc != 0
+
+    - name: RHEL-09-231115 | read the /etc/fstab entry for /dev/shm
+      ansible.builtin.command: awk '$1 !~ /^#/ && $2 == "/dev/shm"' /etc/fstab
+      register: _231115_fstab
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-231115 | add the STIG /dev/shm entry to /etc/fstab, which has none
+      ansible.builtin.lineinfile:
+        path: /etc/fstab
+        line: 'tmpfs /dev/shm tmpfs defaults,nodev,nosuid,noexec 0 0'
+      register: _231115_new
+      when: _231115_fstab.stdout | trim == ''
+
+    - name: RHEL-09-231115 | add noexec to the /etc/fstab entry for /dev/shm
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '^([ \t]*[^#\s]\S*\s+/dev/shm\s+\S+\s+)(?!(?:\S*,)?noexec(?:,|\s))(\S+)'
+        replace: '\g<1>\g<2>,noexec'
+      register: _231115_fix
+
+    - name: RHEL-09-231115 | remount /dev/shm with noexec
+      ansible.builtin.command: mount -o remount,noexec /dev/shm
+      register: _231115_remount
+      when: _231115_mnt.stdout is not search('(^|,)noexec(,|$)')
+
+    - name: RHEL-09-231115 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-231115'] }}"
+      when: (_231115_fix is changed) or (_231115_remount is changed) or (_231115_new is changed)
+  rescue:
+    - name: RHEL-09-231115 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-231115': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-231115'] }}"

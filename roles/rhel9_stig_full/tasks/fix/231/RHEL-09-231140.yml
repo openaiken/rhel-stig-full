@@ -1,0 +1,60 @@
+---
+# RHEL-09-231140 | V-257869 | fix
+# RHEL 9 must mount /var with the nodev option.
+# CAT II (Medium)
+#
+# Adds nodev to the /etc/fstab entry for /var (keeping its other options) and
+# remounts it with nodev; the check reads the live mount table. A host where
+# /var is not a separate file system, or is mounted by a systemd unit rather
+# than fstab, gets a recorded failure: that needs a person.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-231140 | fix
+  block:
+    - name: RHEL-09-231140 | read how /var is mounted
+      ansible.builtin.command: findmnt -rn -o OPTIONS --mountpoint /var
+      register: _231140_mnt
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-231140 | stop if /var is not a separate file system
+      ansible.builtin.fail:
+        msg: "/var is not a separate file system; that needs repartitioning, not a mount option"
+      when: _231140_mnt.rc != 0
+
+    - name: RHEL-09-231140 | read the /etc/fstab entry for /var
+      ansible.builtin.command: awk '$1 !~ /^#/ && $2 == "/var"' /etc/fstab
+      register: _231140_fstab
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-231140 | stop if /var has no /etc/fstab entry
+      ansible.builtin.fail:
+        msg: "/var has no /etc/fstab entry (mounted by a systemd unit?); add nodev to the Options= of that unit"
+      when: _231140_fstab.stdout | trim == ''
+
+    - name: RHEL-09-231140 | add nodev to the /etc/fstab entry for /var
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '^([ \t]*[^#\s]\S*\s+/var\s+\S+\s+)(?!(?:\S*,)?nodev(?:,|\s))(\S+)'
+        replace: '\g<1>\g<2>,nodev'
+      register: _231140_fix
+
+    - name: RHEL-09-231140 | remount /var with nodev
+      ansible.builtin.command: mount -o remount,nodev /var
+      register: _231140_remount
+      when: _231140_mnt.stdout is not search('(^|,)nodev(,|$)')
+
+    - name: RHEL-09-231140 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-231140'] }}"
+      when: (_231140_fix is changed) or (_231140_remount is changed)
+  rescue:
+    - name: RHEL-09-231140 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-231140': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-231140'] }}"
