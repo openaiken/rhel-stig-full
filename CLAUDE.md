@@ -164,6 +164,11 @@ report 0. Re-run it after touching any task.
 - A check that reads only runtime state passes as soon as the fix applies it,
   so the fix must prove persistence itself (sysctl fixes verify the last value
   in `systemd-sysctl --cat-config`, writing `zz-rhel9-stig-full.conf`)
+- "Unless required" rules are **evidence-gated**: a read-only step prints
+  `IN USE: <reason>` lines (required by a package, `rpm -V` config change,
+  local files, unit enabled, mounts/devices); any line means fail with
+  "left in place: ..." and change nothing. `systemctl is-enabled` exits 0
+  for static units: compare its output to `enabled`.
 - `lint_checks.py` FIX-STRUCTURE / FIX-NOT-WIRED / FIX-AUDIT-DRIFT enforce
   the above (audit fixes carry a copy of the check's expected rules)
 - Traps hit writing the first 300 fixes:

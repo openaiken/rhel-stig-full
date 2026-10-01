@@ -150,7 +150,9 @@ Some changes apply only at the next boot: kernel arguments, audit rules once `-e
 
 Where the STIG allows more than one compliant value, the fix applies the STIG fix text's default, through a variable in `roles/rhel9_stig_full/defaults/main.yml`: `rhel9_fix_audit_failure_action` (default `HALT`) and `rhel9_fix_audit_failure_flag` (default `2`).
 
-Not fixed, because the right answer depends on the site: separate file systems, disk encryption, FIPS mode and crypto policy, firewall policy, NTP servers, remote logging, removals the STIG allows to stay ("unless required"), account aging of existing users, sudo `NOPASSWD`, smart card and PKI, and patching. Also deliberately not fixed: user namespaces (213105, breaks rootless containers) and IP forwarding (253075, 254025).
+Rules the STIG lets a site keep ("unless required") are fixed only when nothing on the host shows the feature in use: nfs-utils, gssproxy, iprutils, tuned and quagga removal, autofs, EPEL. Otherwise the fix changes nothing and records each reason ("left in place: required by tuned-ppd; ...") in `finding_details`. Remove the use, or document the exception in `rhel9_attest_documented_exceptions` where the rule allows one.
+
+Not fixed, because they belong in the organization's own baseline: separate file systems, disk encryption, FIPS mode and crypto policy, firewall policy, the NTP source, remote and TLS log forwarding, the ISSO mail alias, fapolicyd policy, smart card and PKI, password aging of existing accounts, system account shells, sudo `NOPASSWD` and SELinux role mapping, and patching. Also deliberately not fixed: user namespaces (213105, breaks rootless containers) and IP forwarding (253075, 254025).
 
 ## Project Structure
 
