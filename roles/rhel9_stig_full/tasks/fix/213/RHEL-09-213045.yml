@@ -1,0 +1,37 @@
+---
+# RHEL-09-213045 | V-257804 | fix
+# RHEL 9 must be configured to disable the Asynchronous Transfer Mode kernel
+# module.
+# CAT II (Medium)
+#
+# Writes /etc/modprobe.d/rhel9-stig-full-atm.conf with install atm /bin/false
+# and blacklist atm, the two lines the check requires. Takes effect at the
+# next attempt to load the module; a module already loaded stays loaded until
+# reboot (the STIG checks configuration, not the running kernel).
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-213045 | fix
+  block:
+    - name: RHEL-09-213045 | prevent loading atm
+      ansible.builtin.copy:
+        dest: /etc/modprobe.d/rhel9-stig-full-atm.conf
+        content: |
+          # Managed by rhel9_stig_full (RHEL-09-213045)
+          install atm /bin/false
+          blacklist atm
+        owner: root
+        group: root
+        mode: '0644'
+      register: _213045_fix
+
+    - name: RHEL-09-213045 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-213045'] }}"
+      when: (_213045_fix is changed)
+  rescue:
+    - name: RHEL-09-213045 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-213045': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-213045'] }}"

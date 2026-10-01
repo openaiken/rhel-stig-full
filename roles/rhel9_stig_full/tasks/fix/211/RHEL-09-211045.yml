@@ -1,0 +1,48 @@
+---
+# RHEL-09-211045 | V-257784 | fix
+# The systemd Ctrl-Alt-Delete burst key sequence in RHEL 9 must be disabled.
+# CAT I (High)
+#
+# Writes CtrlAltDelBurstAction=none to a systemd manager drop-in
+# (/etc/systemd/system.conf.d/, name ending in .conf so systemd reads it) and
+# re-executes the manager so systemctl show reports the new value.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-211045 | fix
+  block:
+    - name: RHEL-09-211045 | create the manager drop-in directory
+      ansible.builtin.file:
+        path: /etc/systemd/system.conf.d
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: RHEL-09-211045 | set CtrlAltDelBurstAction=none
+      ansible.builtin.copy:
+        dest: /etc/systemd/system.conf.d/rhel9-stig-full-ctrlaltdel.conf
+        content: |
+          # Managed by rhel9_stig_full (RHEL-09-211045)
+          [Manager]
+          CtrlAltDelBurstAction=none
+        owner: root
+        group: root
+        mode: '0644'
+      register: _211045_fix
+
+    - name: RHEL-09-211045 | re-execute the systemd manager to apply it
+      ansible.builtin.systemd_service:
+        daemon_reexec: true
+      when: _211045_fix is changed
+
+    - name: RHEL-09-211045 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-211045'] }}"
+      when: (_211045_fix is changed)
+  rescue:
+    - name: RHEL-09-211045 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-211045': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-211045'] }}"

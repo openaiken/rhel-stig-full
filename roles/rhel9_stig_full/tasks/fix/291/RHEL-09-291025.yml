@@ -1,0 +1,34 @@
+---
+# RHEL-09-291025 | V-258037 | fix
+# RHEL 9 must enable Linux audit logging for the USBGuard daemon.
+# CAT III (Low)
+#
+# Sets AuditBackend=LinuxAudit in /etc/usbguard/usbguard-daemon.conf
+# (replacing any existing AuditBackend line) and restarts usbguard if it is
+# running.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-291025 | fix
+  block:
+    - name: RHEL-09-291025 | set AuditBackend=LinuxAudit
+      ansible.builtin.lineinfile:
+        path: /etc/usbguard/usbguard-daemon.conf
+        regexp: '^[ \t]*AuditBackend[ \t]*='
+        line: AuditBackend=LinuxAudit
+      register: _291025_fix
+
+    - name: RHEL-09-291025 | restart a running usbguard to apply it
+      ansible.builtin.command: systemctl try-restart usbguard
+      when: _291025_fix is changed
+
+    - name: RHEL-09-291025 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-291025'] }}"
+      when: (_291025_fix is changed)
+  rescue:
+    - name: RHEL-09-291025 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-291025': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-291025'] }}"
