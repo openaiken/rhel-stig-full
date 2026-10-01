@@ -1,0 +1,36 @@
+---
+# RHEL-09-251030 | V-257939 | fix
+# RHEL 9 must protect against or limit the effects of denial-of-service (DoS)
+# attacks by ensuring rate-limiting measures on impacted network interfaces
+# are implemented.
+# CAT II (Medium)
+#
+# Sets FirewallBackend=nftables in /etc/firewalld/firewalld.conf and restarts
+# a running firewalld (a backend change needs a restart; the rules are
+# reloaded from the permanent configuration).
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-251030 | fix
+  block:
+    - name: RHEL-09-251030 | use the nftables backend
+      ansible.builtin.lineinfile:
+        path: /etc/firewalld/firewalld.conf
+        regexp: '^[ \t]*FirewallBackend[ \t]*='
+        line: 'FirewallBackend=nftables'
+      register: _251030_fix
+
+    - name: RHEL-09-251030 | restart a running firewalld to apply it
+      ansible.builtin.command: systemctl try-restart firewalld
+      when: _251030_fix is changed
+
+    - name: RHEL-09-251030 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-251030'] }}"
+      when: (_251030_fix is changed)
+  rescue:
+    - name: RHEL-09-251030 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-251030': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-251030'] }}"

@@ -1,0 +1,54 @@
+---
+# RHEL-09-213100 | V-257815 | fix
+# RHEL 9 must disable acquiring, saving, and processing core dumps.
+# CAT II (Medium)
+#
+# Stops, disables and masks systemd-coredump.socket. An existing
+# /etc/systemd/system/systemd-coredump.socket that is not a link to /dev/null
+# (an admin override, which makes systemctl mask refuse) is removed first; the
+# fix then confirms LoadState=masked, since the systemd module has reported
+# success when the mask was refused.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-213100 | fix
+  block:
+    - name: RHEL-09-213100 | look for an override of systemd-coredump.socket in /etc/systemd/system
+      ansible.builtin.stat:
+        path: /etc/systemd/system/systemd-coredump.socket
+      register: _213100_ovr
+
+    - name: RHEL-09-213100 | remove the override, which blocks masking
+      ansible.builtin.file:
+        path: /etc/systemd/system/systemd-coredump.socket
+        state: absent
+      register: _213100_rm
+      when: _213100_ovr.stat.exists and (_213100_ovr.stat.lnk_source | default('')) != '/dev/null'
+
+    - name: RHEL-09-213100 | mask systemd-coredump.socket
+      ansible.builtin.systemd_service:
+        name: systemd-coredump.socket
+        masked: true
+        enabled: false
+        state: stopped
+        daemon_reload: true
+      register: _213100_fix
+
+    - name: RHEL-09-213100 | confirm systemd-coredump.socket is masked
+      ansible.builtin.command: systemctl show -p LoadState --value systemd-coredump.socket
+      register: _213100_state
+      changed_when: false
+      failed_when: _213100_state.stdout | trim != 'masked'
+      check_mode: false
+      when: not ansible_check_mode
+
+    - name: RHEL-09-213100 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-213100'] }}"
+      when: (_213100_rm is changed) or (_213100_fix is changed)
+  rescue:
+    - name: RHEL-09-213100 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-213100': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-213100'] }}"

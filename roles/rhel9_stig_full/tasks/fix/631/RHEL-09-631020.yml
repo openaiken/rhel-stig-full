@@ -1,0 +1,39 @@
+---
+# RHEL-09-631020 | V-258133 | fix
+# RHEL 9 must prohibit the use of cached authenticators after one day.
+# CAT II (Medium)
+#
+# Sets offline_credentials_expiration = 1 in [pam] of
+# /etc/sssd/conf.d/rhel9-stig-full.conf (mode 0600, as sssd requires) and
+# restarts a running sssd.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-631020 | fix
+  block:
+    - name: RHEL-09-631020 | expire cached credentials after one day
+      community.general.ini_file:
+        path: /etc/sssd/conf.d/rhel9-stig-full.conf
+        section: pam
+        option: offline_credentials_expiration
+        value: '1'
+        create: true
+        owner: root
+        group: root
+        mode: '0600'
+      register: _631020_fix
+
+    - name: RHEL-09-631020 | restart a running sssd to apply it
+      ansible.builtin.command: systemctl try-restart sssd
+      when: _631020_fix is changed
+
+    - name: RHEL-09-631020 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-631020'] }}"
+      when: (_631020_fix is changed)
+  rescue:
+    - name: RHEL-09-631020 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-631020': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-631020'] }}"

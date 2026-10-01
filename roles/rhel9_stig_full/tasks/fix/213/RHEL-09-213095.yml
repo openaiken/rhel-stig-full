@@ -1,0 +1,34 @@
+---
+# RHEL-09-213095 | V-257814 | fix
+# RHEL 9 must disable core dumps for all users.
+# CAT II (Medium)
+#
+# Writes * hard core 0 to /etc/security/limits.d/rhel9-stig-full-core.conf. A
+# domain given a nonzero core limit elsewhere still fails the re-check and
+# must be fixed by hand.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-213095 | fix
+  block:
+    - name: RHEL-09-213095 | disable core dumps for all users
+      ansible.builtin.copy:
+        dest: /etc/security/limits.d/rhel9-stig-full-core.conf
+        content: |
+          # Managed by rhel9_stig_full (RHEL-09-213095)
+          *    hard    core    0
+        owner: root
+        group: root
+        mode: '0644'
+      register: _213095_fix
+
+    - name: RHEL-09-213095 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-213095'] }}"
+      when: (_213095_fix is changed)
+  rescue:
+    - name: RHEL-09-213095 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-213095': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-213095'] }}"

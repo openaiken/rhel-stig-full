@@ -1,0 +1,29 @@
+---
+# RHEL-09-211040 | V-257783 | fix
+# RHEL 9 systemd-journald service must be enabled.
+# CAT II (Medium)
+#
+# Unmasks and starts systemd-journald (a static unit: it is started by its
+# sockets and cannot be enabled).
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-211040 | fix
+  block:
+    - name: RHEL-09-211040 | unmask and start systemd-journald
+      ansible.builtin.systemd_service:
+        name: systemd-journald
+        masked: false
+        state: started
+      register: _211040_fix
+
+    - name: RHEL-09-211040 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-211040'] }}"
+      when: (_211040_fix is changed)
+  rescue:
+    - name: RHEL-09-211040 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-211040': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-211040'] }}"
