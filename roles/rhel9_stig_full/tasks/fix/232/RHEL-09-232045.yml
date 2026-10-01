@@ -1,0 +1,64 @@
+---
+# RHEL-09-232045 | V-257889 | fix
+# All RHEL 9 local initialization files must have mode 0740 or less
+# permissive.
+# CAT II (Medium)
+#
+# Removes group write and execute and all other permissions from the dotfiles
+# the check lists (find /home /root -maxdepth 2 -type f -name .* -perm /037,
+# the STIG command), leaving each at 0740 or stricter.
+#
+# The rootfiles package ships /usr/lib/tmpfiles.d/rootfiles.conf, which sets
+# the /root dotfiles back to 0644 at every boot and after every package
+# transaction (systemd-tmpfiles --create). So its entries are copied to
+# /etc/tmpfiles.d/rootfiles.conf (same name, which overrides the vendor file)
+# with mode 0640. Seen on sandbox3: a later dnf install in the same run undid
+# the chmod.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-232045 | fix
+  block:
+    - name: RHEL-09-232045 | read the vendor tmpfiles entries for /root
+      ansible.builtin.slurp:
+        src: /usr/lib/tmpfiles.d/rootfiles.conf
+      register: _232045_tmpf
+      failed_when: false
+
+    - name: RHEL-09-232045 | override them so /root dotfiles stay 0640
+      ansible.builtin.copy:
+        dest: /etc/tmpfiles.d/rootfiles.conf
+        content: |
+          # Managed by rhel9_stig_full (RHEL-09-232045): the vendor entries from
+          # /usr/lib/tmpfiles.d/rootfiles.conf, with mode 0640 instead of 0644.
+          {{ _232045_tmpf.content | b64decode | regex_replace('(?m)^([CcFfwz][+!^-]*[ \t]+/root/[^ \t]+[ \t]+)0?[0-7][0-7][0-7]', '\g<1>0640') }}
+        owner: root
+        group: root
+        mode: '0644'
+      when: _232045_tmpf.content is defined
+      register: _232045_ovr
+
+    - name: RHEL-09-232045 | find local initialization files more permissive than 0740
+      ansible.builtin.shell: find /home /root -maxdepth 2 -type f -name '.*' -perm /037 2>/dev/null || true
+      register: _232045_files
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-232045 | restrict them to 0740 or less
+      ansible.builtin.file:
+        path: "{{ item }}"
+        mode: 'g-wx,o-rwx'
+      loop: "{{ _232045_files.stdout_lines }}"
+      register: _232045_fix
+
+    - name: RHEL-09-232045 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232045'] }}"
+      when: (_232045_ovr is changed) or (_232045_fix is changed)
+  rescue:
+    - name: RHEL-09-232045 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-232045': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232045'] }}"
