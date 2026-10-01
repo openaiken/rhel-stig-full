@@ -27,13 +27,18 @@
     else
       echo "PASS: page_poison=1 present in all current kernel args"
     fi
-    if grep -q '^[[:space:]]*GRUB_CMDLINE_LINUX=.*page_poison=1' /etc/default/grub 2>/dev/null; then
+    # /etc/default/grub is a shell file that grub2-mkconfig sources, so the last
+    # assignment wins; grepping for any GRUB_CMDLINE_LINUX= line holding the
+    # argument passed an earlier line that a later one overrode. Source it
+    # in a subshell, as grub2-mkconfig does, and match whole arguments.
+    gcl=$( (. /etc/default/grub >/dev/null 2>&1; printf '%s' "$GRUB_CMDLINE_LINUX") )
+    if [[ " $gcl " == *" page_poison=1 "* ]]; then
       echo "PASS: page_poison=1 present in GRUB_CMDLINE_LINUX"
     else
       fail=1
       echo "FAIL: page_poison=1 absent from GRUB_CMDLINE_LINUX in /etc/default/grub"
       echo "      setting will not persist across kernel updates"
-      echo "CURRENT: $(grep '^[[:space:]]*GRUB_CMDLINE_LINUX=' /etc/default/grub 2>/dev/null || echo none)"
+      echo "CURRENT (as sourced): GRUB_CMDLINE_LINUX=\"$gcl\""
     fi
     if [ "$fail" -eq 0 ]; then echo "STATUS: PASS"; else echo "STATUS: FAIL"; fi
   register: _212040_poison

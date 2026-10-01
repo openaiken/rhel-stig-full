@@ -9,7 +9,12 @@
 - name: RHEL-09-212045 | check init_on_free=1 in /etc/default/grub
   # Uncommented GRUB_CMDLINE_LINUX= only: a plain grep also matched a
   # commented-out line (which the STIG calls a finding) and _DEFAULT.
-  shell: grep -E '^[[:space:]]*GRUB_CMDLINE_LINUX=' /etc/default/grub 2>/dev/null || true
+  # /etc/default/grub is a shell file grub2-mkconfig sources: the last
+  # assignment wins, so print the sourced value, not every matching line.
+  shell: |
+    if [ -f /etc/default/grub ]; then
+      ( . /etc/default/grub >/dev/null 2>&1; printf 'GRUB_CMDLINE_LINUX="%s"\n' "$GRUB_CMDLINE_LINUX" )
+    fi
   register: _212045_cmdline
   changed_when: false
   failed_when: false
