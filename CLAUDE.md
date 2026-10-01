@@ -154,7 +154,19 @@ report 0. Re-run it after touching any task.
 - A check that reads only runtime state passes as soon as the fix applies it,
   so the fix must prove persistence itself (sysctl fixes verify the last value
   in `systemd-sysctl --cat-config`, writing `zz-rhel9-stig-full.conf`)
-- `lint_checks.py` FIX-STRUCTURE / FIX-NOT-WIRED enforce the above
+- `lint_checks.py` FIX-STRUCTURE / FIX-NOT-WIRED / FIX-AUDIT-DRIFT enforce
+  the above (audit fixes carry a copy of the check's expected rules)
+- Traps hit writing the first 300 fixes:
+  - `systemd_service masked: true` reported `changed` while `systemctl mask`
+    refused (an admin symlink in /etc/systemd/system): verify `LoadState`
+  - `{{3,4}}` in a regex is Jinja (lint JINJA-QUANTIFIER); `awk '{{print}}'`
+    too; `: ` in a plain-scalar command breaks YAML (use `shell: |`)
+  - a lookahead like `(?![^#]*x)` crosses lines under MULTILINE: add `\n`
+  - rootfiles' tmpfiles.d resets /root dotfiles to 0644 on every rpm
+    transaction and boot; override in /etc/tmpfiles.d
+  - `-e 2` makes audit rules immutable until reboot; check `auditctl -s`
+  - a fix that only needs a value nobody else sets still must win against a
+    later file: name drop-ins `zz-` (last wins) or `00-` (sshd: first wins)
 
 ## Verification loop
 

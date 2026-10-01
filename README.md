@@ -7,7 +7,7 @@ This project is a Work-In-Progress. Furthermore, *this document was largely writ
 ## Overview
 
 - **Assessment** (`./run.sh validate`): the **`rhel9_stig_full` role** checks all 445 rules of RHEL 9 STIG V2R9, read-only, one task file per STIG ID, then renders the results into a populated `.cklb` checklist.
-- **Remediation** (`./run.sh remediate`): the unmodified **DISA formal role** (`rhel9STIG`) enforces settings, then `rhel9_stig_full` checks every rule and fixes the open ones it has a fix for (a first batch of 85: packages, file ownership and modes, sysctl). The DISA role takes no part in assessment. See [How Remediation Works](#how-remediation-works).
+- **Remediation** (`./run.sh remediate`): the unmodified **DISA formal role** (`rhel9STIG`) enforces settings, then `rhel9_stig_full` checks every rule and fixes the open ones it has a fix for (325 of the 445 rules: packages, services, sysctl, kernel modules and boot arguments, file modes, login/PAM/sudo, sshd, audit rules and auditd, GNOME, mounts, AIDE, and more). The DISA role takes no part in assessment. See [How Remediation Works](#how-remediation-works).
 
 Why the formal role does not assess: in check mode it reports whether a task *would change something*, and its tasks write one exact line into one exact file. A host configured correctly any other way (a drop-in file, different spelling, a stricter value) was reported open. The assessment role checks what each STIG check text checks, on the effective state wherever there is one.
 
@@ -141,10 +141,16 @@ Checks prefer the effective value to configuration text (`sysctl -n`, `sshd -T`,
 `--tags remediate` (in `tasks/remediate.yml`, after every check has run):
 
 1. Each fix in `tasks/fix/<category>/RHEL-09-XXXXXX.yml` runs **only if that rule's check reported `open`** and its `stig_rules` toggle is on. A compliant, not-applicable or attested rule is never touched.
-2. Fixes use Ansible modules (`dnf`, `file`, `ansible.posix.sysctl`), in `block`/`rescue`: a failed fix is recorded and the host carries on.
+2. Fixes use Ansible modules (`dnf`, `file`, `lineinfile`, `ini_file`, `systemd_service`, `ansible.posix.sysctl`, ...), in `block`/`rescue`: a failed fix is recorded and the host carries on. A fix that cannot apply on this host says why in `finding_details` (for example "/tmp is not a separate file system", "PAM is not managed by authselect", or "the loaded audit rules are immutable; loads at next boot").
 3. With `validate` also selected, every rule a fix changed (or failed on) is re-checked, its `finding_details` notes that it was remediated (or why the fix failed), and the results are written and rendered. With `remediate` alone, nothing is written: the pre-fix verdicts would be stale, and a later render would show fixed rules as open. Either way a summary task lists what changed and what failed.
 
-sysctl fixes write `/etc/sysctl.d/zz-rhel9-stig-full.conf`, named to load after every numbered file and `/etc/sysctl.conf`, and fail if a later file still overrides the value at boot. Deliberately not fixed: user namespaces (213105, breaks rootless containers) and IP forwarding (253075, 254025).
+Where it writes configuration, it uses its own drop-in, named so it wins: `/etc/sysctl.d/zz-rhel9-stig-full.conf`, `/etc/ssh/sshd_config.d/00-rhel9-stig-full.conf` (sshd takes the first value), `/etc/security/pwquality.conf.d/zz-rhel9-stig-full.conf`, `/etc/sudoers.d/rhel9-stig-full`, `/etc/audit/rules.d/50-rhel9-stig-full-<ID>.rules`, `/etc/dconf/db/local.d/00-rhel9-stig-full`, `/etc/modprobe.d/rhel9-stig-full-<module>.conf`. Single-file settings (`login.defs`, `auditd.conf`, `faillock.conf`, `chrony.conf`) are edited in place on the line in effect.
+
+Some changes apply only at the next boot: kernel arguments, audit rules once `-e 2` is loaded, `StopIdleSessionSec`, and SELinux from disabled. The fix records this.
+
+Where the STIG allows more than one compliant value, the fix applies the STIG fix text's default, through a variable in `roles/rhel9_stig_full/defaults/main.yml`: `rhel9_fix_audit_failure_action` (default `HALT`) and `rhel9_fix_audit_failure_flag` (default `2`).
+
+Not fixed, because the right answer depends on the site: separate file systems, disk encryption, FIPS mode and crypto policy, firewall policy, NTP servers, remote logging, removals the STIG allows to stay ("unless required"), account aging of existing users, sudo `NOPASSWD`, smart card and PKI, and patching. Also deliberately not fixed: user namespaces (213105, breaks rootless containers) and IP forwarding (253075, 254025).
 
 ## Project Structure
 
