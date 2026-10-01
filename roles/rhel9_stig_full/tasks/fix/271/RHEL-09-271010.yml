@@ -1,0 +1,70 @@
+---
+# RHEL-09-271010 | V-258012 | fix
+# RHEL 9 must display the Standard Mandatory DOD Notice and Consent Banner
+# before granting local or remote access to the system via a graphical user
+# logon.
+# CAT II (Medium)
+#
+# Sets org.gnome.login-screen banner-message-enable to true in
+# /etc/dconf/db/local.d/00-rhel9-stig-full. Login-screen keys are also written
+# to the gdm database, which the greeter itself reads. Applies only where gdm
+# is installed (the check is not applicable otherwise). The local system
+# database is what the check reads through the user profile, which is made to
+# include system-db:local; the databases are then compiled with dconf update.
+# Takes effect at the next login.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-271010 | fix
+  block:
+    - name: RHEL-09-271010 | make sure the user profile reads the local database
+      ansible.builtin.lineinfile:
+        path: /etc/dconf/profile/user
+        line: system-db:local
+        insertafter: '^user-db:user'
+        create: true
+        owner: root
+        group: root
+        mode: '0644'
+      register: _271010_prof
+
+    - name: RHEL-09-271010 | set banner-message-enable in /etc/dconf/db/local.d/00-rhel9-stig-full
+      community.general.ini_file:
+        path: /etc/dconf/db/local.d/00-rhel9-stig-full
+        section: org/gnome/login-screen
+        option: banner-message-enable
+        value: "true"
+        no_extra_spaces: true
+        create: true
+        owner: root
+        group: root
+        mode: '0644'
+      register: _271010_set0
+
+    - name: RHEL-09-271010 | set banner-message-enable in /etc/dconf/db/gdm.d/00-rhel9-stig-full
+      community.general.ini_file:
+        path: /etc/dconf/db/gdm.d/00-rhel9-stig-full
+        section: org/gnome/login-screen
+        option: banner-message-enable
+        value: "true"
+        no_extra_spaces: true
+        create: true
+        owner: root
+        group: root
+        mode: '0644'
+      register: _271010_set1
+
+    - name: RHEL-09-271010 | compile the dconf databases
+      ansible.builtin.command: dconf update
+      when: (_271010_prof is changed) or (_271010_set0 is changed) or (_271010_set1 is changed)
+
+    - name: RHEL-09-271010 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-271010'] }}"
+      when: (_271010_prof is changed) or (_271010_set0 is changed) or (_271010_set1 is changed)
+  rescue:
+    - name: RHEL-09-271010 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-271010': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-271010'] }}"

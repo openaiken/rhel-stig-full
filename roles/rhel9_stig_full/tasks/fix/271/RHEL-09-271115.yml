@@ -1,0 +1,68 @@
+---
+# RHEL-09-271115 | V-258033 | fix
+# RHEL 9 must disable the user list at logon for graphical user interfaces.
+# CAT II (Medium)
+#
+# Sets org.gnome.login-screen disable-user-list to true in
+# /etc/dconf/db/local.d/00-rhel9-stig-full. Login-screen keys are also written
+# to the gdm database, which the greeter itself reads. Applies only where gdm
+# is installed (the check is not applicable otherwise). The local system
+# database is what the check reads through the user profile, which is made to
+# include system-db:local; the databases are then compiled with dconf update.
+# Takes effect at the next login.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-271115 | fix
+  block:
+    - name: RHEL-09-271115 | make sure the user profile reads the local database
+      ansible.builtin.lineinfile:
+        path: /etc/dconf/profile/user
+        line: system-db:local
+        insertafter: '^user-db:user'
+        create: true
+        owner: root
+        group: root
+        mode: '0644'
+      register: _271115_prof
+
+    - name: RHEL-09-271115 | set disable-user-list in /etc/dconf/db/local.d/00-rhel9-stig-full
+      community.general.ini_file:
+        path: /etc/dconf/db/local.d/00-rhel9-stig-full
+        section: org/gnome/login-screen
+        option: disable-user-list
+        value: "true"
+        no_extra_spaces: true
+        create: true
+        owner: root
+        group: root
+        mode: '0644'
+      register: _271115_set0
+
+    - name: RHEL-09-271115 | set disable-user-list in /etc/dconf/db/gdm.d/00-rhel9-stig-full
+      community.general.ini_file:
+        path: /etc/dconf/db/gdm.d/00-rhel9-stig-full
+        section: org/gnome/login-screen
+        option: disable-user-list
+        value: "true"
+        no_extra_spaces: true
+        create: true
+        owner: root
+        group: root
+        mode: '0644'
+      register: _271115_set1
+
+    - name: RHEL-09-271115 | compile the dconf databases
+      ansible.builtin.command: dconf update
+      when: (_271115_prof is changed) or (_271115_set0 is changed) or (_271115_set1 is changed)
+
+    - name: RHEL-09-271115 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-271115'] }}"
+      when: (_271115_prof is changed) or (_271115_set0 is changed) or (_271115_set1 is changed)
+  rescue:
+    - name: RHEL-09-271115 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-271115': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-271115'] }}"

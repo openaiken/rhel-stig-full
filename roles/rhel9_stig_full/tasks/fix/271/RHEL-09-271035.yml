@@ -1,0 +1,52 @@
+---
+# RHEL-09-271035 | V-258017 | fix
+# RHEL 9 must prevent a user from overriding the disabling of the graphical
+# user interface autorun function.
+# CAT II (Medium)
+#
+# Locks /org/gnome/desktop/media-handling/autorun-never in
+# /etc/dconf/db/local.d/locks/rhel9-stig-full, so users cannot override it.
+# Applies only where gdm is installed (the check is not applicable otherwise).
+# The local system database is what the check reads through the user profile,
+# which is made to include system-db:local; the databases are then compiled
+# with dconf update. Takes effect at the next login.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-271035 | fix
+  block:
+    - name: RHEL-09-271035 | make sure the user profile reads the local database
+      ansible.builtin.lineinfile:
+        path: /etc/dconf/profile/user
+        line: system-db:local
+        insertafter: '^user-db:user'
+        create: true
+        owner: root
+        group: root
+        mode: '0644'
+      register: _271035_prof
+
+    - name: RHEL-09-271035 | lock /org/gnome/desktop/media-handling/autorun-never
+      ansible.builtin.lineinfile:
+        path: /etc/dconf/db/local.d/locks/rhel9-stig-full
+        line: /org/gnome/desktop/media-handling/autorun-never
+        create: true
+        owner: root
+        group: root
+        mode: '0644'
+      register: _271035_lock
+
+    - name: RHEL-09-271035 | compile the dconf databases
+      ansible.builtin.command: dconf update
+      when: (_271035_prof is changed) or (_271035_lock is changed)
+
+    - name: RHEL-09-271035 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-271035'] }}"
+      when: (_271035_prof is changed) or (_271035_lock is changed)
+  rescue:
+    - name: RHEL-09-271035 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-271035': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-271035'] }}"

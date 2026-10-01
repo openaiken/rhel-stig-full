@@ -1,0 +1,33 @@
+---
+# RHEL-09-271040 | V-258018 | fix
+# RHEL 9 must not allow unattended or automatic logon via the graphical user
+# interface.
+# CAT I (High)
+#
+# Sets AutomaticLoginEnable=false in the [daemon] section of
+# /etc/gdm/custom.conf (the section GDM reads). Takes effect when gdm next
+# starts.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-271040 | fix
+  block:
+    - name: RHEL-09-271040 | disable automatic login
+      community.general.ini_file:
+        path: /etc/gdm/custom.conf
+        section: daemon
+        option: AutomaticLoginEnable
+        value: 'false'
+        no_extra_spaces: true
+      register: _271040_fix
+
+    - name: RHEL-09-271040 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-271040'] }}"
+      when: (_271040_fix is changed)
+  rescue:
+    - name: RHEL-09-271040 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-271040': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-271040'] }}"
