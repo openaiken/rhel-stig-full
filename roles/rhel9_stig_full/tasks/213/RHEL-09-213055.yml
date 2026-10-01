@@ -14,10 +14,15 @@
 
 - name: RHEL-09-213055 | check firewire-core module is disabled
   shell: |
-    lines=$(grep -hsE '^[[:space:]]*(install|blacklist)[[:space:]]+firewire-core([[:space:]]|$)' /etc/modprobe.conf /etc/modprobe.d/*)
+    # The effective configuration, as modprobe reads it: only *.conf files in
+    # /etc/modprobe.d (and /run, /usr/lib) count. Grepping /etc/modprobe.d/*,
+    # as the STIG command does, also matched a renamed firewire-core.conf.bak that
+    # modprobe ignores, so the module still loaded while this passed.
+    # modprobe prints - in module names as _, so both spellings match.
+    lines=$(modprobe --showconfig 2>/dev/null | grep -E '^(install|blacklist)[[:space:]]+firewire[-_]core([[:space:]]|$)')
     echo "modprobe lines for firewire-core: $(echo "$lines" | tr '\n' ' ')"
-    inst=$(echo "$lines" | grep -E '^[[:space:]]*install[[:space:]]+firewire-core[[:space:]]+/(usr/)?bin/(false|true)[[:space:]]*$')
-    bl=$(echo "$lines" | grep -E '^[[:space:]]*blacklist[[:space:]]+firewire-core[[:space:]]*$')
+    inst=$(echo "$lines" | grep -E '^[[:space:]]*install[[:space:]]+firewire[-_]core[[:space:]]+/(usr/)?bin/(false|true)[[:space:]]*$')
+    bl=$(echo "$lines" | grep -E '^[[:space:]]*blacklist[[:space:]]+firewire[-_]core[[:space:]]*$')
     if [ -n "$inst" ] && [ -n "$bl" ]; then
       echo "STATUS: PASS"
     else

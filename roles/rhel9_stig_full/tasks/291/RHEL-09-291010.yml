@@ -14,10 +14,15 @@
 
 - name: RHEL-09-291010 | check usb-storage module is disabled
   shell: |
-    lines=$(grep -hsE '^[[:space:]]*(install|blacklist)[[:space:]]+usb-storage([[:space:]]|$)' /etc/modprobe.conf /etc/modprobe.d/*)
+    # The effective configuration, as modprobe reads it: only *.conf files in
+    # /etc/modprobe.d (and /run, /usr/lib) count. Grepping /etc/modprobe.d/*,
+    # as the STIG command does, also matched a renamed usb-storage.conf.bak that
+    # modprobe ignores, so the module still loaded while this passed.
+    # modprobe prints - in module names as _, so both spellings match.
+    lines=$(modprobe --showconfig 2>/dev/null | grep -E '^(install|blacklist)[[:space:]]+usb[-_]storage([[:space:]]|$)')
     echo "modprobe lines for usb-storage: $(echo "$lines" | tr '\n' ' ')"
-    inst=$(echo "$lines" | grep -E '^[[:space:]]*install[[:space:]]+usb-storage[[:space:]]+/(usr/)?bin/(false|true)[[:space:]]*$')
-    bl=$(echo "$lines" | grep -E '^[[:space:]]*blacklist[[:space:]]+usb-storage[[:space:]]*$')
+    inst=$(echo "$lines" | grep -E '^[[:space:]]*install[[:space:]]+usb[-_]storage[[:space:]]+/(usr/)?bin/(false|true)[[:space:]]*$')
+    bl=$(echo "$lines" | grep -E '^[[:space:]]*blacklist[[:space:]]+usb[-_]storage[[:space:]]*$')
     if [ -n "$inst" ] && [ -n "$bl" ]; then
       echo "STATUS: PASS"
     else

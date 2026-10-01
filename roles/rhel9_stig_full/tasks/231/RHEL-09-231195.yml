@@ -14,7 +14,11 @@
 
 - name: RHEL-09-231195 | check cramfs module is disabled
   shell: |
-    lines=$(grep -hsE '^[[:space:]]*(install|blacklist)[[:space:]]+cramfs([[:space:]]|$)' /etc/modprobe.conf /etc/modprobe.d/*)
+    # The effective configuration, as modprobe reads it: only *.conf files in
+    # /etc/modprobe.d (and /run, /usr/lib) count. Grepping /etc/modprobe.d/*,
+    # as the STIG command does, also matched a renamed cramfs.conf.bak that
+    # modprobe ignores, so the module still loaded while this passed.
+    lines=$(modprobe --showconfig 2>/dev/null | grep -E '^(install|blacklist)[[:space:]]+cramfs([[:space:]]|$)')
     echo "modprobe lines for cramfs: $(echo "$lines" | tr '\n' ' ')"
     inst=$(echo "$lines" | grep -E '^[[:space:]]*install[[:space:]]+cramfs[[:space:]]+/(usr/)?bin/(false|true)[[:space:]]*$')
     bl=$(echo "$lines" | grep -E '^[[:space:]]*blacklist[[:space:]]+cramfs[[:space:]]*$')

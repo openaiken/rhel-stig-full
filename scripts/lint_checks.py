@@ -69,7 +69,7 @@ CHECKS = {
                     "an audit-rule fix writes different expected rules than its check requires",
     "FILE-NOT-EFFECTIVE":
                     "greps config files for a setting whose effective value can differ "
-                    "(systemd drop-in without .conf, sysctl override, sshd Match block)",
+                    "(systemd drop-in without .conf, sysctl override, sshd Match block, modprobe.d non-.conf)",
 }
 
 
@@ -311,8 +311,8 @@ def lint(sid, path):
 
     # C7: file-grep where the effective value can differ
     # (file ownership and mode checks, which use stat, read no setting)
-    if not fix and re.search(r"/etc/systemd/[\w.]*\.conf\.d|/etc/sysctl\.d|sshd_config", src) and "stat -c" not in src:
-        if not re.search(r"systemctl show|sysctl -n|sshd -T", src):
+    if not fix and re.search(r"/etc/systemd/[\w.]*\.conf\.d|/etc/sysctl\.d|sshd_config|/etc/modprobe\.d", src) and "stat -c" not in src:
+        if not re.search(r"systemctl show|sysctl -n|sshd -T|modprobe --showconfig", src):
             hits.append(("FILE-NOT-EFFECTIVE", 0,
                          "greps config files without querying the effective value"))
     return hits
