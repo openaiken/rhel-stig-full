@@ -1,0 +1,29 @@
+---
+# RHEL-09-611180 | V-258125 | fix
+# The pcscd socket on RHEL 9 must be active.
+# CAT II (Medium)
+#
+# Enables and starts pcscd.socket (pcsc-lite is installed by the
+# RHEL-09-611175 fix).
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-611180 | fix
+  block:
+    - name: RHEL-09-611180 | enable and start pcscd.socket
+      ansible.builtin.systemd_service:
+        name: pcscd.socket
+        enabled: true
+        state: started
+      register: _611180_fix
+
+    - name: RHEL-09-611180 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-611180'] }}"
+      when: (_611180_fix is changed)
+  rescue:
+    - name: RHEL-09-611180 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-611180': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-611180'] }}"

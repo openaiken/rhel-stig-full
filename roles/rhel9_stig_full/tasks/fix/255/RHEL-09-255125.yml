@@ -1,0 +1,37 @@
+---
+# RHEL-09-255125 | V-258001 | fix
+# RHEL 9 SSH public host key files must have mode 0644 or less permissive.
+# CAT II (Medium)
+#
+# Removes owner execute and group and other write and execute from every
+# /etc/ssh/*.pub, leaving 0644 or stricter.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-255125 | fix
+  block:
+    - name: RHEL-09-255125 | find the SSH public host keys
+      ansible.builtin.find:
+        paths: /etc/ssh
+        patterns: '*.pub'
+      register: _255125_keys
+
+    - name: RHEL-09-255125 | restrict them to 0644 or less
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        mode: 'u-xs,g-wxs,o-wxt'
+      loop: "{{ _255125_keys.files }}"
+      loop_control:
+        label: "{{ item.path }}"
+      register: _255125_fix
+
+    - name: RHEL-09-255125 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-255125'] }}"
+      when: (_255125_fix is changed)
+  rescue:
+    - name: RHEL-09-255125 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-255125': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-255125'] }}"

@@ -1,0 +1,35 @@
+---
+# RHEL-09-255110 | V-257998 | fix
+# The RHEL 9 SSH server configuration file must be owned by root.
+# CAT II (Medium)
+#
+# Sets the owner of /etc/ssh/sshd_config, /etc/ssh/sshd_config.d and every
+# file in it to root.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-255110 | fix
+  block:
+    - name: RHEL-09-255110 | find the sshd drop-in files
+      ansible.builtin.find:
+        paths: /etc/ssh/sshd_config.d
+        hidden: true
+      register: _255110_files
+
+    - name: RHEL-09-255110 | set their owner to root
+      ansible.builtin.file:
+        path: "{{ item }}"
+        owner: root
+      loop: "{{ ['/etc/ssh/sshd_config', '/etc/ssh/sshd_config.d'] + (_255110_files.files | map(attribute='path') | list) }}"
+      register: _255110_fix
+
+    - name: RHEL-09-255110 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-255110'] }}"
+      when: (_255110_fix is changed)
+  rescue:
+    - name: RHEL-09-255110 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-255110': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-255110'] }}"

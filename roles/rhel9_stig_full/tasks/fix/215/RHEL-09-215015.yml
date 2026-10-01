@@ -1,0 +1,28 @@
+---
+# RHEL-09-215015 | V-257826 | fix
+# RHEL 9 must not have a File Transfer Protocol (FTP) server package
+# installed.
+# CAT I (High)
+#
+# Removes vsftpd (the STIG names no exception).
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-215015 | fix
+  block:
+    - name: RHEL-09-215015 | remove vsftpd
+      ansible.builtin.dnf:
+        name: vsftpd
+        state: absent
+      register: _215015_fix
+
+    - name: RHEL-09-215015 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-215015'] }}"
+      when: (_215015_fix is changed)
+  rescue:
+    - name: RHEL-09-215015 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-215015': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-215015'] }}"

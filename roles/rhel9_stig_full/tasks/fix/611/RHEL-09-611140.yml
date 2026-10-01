@@ -1,0 +1,30 @@
+---
+# RHEL-09-611140 | V-258117 | fix
+# RHEL 9 must be configured to use the shadow file to store only encrypted
+# representations of passwords.
+# CAT II (Medium)
+#
+# Sets ENCRYPT_METHOD SHA512 in /etc/login.defs, replacing the last
+# uncommented ENCRYPT_METHOD line (the one in effect) or appending one.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-611140 | fix
+  block:
+    - name: RHEL-09-611140 | set ENCRYPT_METHOD in /etc/login.defs
+      ansible.builtin.lineinfile:
+        path: /etc/login.defs
+        regexp: '^[ \t]*ENCRYPT_METHOD[ \t]'
+        line: 'ENCRYPT_METHOD SHA512'
+      register: _611140_fix
+
+    - name: RHEL-09-611140 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-611140'] }}"
+      when: (_611140_fix is changed)
+  rescue:
+    - name: RHEL-09-611140 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-611140': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-611140'] }}"

@@ -1,0 +1,47 @@
+---
+# RHEL-09-232050 | V-257890 | fix
+# All RHEL 9 local interactive user home directories must have mode 0750 or
+# less permissive.
+# CAT II (Medium)
+#
+# Removes group write and all other permissions from the home directory of
+# every local interactive user (UID 1000 to 65533 without a nologin shell, as
+# the check selects them), leaving each at 0750 or stricter.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-232050 | fix
+  block:
+    - name: RHEL-09-232050 | list interactive users' home directories
+      ansible.builtin.shell: |
+        awk -F: '($3 >= 1000) && ($3 < 65534) && ($7 !~ /nologin/) { print $6 }' /etc/passwd
+      register: _232050_homes
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-232050 | look at each home directory
+      ansible.builtin.stat:
+        path: "{{ item }}"
+      loop: "{{ _232050_homes.stdout_lines }}"
+      register: _232050_stat
+
+    - name: RHEL-09-232050 | restrict them to 0750 or less
+      ansible.builtin.file:
+        path: "{{ item.item }}"
+        mode: 'g-w,o-rwx'
+      loop: "{{ _232050_stat.results | selectattr('stat.isdir', 'defined') | selectattr('stat.isdir') | list }}"
+      loop_control:
+        label: "{{ item.item }}"
+      register: _232050_fix
+
+    - name: RHEL-09-232050 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232050'] }}"
+      when: (_232050_fix is changed)
+  rescue:
+    - name: RHEL-09-232050 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-232050': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232050'] }}"

@@ -1,0 +1,32 @@
+---
+# RHEL-09-214035 | V-257824 | fix
+# RHEL 9 must remove all software components after updated versions have been
+# installed.
+# CAT III (Low)
+#
+# Sets clean_requirements_on_remove=True in [main] of /etc/dnf/dnf.conf, so
+# dnf removes dependencies nothing needs any more.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-214035 | fix
+  block:
+    - name: RHEL-09-214035 | set clean_requirements_on_remove=True in [main] of /etc/dnf/dnf.conf
+      community.general.ini_file:
+        path: /etc/dnf/dnf.conf
+        section: main
+        option: clean_requirements_on_remove
+        value: 'True'
+        no_extra_spaces: true
+      register: _214035_fix
+
+    - name: RHEL-09-214035 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-214035'] }}"
+      when: (_214035_fix is changed)
+  rescue:
+    - name: RHEL-09-214035 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-214035': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-214035'] }}"

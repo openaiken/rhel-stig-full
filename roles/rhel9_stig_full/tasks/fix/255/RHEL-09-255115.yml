@@ -1,0 +1,32 @@
+---
+# RHEL-09-255115 | V-257999 | fix
+# RHEL 9 SSH server configuration files' permissions must not be modified.
+# CAT II (Medium)
+#
+# Restores the packaged owner, group and mode of every file in openssh-server
+# (rpm --setugids, then rpm --setperms), which is what rpm --verify compares.
+# Content changes are not touched; a modified non-configuration file still
+# fails the re-check.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-255115 | fix
+  block:
+    - name: RHEL-09-255115 | restore packaged owners and groups
+      ansible.builtin.command: rpm --setugids openssh-server
+      register: _255115_ugid
+
+    - name: RHEL-09-255115 | restore packaged modes
+      ansible.builtin.command: rpm --setperms openssh-server
+      register: _255115_fix
+
+    - name: RHEL-09-255115 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-255115'] }}"
+      when: (_255115_ugid is changed) or (_255115_fix is changed)
+  rescue:
+    - name: RHEL-09-255115 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-255115': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-255115'] }}"
