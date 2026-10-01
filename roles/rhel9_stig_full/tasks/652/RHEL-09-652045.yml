@@ -4,7 +4,7 @@
 # system or media from the system being audited via rsyslog.
 # CAT II (Medium) | CCI-001851
 
-# The formal role checks for its own line in one specific file, so a host
+# The DISA Ansible role checks for its own line in one specific file, so a host
 # configured equivalently elsewhere (a drop-in, other spacing or case) was
 # reported open while compliant.
 # Parsed across /etc/rsyslog.conf and /etc/rsyslog.d/*.conf, comments removed.

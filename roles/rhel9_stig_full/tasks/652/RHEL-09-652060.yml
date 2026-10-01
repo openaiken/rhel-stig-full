@@ -3,7 +3,7 @@
 # RHEL 9 must use cron logging.
 # CAT II (Medium) | CCI-000366
 
-# The formal role checks for its own line in one specific file, so a host
+# The DISA Ansible role checks for its own line in one specific file, so a host
 # configured equivalently elsewhere (a drop-in, other spacing or case) was
 # reported open while compliant.
 # Parsed across /etc/rsyslog.conf and /etc/rsyslog.d/*.conf. A facility is

@@ -44,9 +44,8 @@ def cklb_render(template_json, hostname, result_paths, fqdn='', ip_address='',
     """
     Fill the CKLB template for a single host from its assessment results.
 
-    Every rule is assessed by this role; the DISA formal role (rhel9STIG) takes
-    no part in assessment. A rule with no result inside the age window stays as the
-    template has it: not_reviewed.
+    Every rule is assessed by this role. A rule with no result inside the age
+    window stays as the template has it: not_reviewed.
 
     Results are merged per rule across all of the host's result files, the
     newest file winning; each rule's comments name the run it came from.

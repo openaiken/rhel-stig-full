@@ -3,9 +3,8 @@
 # The RHEL 9 SSH server configuration file must be owned by root.
 # CAT II (Medium) | CCI-000366
 
-# Previously decided only by the formal role, whose check-mode result says
-# whether a task would change something. Checked here directly, as the STIG
-# command does, so the formal role is no longer needed for assessment.
+# Checked directly, as the STIG command does. (The DISA Ansible role's check
+# mode only says whether one of its tasks would change something.)
 # Covers sshd_config, the sshd_config.d directory and every file in it, as
 # the STIG command does.
 

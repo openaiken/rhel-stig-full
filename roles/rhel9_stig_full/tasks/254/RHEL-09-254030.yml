@@ -4,7 +4,7 @@
 # default.
 # CAT II (Medium) | CCI-000366
 
-# The STIG checks the running value (sysctl). The formal role's sysctl task
+# The STIG checks the running value (sysctl). The DISA Ansible role's sysctl task
 # compares against /etc/sysctl.conf, so a host setting this in
 # /etc/sysctl.d/ (as ComplianceAsCode does) was reported open while
 # compliant. The value persisted by the sysctl configuration is shown for

@@ -3,7 +3,7 @@
 # RHEL 9 must require authentication to access emergency mode.
 # CAT II (Medium) | CCI-000213
 
-# The formal role checks for its own line in one specific file, so a host
+# The DISA Ansible role checks for its own line in one specific file, so a host
 # configured equivalently elsewhere (a drop-in, other spacing or case) was
 # reported open while compliant.
 # Decided on the effective ExecStart (systemctl show), as for RHEL-09-611200: a

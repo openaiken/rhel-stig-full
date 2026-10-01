@@ -2,8 +2,7 @@
 """
 Parse the DISA XCCDF benchmark XML and emit files/rules.json keyed by STIG ID.
 
-The benchmark lives in files/ (moved out of roles/rhel9STIG, which is now used
-for remediation only and does not take part in assessment).
+The benchmark XML lives in files/.
 
 Usage:
     python3 scripts/parse_xccdf_benchmark.py

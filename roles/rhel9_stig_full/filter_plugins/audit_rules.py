@@ -8,7 +8,7 @@ The STIG shows the expected rules as auditctl -l would print them. A host can
 meet a requirement with rules written differently: other keys, the syscalls
 in another order or merged into one rule, a -w watch instead of an
 arch-specific -F path rule, auid!=unset for auid!=-1. Text comparison reports
-all of those as findings (the formal role checks its own lines in
+all of those as findings (the DISA Ansible role checks its own lines in
 /etc/audit/rules.d/audit.rules, so it did exactly that on hosts hardened any
 other way). This compares what events the rules record instead.
 

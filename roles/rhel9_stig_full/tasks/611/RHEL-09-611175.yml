@@ -3,9 +3,8 @@
 # RHEL 9 must have the pcsc-lite package installed.
 # CAT II (Medium) | CCI-004046, CCI-001948
 
-# Previously decided only by the formal role, whose check-mode result says
-# whether a task would change something. Checked here directly, as the STIG
-# command does, so the formal role is no longer needed for assessment.
+# Checked directly, as the STIG command does. (The DISA Ansible role's check
+# mode only says whether one of its tasks would change something.)
 # Not applicable with an approved alternate MFA method
 # (rhel9_attest_alt_mfa_no_pki).
 

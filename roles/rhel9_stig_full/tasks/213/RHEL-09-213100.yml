@@ -3,11 +3,11 @@
 # RHEL 9 must disable acquiring, saving, and processing core dumps.
 # CAT II (Medium) | CCI-000366
 
-# The formal role checks for its own line in one specific file, so a host
+# The DISA Ansible role checks for its own line in one specific file, so a host
 # configured equivalently elsewhere (a drop-in, other spacing or case) was
 # reported open while compliant.
 # Not applicable when kernel dumps are disabled per RHEL-09-213040
-# (kernel.core_pattern |/bin/false), as the STIG note says; the formal role
+# (kernel.core_pattern |/bin/false), as the STIG note says; the DISA Ansible role
 # reported open regardless. A documented ISSO exception is accepted
 # (rhel9_attest_documented_exceptions).
 

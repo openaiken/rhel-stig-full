@@ -3,9 +3,8 @@
 # RHEL 9 audit package must be installed.
 # CAT II (Medium) | CCI-000130, CCI-000131, CCI-000132, CCI-000133, CCI-000134, CCI-000135, CCI-000154, CCI-000158, CCI-000159, CCI-000169, CCI-000172, CCI-001464, CCI-001487, CCI-003938, CCI-001875, CCI-001876, CCI-001877, CCI-001878, CCI-001879, CCI-001880, CCI-001881, CCI-001882, CCI-001889, CCI-001914, CCI-002884, CCI-001814
 
-# Previously decided only by the formal role, whose check-mode result says
-# whether a task would change something. Checked here directly, as the STIG
-# command does, so the formal role is no longer needed for assessment.
+# Checked directly, as the STIG command does. (The DISA Ansible role's check
+# mode only says whether one of its tasks would change something.)
 
 - name: RHEL-09-653010 | check audit is installed
   shell: |

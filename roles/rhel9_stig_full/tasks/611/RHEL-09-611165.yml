@@ -3,7 +3,7 @@
 # RHEL 9 must enable certificate based smart card authentication.
 # CAT II (Medium) | CCI-000765, CCI-004046, CCI-004047, CCI-001948
 
-# The formal role checks for its own line in one specific file, so a host
+# The DISA Ansible role checks for its own line in one specific file, so a host
 # configured equivalently elsewhere (a drop-in, other spacing or case) was
 # reported open while compliant.
 # Read from sssd.conf and conf.d, last value wins. Not applicable when the SA

@@ -3,7 +3,7 @@
 # RHEL 9 must prohibit the use of cached authenticators after one day.
 # CAT II (Medium) | CCI-002007
 
-# The formal role checks for its own line in one specific file, so a host
+# The DISA Ansible role checks for its own line in one specific file, so a host
 # configured equivalently elsewhere (a drop-in, other spacing or case) was
 # reported open while compliant.
 # Per the STIG: if cache_credentials is not true, no further check;

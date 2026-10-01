@@ -3,7 +3,7 @@
 # RHEL 9 must require reauthentication when using the "sudo" command.
 # CAT II (Medium) | CCI-004895, CCI-002038
 
-# The formal role checks for its own line in one specific file, so a host
+# The DISA Ansible role checks for its own line in one specific file, so a host
 # configured equivalently elsewhere (a drop-in, other spacing or case) was
 # reported open while compliant.
 # Per the STIG: set in exactly one file, not negative.

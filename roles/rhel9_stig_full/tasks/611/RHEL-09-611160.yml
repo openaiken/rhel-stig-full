@@ -3,7 +3,7 @@
 # RHEL 9 must use the common access card (CAC) smart card driver.
 # CAT II (Medium) | CCI-000764, CCI-000766, CCI-000765, CCI-004045, CCI-001941, CCI-000767, CCI-000768, CCI-000770, CCI-001942
 
-# The formal role checks for its own line in one specific file, so a host
+# The DISA Ansible role checks for its own line in one specific file, so a host
 # configured equivalently elsewhere (a drop-in, other spacing or case) was
 # reported open while compliant.
 # Uses opensc-tool, as the STIG does; missing opensc is a finding.

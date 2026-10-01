@@ -4,13 +4,13 @@
 # CAT I (High) | CCI-000366
 #
 # Checks for CtrlAltDelBurstAction=none in /etc/systemd/system.conf and drop-ins.
-# The formal role covers the regular Ctrl-Alt-Delete (RHEL-09-211050); this rule
+# The DISA Ansible role covers the regular Ctrl-Alt-Delete (RHEL-09-211050); this rule
 # covers the burst sequence (7 presses within 2 seconds).
 
 # systemd reads drop-ins only if the filename ends in .conf; one without that
 # extension is parsed by nothing and silently ignored. V2R9 renamed the STIG
 # drop-in to 55-CtrlAltDel-BurstAction.conf for exactly that reason, and V2R8 of
-# the formal role created the extensionless name. Grepping files alone would
+# the DISA Ansible role created the extensionless name. Grepping files alone would
 # therefore report a dead configuration as compliant, so query the effective
 # value from systemd and treat that as authoritative.
 - name: RHEL-09-211045 | check CtrlAltDelBurstAction setting

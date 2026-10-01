@@ -3,7 +3,7 @@
 # The pcscd socket on RHEL 9 must be active.
 # CAT II (Medium) | CCI-004046, CCI-001948
 
-# The STIG checks systemctl is-active pcscd.socket. The formal role instead
+# The STIG checks systemctl is-active pcscd.socket. The DISA Ansible role instead
 # asserts that pcscd.service is started; the service is socket-activated and
 # normally idle until a smart card request arrives, so in check mode the role
 # reports a change on every host with an active socket (a false positive once

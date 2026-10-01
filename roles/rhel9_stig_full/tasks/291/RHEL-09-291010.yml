@@ -3,7 +3,7 @@
 # RHEL 9 must be configured to disable USB mass storage.
 # CAT II (Medium) | CCI-000778, CCI-001958, CCI-003959
 
-# The formal role checks for its own line in one specific file, so a host
+# The DISA Ansible role checks for its own line in one specific file, so a host
 # configured equivalently elsewhere (a drop-in, other spacing or case) was
 # reported open while compliant.
 # Both lines the STIG shows are required, uncommented, in any file it lists

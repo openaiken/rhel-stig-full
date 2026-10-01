@@ -3,9 +3,8 @@
 # RHEL 9 must have the crypto-policies package installed.
 # CAT I (High) | CCI-002450, CCI-002890, CCI-003123
 
-# Previously decided only by the formal role, whose check-mode result says
-# whether a task would change something. Checked here directly, as the STIG
-# command does, so the formal role is no longer needed for assessment.
+# Checked directly, as the STIG command does. (The DISA Ansible role's check
+# mode only says whether one of its tasks would change something.)
 
 - name: RHEL-09-215100 | check crypto-policies is installed
   shell: |

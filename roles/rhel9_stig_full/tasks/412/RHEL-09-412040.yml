@@ -4,7 +4,7 @@
 # and/or account types.
 # CAT III (Low) | CCI-000054
 
-# The formal role checks for its own line in one specific file, so a host
+# The DISA Ansible role checks for its own line in one specific file, so a host
 # configured equivalently elsewhere (a drop-in, other spacing or case) was
 # reported open while compliant.
 # Every uncommented maxlogins entry must be 10 or less, with at least one. A

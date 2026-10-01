@@ -3,7 +3,7 @@
 # All RHEL 9 networked systems must have SSH installed.
 # CAT II (Medium) | CCI-002418, CCI-002420, CCI-002421, CCI-002422
 
-# The formal role installs openssh-server in remediate mode; in validate its
+# The DISA Ansible role installs openssh-server in remediate mode; in validate its
 # result depends on the package task. This check also honours a documented
 # exception for hosts that must not run SSH (rhel9_attest_no_sshd + _method):
 # with the exception attested and the package absent, not applicable.

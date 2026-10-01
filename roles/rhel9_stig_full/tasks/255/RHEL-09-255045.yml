@@ -4,7 +4,7 @@
 # via SSH.
 # CAT II (Medium) | CCI-004045, CCI-000770
 
-# The formal role manages this setting only where openssh-server is installed,
+# The DISA Ansible role manages this setting only where openssh-server is installed,
 # so on a host without it the rule had no result and rendered not_reviewed.
 # Without openssh-server this is not applicable (RHEL-09-255010 reports the
 # missing package). Otherwise both STIG conditions must hold: the effective

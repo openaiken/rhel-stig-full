@@ -4,7 +4,7 @@
 # CAT II (Medium) | CCI-000162, CCI-000163, CCI-000164, CCI-000172
 
 # The STIG reads /etc/audit/audit.rules, the file augenrules generates from
-# rules.d. The formal role checks for its own line in rules.d/audit.rules, so a
+# rules.d. The DISA Ansible role checks for its own line in rules.d/audit.rules, so a
 # host setting this in another rules.d file was reported open while compliant.
 
 - name: RHEL-09-654270 | check --loginuid-immutable

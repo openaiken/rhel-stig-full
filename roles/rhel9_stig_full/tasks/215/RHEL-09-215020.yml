@@ -3,9 +3,8 @@
 # RHEL 9 must not have the sendmail package installed.
 # CAT II (Medium) | CCI-000381
 
-# Previously decided only by the formal role, whose check-mode result says
-# whether a task would change something. Checked here directly, as the STIG
-# command does, so the formal role is no longer needed for assessment.
+# Checked directly, as the STIG command does. (The DISA Ansible role's check
+# mode only says whether one of its tasks would change something.)
 
 - name: RHEL-09-215020 | check sendmail is not installed
   shell: |

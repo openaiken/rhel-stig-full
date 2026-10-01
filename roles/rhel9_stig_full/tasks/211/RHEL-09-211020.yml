@@ -5,10 +5,10 @@
 # logon.
 # CAT II (Medium) | CCI-000048, CCI-001384, CCI-001385, CCI-001386, CCI-001387, CCI-001388
 
-# The formal role checks for its own line in one specific file, so a host
+# The DISA Ansible role checks for its own line in one specific file, so a host
 # configured equivalently elsewhere (a drop-in, other spacing or case) was
 # reported open while compliant.
-# The formal role writes the banner with exact line breaks; the STIG requires
+# The DISA Ansible role writes the banner with exact line breaks; the STIG requires
 # the text, so it is compared with whitespace runs collapsed.
 
 - name: RHEL-09-211020 | check /etc/issue banner text

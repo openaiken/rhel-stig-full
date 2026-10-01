@@ -4,7 +4,7 @@
 # before installation.
 # CAT I (High) | CCI-003992, CCI-001749
 
-# The formal role checks for its own line in one specific file, so a host
+# The DISA Ansible role checks for its own line in one specific file, so a host
 # configured equivalently elsewhere (a drop-in, other spacing or case) was
 # reported open while compliant.
 # Parsed from the [main] section, with any spacing around the equals sign.

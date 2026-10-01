@@ -4,9 +4,8 @@
 # Linux (EPEL) repository.
 # CAT II (Medium) | CCI-000381
 
-# Previously decided only by the formal role, whose check-mode result says
-# whether a task would change something. Checked here directly, as the STIG
-# command does, so the formal role is no longer needed for assessment.
+# Checked directly, as the STIG command does. (The DISA Ansible role's check
+# mode only says whether one of its tasks would change something.)
 # The STIG lists repositories with dnf repolist; that can fetch metadata over
 # the network, so enabled repositories are read from the .repo files instead
 # (enabled unless enabled=0). Any repository id or name containing epel is a

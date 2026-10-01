@@ -3,7 +3,7 @@
 # RHEL 9 must enable the SELinux targeted policy.
 # CAT II (Medium) | CCI-002696
 
-# The formal role checks for its own line in one specific file, so a host
+# The DISA Ansible role checks for its own line in one specific file, so a host
 # configured equivalently elsewhere (a drop-in, other spacing or case) was
 # reported open while compliant.
 # The STIG checks the loaded policy name (sestatus).

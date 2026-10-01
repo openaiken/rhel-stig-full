@@ -5,7 +5,7 @@
 # passwords.
 # CAT II (Medium) | CCI-004062, CCI-000196
 
-# The formal role checks for its own line in one specific file, so a host
+# The DISA Ansible role checks for its own line in one specific file, so a host
 # configured equivalently elsewhere (a drop-in, other spacing or case) was
 # reported open while compliant.
 # The STIG requires the setting in the [defaults] section.

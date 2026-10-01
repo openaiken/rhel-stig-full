@@ -3,9 +3,8 @@
 # RHEL 9 fapolicy module must be installed.
 # CAT II (Medium) | CCI-001764, CCI-001774
 
-# Previously decided only by the formal role, whose check-mode result says
-# whether a task would change something. Checked here directly, as the STIG
-# command does, so the formal role is no longer needed for assessment.
+# Checked directly, as the STIG command does. (The DISA Ansible role's check
+# mode only says whether one of its tasks would change something.)
 
 - name: RHEL-09-433010 | check fapolicyd is installed
   shell: |

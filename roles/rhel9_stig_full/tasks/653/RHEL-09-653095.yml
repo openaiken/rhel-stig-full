@@ -4,10 +4,10 @@
 # audit records.
 # CAT II (Medium) | CCI-000154
 
-# The formal role checks for its own line in one specific file, so a host
+# The DISA Ansible role checks for its own line in one specific file, so a host
 # configured equivalently elsewhere (a drop-in, other spacing or case) was
 # reported open while compliant.
-# The formal role also enforces one exact value, but the STIG sets a limit
+# The DISA Ansible role also enforces one exact value, but the STIG sets a limit
 # ("X or more", "X or less", one of a set); a stricter value was reported open.
 # The files are read as the consuming library reads them (drop-ins where it
 # has them, comments ignored, last value wins) and compared as the STIG says.

@@ -8,7 +8,7 @@
 # Each expected rule below (from the STIG check text) must be covered by a
 # rule that records at least the same events; keys, syscall order, merged
 # syscall lists, -w watches and auid!=unset are all accepted. See
-# filter_plugins/audit_rules.py. The formal role checked for its own lines in
+# filter_plugins/audit_rules.py. The DISA Ansible role checked for its own lines in
 # /etc/audit/rules.d/audit.rules, so hosts hardened any other way were open.
 
 - name: RHEL-09-654195 | read audit rules

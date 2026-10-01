@@ -4,7 +4,7 @@
 # system services.
 # CAT I (High) | CCI-001084, CCI-002696
 
-# The formal role checks for its own line in one specific file, so a host
+# The DISA Ansible role checks for its own line in one specific file, so a host
 # configured equivalently elsewhere (a drop-in, other spacing or case) was
 # reported open while compliant.
 # Both conditions the STIG states: getenforce reports Enforcing, and

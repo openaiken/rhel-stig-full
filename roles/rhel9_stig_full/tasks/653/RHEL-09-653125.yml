@@ -46,7 +46,7 @@
       fi
     done
 
-    # The DISA role default is the placeholder change_me@localhost, which
+    # The DISA Ansible role default is the placeholder change_me@localhost, which
     # notifies nobody; it used to pass.
     if echo "$alias_val" | grep -qiE 'change_?me'; then
       echo "STATUS: FAIL"

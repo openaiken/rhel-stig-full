@@ -2,7 +2,7 @@
 """
 Audit supplement coverage consistency across the project.
 
-The supplement assesses every rule (the DISA formal role takes no part in
+The supplement assesses every rule (the DISA Ansible role takes no part in
 assessment), so every rule must have exactly one supplement check, wired and
 toggled. Cross-checks five sources that must agree:
 

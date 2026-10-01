@@ -3,9 +3,8 @@
 # The firewalld service on RHEL 9 must be active.
 # CAT II (Medium) | CCI-000382, CCI-002314
 
-# Previously decided only by the formal role, whose check-mode result says
-# whether a task would change something. Checked here directly, as the STIG
-# command does, so the formal role is no longer needed for assessment.
+# Checked directly, as the STIG command does. (The DISA Ansible role's check
+# mode only says whether one of its tasks would change something.)
 
 - name: RHEL-09-251015 | check firewalld is active
   shell: |

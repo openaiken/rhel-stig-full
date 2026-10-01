@@ -3,7 +3,7 @@
 # The rsyslog service on RHEL 9 must be active.
 # CAT II (Medium) | CCI-000366
 
-# The formal role task errors when rsyslog is not installed and the error is
+# The DISA Ansible role task errors when rsyslog is not installed and the error is
 # ignored, so the rule had no result and rendered as not_reviewed.
 
 - name: RHEL-09-652020 | check rsyslog service state

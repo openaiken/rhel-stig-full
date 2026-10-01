@@ -3,9 +3,8 @@
 # RHEL 9 subscription-manager package must be installed.
 # CAT II (Medium) | CCI-003992, CCI-001749
 
-# Previously decided only by the formal role, whose check-mode result says
-# whether a task would change something. Checked here directly, as the STIG
-# command does, so the formal role is no longer needed for assessment.
+# Checked directly, as the STIG command does. (The DISA Ansible role's check
+# mode only says whether one of its tasks would change something.)
 # Not applicable on a system that is not internet connected: record that in
 # rhel9_attest_documented_exceptions.
 
