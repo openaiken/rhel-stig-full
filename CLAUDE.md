@@ -8,10 +8,12 @@ Current revision: **RHEL 9 STIG V2R9** (445 rules, Release: 9, 01 Jul 2026).
 
 ## The one thing to understand first
 
-**The supplement assesses every rule; the DISA formal role (`roles/rhel9STIG`)
-only remediates.** `run.sh validate` = supplement + renderer; `run.sh remediate`
-= formal role. Every rule in `rules.json` and the CKLB template has exactly one
-supplement task (`audit_coverage.py` enforces it).
+**`roles/rhel9_stig_full` assesses every rule; the DISA formal role
+(`roles/rhel9STIG`) only remediates.** One playbook, `stig.yml`, selected by
+tag: `remediate` runs the DISA role and never renders a checklist; `validate`
+assesses and renders; `render` re-renders from earlier results. Every rule in
+`rules.json` and the CKLB template has exactly one task (`audit_coverage.py`
+enforces it).
 
 Why the formal role cannot assess: in check mode a rule "fails" when a task
 *would change something*, and its tasks write one exact line into one exact
@@ -30,9 +32,9 @@ Results and rendering:
 
 - `cklb.py` merges a host's result files per rule, newest winning, and stamps
   each rule's comments with its run. A tag-limited run (`-t RHEL-09-...`) must
-  not blank the other rules. Rules switched off in `supp_rules` are dropped;
+  not blank the other rules. Rules switched off in `stig_rules` are dropped;
   files are matched to the exact host name (glob suffix collisions).
-- Result files are `reports/supp-facts/YYYYMonDD-HH:MM:SS-<host>.json` (the
+- Result files are `reports/results/YYYYMonDD-HH:MM:SS-<host>.json` (the
   older `YYMonDD-HH:MM` form still parses). Only the last
   `cklb_max_result_age_days` (default 30, `run.sh --max-result-age`, 0 = none)
   are merged; older results are dropped, not reported.
@@ -49,7 +51,7 @@ exception; each such task says so, and the var's comment lists them.
 ## Identifiers
 
 **STIG ID (`RHEL-09-XXXXXX`) is the key everywhere** — `rules.json` keys, task
-filenames, tags, `supp_rules`, `supp_facts`, and the CKLB join on `rule_version`.
+filenames, tags, `stig_rules`, `stig_facts`, and the CKLB join on `rule_version`.
 
 V-numbers churn between revisions and must not be used as identity. Assessment
 uses none. The one V-number dependency is DISA's, and remediation only:
@@ -58,7 +60,7 @@ R8→R9 renamed none, but a future revision could. Check on every bump.
 
 ## Status contract
 
-The supplement writes only `not_a_finding`, `open`, `not_applicable`. It **never**
+Assessment writes only `not_a_finding`, `open`, `not_applicable`. It **never**
 writes `not_reviewed`: a rule awaiting an operator decision is `open` until its
 attestation var is set, and a check that cannot determine state is also `open`
 (an unverifiable control is conservatively a finding). Therefore `not_reviewed`
@@ -68,21 +70,21 @@ Reviewers reject submitted checklists containing it.
 Do not confuse `not_applicable` (rule doesn't apply here) with `not_a_finding`
 (rule applies, system complies).
 
-## Writing supplement tasks
+## Writing check tasks
 
-- One file per STIG ID: `roles/rhel9_stig_supplement/tasks/<cat>/RHEL-09-XXXXXX.yml`
+- One file per STIG ID: `roles/rhel9_stig_full/tasks/<cat>/RHEL-09-XXXXXX.yml`
 - Shell emits `STATUS: PASS` / `STATUS: FAIL` / `NA:`; exit code is never used
 - `changed_when: false` and `failed_when: false` on every shell task
 - No apostrophes in shell comments (Ansible `parse_kv` sees unbalanced quotes)
 - No literal double quotes in `set_fact` strings (they sit inside double-quoted YAML)
 - Wire into `tasks/main.yml` with `import_tasks`, a STIG ID tag, and a
-  `supp_rules` conditional; add the toggle to `group_vars/all/stig_supplement.yml`
+  `stig_rules` conditional; add the toggle to `group_vars/all/stig_rules.yml`
 - Attestation vars: bool + optional `_method` string; the bool clears the finding,
   the method string lands in `finding_details`
 
 ### Shell traps that have actually shipped bugs here
 
-Run `python3 scripts/lint_supplement.py` — it encodes every class below and must
+Run `python3 scripts/lint_checks.py` — it encodes every class below and must
 report 0. Re-run it after touching any task.
 
 - **`grep -n`/`-rn` prefix every line with `file:lineno:`** (just `lineno:` under
@@ -104,8 +106,8 @@ report 0. Re-run it after touching any task.
   dead configuration — this is exactly what V2R9 renamed 211045's drop-in to fix.
   Prefer the effective value: `systemctl show -p X --value`, `sysctl -n`, `sshd -T`.
 - **Every shell/command task needs `failed_when: false` — no exceptions.**
-  `supplement.yml` does not ignore errors, so one non-zero exit aborts the play
-  and every later rule silently drops out of `supp_facts`. Deciding "this one
+  `stig.yml` does not ignore errors, so one non-zero exit aborts the play
+  and every later rule silently drops out of `stig_facts`. Deciding "this one
   can't fail" by inspection does not work: 412035 ended in
   `[ -n "$x" ] && echo ...`, which exits 1 when `$x` is empty, and aborted the
   run on a less-hardened host. The linter used to guess and missed it; it now
@@ -124,11 +126,11 @@ report 0. Re-run it after touching any task.
   linter lists multi-condition rules as INFO — re-read that list each bump.
 - `process substitution` (`done < <(...)`) is fine — the shell module gets bash.
 - **`{#` opens a Jinja comment.** Bash `${#arr[@]}` / `${#var}` in a task makes
-  Ansible fail to parse the role, aborting the *whole* supplement run. Use
+  Ansible fail to parse the role, aborting the *whole* assessment run. Use
   `set -- ...; $#` or `wc -l`. Lint rule JINJA-COMMENT catches it.
 - **Testing a shell body with plain `bash` does not prove the task works.**
   Fixture tests bypass Ansible templating; that is how the `{#` bug shipped.
-  After any change, also run the task (or the whole supplement) through
+  After any change, also run the task (or the whole assessment) through
   `ansible-playbook` on a real host.
 - For GNOME/dconf rules, query `gsettings get|writable` (with
   `DCONF_PROFILE=user XDG_CONFIG_HOME=/nonexistent`), as the STIG does. Keyfile
@@ -138,15 +140,15 @@ report 0. Re-run it after touching any task.
 
 ```bash
 python3 scripts/audit_coverage.py     # must print CLEAN
-python3 scripts/lint_supplement.py    # must report 0
+python3 scripts/lint_checks.py    # must report 0
 python3 scripts/test_audit_rules.py   # audit-rule filter unit tests
-ansible-playbook supplement.yml -t RHEL-09-XXXXXX -e my_host=demoserver \
+ansible-playbook stig.yml -t RHEL-09-XXXXXX -e my_host=demoserver \
     -l stigging-sandbox3,delta-bindtest --vault-password-file vault_pass.txt
 ./run.sh validate --host demoserver --vault-pass-file vault_pass.txt
 ```
 
 `audit_coverage.py` cross-checks `rules.json`, the CKLB template, task files,
-`main.yml` wiring and `supp_rules` toggles. It must print CLEAN before any
+`main.yml` wiring and `stig_rules` toggles. It must print CLEAN before any
 revision work is done.
 Then confirm the rendered CKLB has **0 `not_reviewed`** and 0 empty
 `finding_details`.
@@ -175,7 +177,7 @@ in `hosts`. Validate is read-only: it runs only the assessment shells. Test
 
 **Budget time to sweep for latent shell-logic bugs, not just to diff rule text.**
 In the V2R9 bump, three of four commits fixed pre-existing R8 defects that the
-changelog could never have revealed. Check whether a supplement task is already
+changelog could never have revealed. Check whether a task is already
 correct before changing it — in V2R9, four of seven "changed" rules needed no
 code at all.
 

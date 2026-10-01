@@ -6,7 +6,7 @@ This project is a Work-In-Progress. Furthermore, *this document was largely writ
 
 ## Overview
 
-- **Assessment** (`./run.sh validate`): the **assessment role** (`rhel9_stig_supplement`) checks all 445 rules of RHEL 9 STIG V2R9, read-only, one task file per STIG ID. The **CKLB renderer** (`cklb_renderer`) turns the results into a populated `.cklb` checklist.
+- **Assessment** (`./run.sh validate`): the **`rhel9_stig_full` role** checks all 445 rules of RHEL 9 STIG V2R9, read-only, one task file per STIG ID, then renders the results into a populated `.cklb` checklist.
 - **Remediation** (`./run.sh remediate`): the unmodified **DISA formal role** (`rhel9STIG`) enforces settings. It takes no part in assessment.
 
 Why the formal role does not assess: in check mode it reports whether a task *would change something*, and its tasks write one exact line into one exact file. A host configured correctly any other way (a drop-in file, different spelling, a stricter value) was reported open. The assessment role checks what each STIG check text checks, on the effective state wherever there is one.
@@ -25,7 +25,7 @@ Why the formal role does not assess: in check mode it reports whether a task *wo
 ./run.sh remediate --host prod-servers --vault-pass-file ~/.vault_pass
 ./run.sh validate --skip-supplement            # re-render from earlier results only
 ./run.sh validate --max-result-age 7           # merge only the last 7 days of results
-./run.sh validate --host myserver -- -e "supp_rules={'RHEL-09-671010': false}"
+./run.sh validate --host myserver -- -e "stig_rules={'RHEL-09-671010': false}"
 ```
 
 `run.sh` exits 0 when every stage completed on every host, 2 when some hosts failed or were unreachable but the others were processed, and 1 when a stage failed outright.
@@ -33,13 +33,15 @@ Why the formal role does not assess: in check mode it reports whether a task *wo
 ### Running playbooks directly
 
 ```bash
-ansible-playbook supplement.yml -t RHEL-09-653030 -e my_host=myserver   # one rule
-ansible-playbook supplement.yml -t validate -e my_host=myserver         # all rules
-ansible-playbook cklb.yml -t validate -e my_host=myserver               # render only
-ansible-playbook formal-role.yml -t remediate -e my_host=myserver       # remediate
+ansible-playbook stig.yml -t validate -e my_host=myserver              # assess + checklist
+ansible-playbook stig.yml -t RHEL-09-653030 -e my_host=myserver        # one rule, no render
+ansible-playbook stig.yml -t RHEL-09-653030,render -e my_host=myserver # one rule + checklist
+ansible-playbook stig.yml -t render -e my_host=myserver                # re-render only
+ansible-playbook stig.yml -t remediate -e my_host=myserver             # remediate only
+ansible-playbook stig.yml -t remediate,validate -e my_host=myserver    # remediate, then assess
 ```
 
-Every assessment task is tagged `validate` and its STIG ID. A tag-limited run updates only those rules: the renderer merges results per rule across runs.
+`stig.yml` is the single playbook. Remediation runs only under the `remediate` tag, and a checklist is rendered only under `validate` or `render`. Every check is tagged `validate` and its STIG ID; a tag-limited run updates only those rules, since the renderer merges results per rule across runs. Without `--tags` every play runs, remediation included.
 
 ## Configuration
 
@@ -92,12 +94,12 @@ Many follow a **bool + method** pattern: the bool clears the finding, the method
 
 > **`rhel9_attest_log_aggregation_server`** must be set in `host_vars/<hostname>/`, never in `group_vars/all/`. Setting it globally would silently clear a real finding on every non-collector host.
 
-### `stig_supplement.yml` — rule toggles
+### `stig_rules.yml` — rule toggles
 
 Set a rule to `false` to stop assessing it. Results from earlier runs are dropped too, so it renders `not_reviewed`:
 
 ```yaml
-supp_rules:
+stig_rules:
   RHEL-09-231190: false
 ```
 
@@ -111,16 +113,16 @@ rhel9STIG_stigrule_257779_Manage: false   # RHEL-09-211020
 
 ### Checklist age window
 
-`cklb_max_result_age_days` (default 30, in `roles/cklb_renderer/defaults/main.yml`, or `run.sh --max-result-age`) limits which results are merged into the checklist. A rule with no result in the window renders `not_reviewed` rather than a stale status. 0 disables the limit.
+`cklb_max_result_age_days` (default 30, in `roles/rhel9_stig_full/defaults/main.yml`, or `run.sh --max-result-age`) limits which results are merged into the checklist. A rule with no result in the window renders `not_reviewed` rather than a stale status. 0 disables the limit.
 
 ## How Assessment Works
 
 Each task file follows a two-task structure:
 
 1. A `shell: |` block that inspects the system and prints `STATUS: PASS`, `STATUS: FAIL`, or `NA:` at the start of a line. The shell always exits 0 (`failed_when: false`); the exit code is never used.
-2. A `set_fact` task that turns that output into the rule's `status`, `finding_details` and `comments` in the `supp_facts` accumulator.
+2. A `set_fact` task that turns that output into the rule's `status`, `finding_details` and `comments` in the `stig_facts` accumulator.
 
-At the end of the play, `supp_facts` is written to `reports/supp-facts/<YYYYMonDD-HH:MM:SS>-<host>.json`. The renderer merges a host's result files per rule, newest winning, and ends each rule's comments with the run it came from.
+At the end of the play, `stig_facts` is written to `reports/results/<YYYYMonDD-HH:MM:SS>-<host>.json`. The renderer merges a host's result files per rule, newest winning, and ends each rule's comments with the run it came from.
 
 **Status values:**
 - `not_a_finding` — compliant, or a clearing attestation is set
@@ -134,14 +136,11 @@ Checks prefer the effective value to configuration text (`sysctl -n`, `sshd -T`,
 ## Project Structure
 
 ### Playbooks
-- **`supplement.yml`** — the assessment role. Results go to `reports/supp-facts/` as JSON.
-- **`cklb.yml`** — the CKLB renderer; can be run alone against existing results.
-- **`formal-role.yml`** — the DISA role, for remediation.
+- **`stig.yml`** — the single playbook: play 1 is the DISA role (`remediate` tag), play 2 the assessment and checklist (`validate` / `render` tags).
 - **`run.sh`** — orchestration: credentials, skip flags, per-host failure handling, argument passthrough.
 
 ### Roles
-- **`roles/rhel9_stig_supplement/`** — 445 assessment tasks, one per STIG ID, under `tasks/<category>/`; `filter_plugins/audit_rules.py`.
-- **`roles/cklb_renderer/`** — `filter_plugins/cklb.py` fills the CKLB template from the results.
+- **`roles/rhel9_stig_full/`** — 445 assessment tasks, one per STIG ID, under `tasks/<category>/`; `tasks/render.yml` and `filter_plugins/cklb.py` render the checklist; `filter_plugins/audit_rules.py` checks audit-rule coverage.
 - **`roles/rhel9STIG/`** — unmodified DISA formal role (V2R9), remediation only. Do not edit.
 
 ### Supporting Files
@@ -149,27 +148,27 @@ Checks prefer the effective value to configuration text (`sysctl -n`, `sshd -T`,
 - **`files/rules.json`** — all 445 rules keyed by STIG ID (check and fix text, severity, CCIs). Regenerate with `python3 scripts/parse_xccdf_benchmark.py`.
 - **`files/empty-checklist-rhel9v2r9.cklb`** — CKLB template used by the renderer.
 - **`scripts/audit_coverage.py`** — every rule in `rules.json` and the template must have exactly one wired, toggled task. Must print `CLEAN`.
-- **`scripts/lint_supplement.py`** — static checks for the bug classes found in this codebase. Must report 0.
+- **`scripts/lint_checks.py`** — static checks for the bug classes found in this codebase. Must report 0.
 - **`scripts/diff_benchmarks.py`** — diffs two benchmarks by STIG ID; run first on a revision bump.
 - **`scripts/test_audit_rules.py`** — unit tests for the audit-rule filter.
 
 ### Reports
-`reports/` is gitignored: `supp-facts/*-<host>.json` (results) and `*-<host>.cklb` (checklists).
+`reports/` is gitignored: `results/*-<host>.json` (results) and `*-<host>.cklb` (checklists).
 
 ## Maintenance
 
 ### Updating to a new STIG revision
 1. Put the new benchmark XML in `files/`, update `XCCDF_PATH` in `scripts/parse_xccdf_benchmark.py`, and regenerate `files/rules.json`.
-2. Replace the CKLB template in `files/` and `cklb_template_path` in `roles/cklb_renderer/defaults/main.yml`. Confirm its `release_info` and rule count match the benchmark.
+2. Replace the CKLB template in `files/` and `cklb_template_path` in `roles/rhel9_stig_full/defaults/main.yml`. Confirm its `release_info` and rule count match the benchmark.
 3. Run `python3 scripts/diff_benchmarks.py OLD.xml NEW.xml` and reconcile against DISA's changelog (the XCCDF is authoritative; the changelog omits pure `rule_id` bumps).
 4. Rework tasks for rules whose check text changed; add tasks for new rules; retire tasks, toggles and attestation vars for removed rules.
 5. For remediation, replace `roles/rhel9STIG/` with the new DISA role (delete any `callback_plugins/` it ships) and regenerate the comment block in `group_vars/all/stig_formal_role.yml`.
-6. `python3 scripts/audit_coverage.py` must print `CLEAN` and `python3 scripts/lint_supplement.py` must report 0.
+6. `python3 scripts/audit_coverage.py` must print `CLEAN` and `python3 scripts/lint_checks.py` must report 0.
 
 ### Task conventions
-- One file per STIG ID: `roles/rhel9_stig_supplement/tasks/<category>/RHEL-09-XXXXXX.yml`
+- One file per STIG ID: `roles/rhel9_stig_full/tasks/<category>/RHEL-09-XXXXXX.yml`
 - Status markers at the start of a line, matched with `is search('^...', multiline=True)`
 - `changed_when: false` and `failed_when: false` on every shell/command task
 - No apostrophes in shell comments; no double quotes inside the `set_fact` string; no `{#` anywhere
 - Attestation vars: bool + optional `_method` string, and the method must reach `finding_details`
-- Wire into `tasks/main.yml` with `import_tasks`, a STIG ID tag, and a `supp_rules` conditional
+- Wire into `tasks/main.yml` with `import_tasks`, a STIG ID tag, and a `stig_rules` conditional
