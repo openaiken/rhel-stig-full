@@ -1,0 +1,54 @@
+---
+# RHEL-09-212050 | V-257795 | fix
+# RHEL 9 must enable mitigations against processor-based vulnerabilities.
+# CAT III (Low)
+#
+# Sets pti=on on every installed kernel (grubby --update-kernel=ALL) and in
+# GRUB_CMDLINE_LINUX in /etc/default/grub, so it survives the next kernel
+# install: an existing pti= value is corrected, otherwise pti=on is appended.
+# The checks read both. The running kernel uses it from the next boot.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-212050 | fix
+  block:
+    - name: RHEL-09-212050 | read the installed kernels' arguments
+      ansible.builtin.command: grubby --info=ALL
+      register: _212050_info
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-212050 | add pti=on to every installed kernel
+      ansible.builtin.command: grubby --update-kernel=ALL --args=pti=on
+      register: _212050_kern
+      when: >-
+        (_212050_info.stdout_lines | select('match', '^args=') | list | length == 0)
+        or (_212050_info.stdout_lines | select('match', '^args=')
+            | reject('search', '(^args="|[ ])pti=on([ ]|"$)') | list | length > 0)
+
+    - name: RHEL-09-212050 | correct an existing pti= in GRUB_CMDLINE_LINUX
+      ansible.builtin.replace:
+        path: /etc/default/grub
+        regexp: '^([ \t]*GRUB_CMDLINE_LINUX="(?:[^"]*[ ])?)pti=[^" ]*'
+        replace: '\g<1>pti=on'
+      register: _212050_fix
+
+    - name: RHEL-09-212050 | add pti=on to GRUB_CMDLINE_LINUX where it has no pti=
+      ansible.builtin.lineinfile:
+        path: /etc/default/grub
+        regexp: '^([ \t]*GRUB_CMDLINE_LINUX=")(?!(?:[^"]*[ ])?pti=)([^"]*)"(.*)$'
+        line: '\1\2 pti=on"\3'
+        backrefs: true
+      register: _212050_add
+
+    - name: RHEL-09-212050 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-212050'] }}"
+      when: (_212050_kern is changed) or (_212050_fix is changed) or (_212050_add is changed)
+  rescue:
+    - name: RHEL-09-212050 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-212050': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-212050'] }}"

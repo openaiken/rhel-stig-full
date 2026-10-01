@@ -1,0 +1,56 @@
+---
+# RHEL-09-653120 | V-258173 | fix
+# RHEL 9 must allocate an audit_backlog_limit of sufficient size to capture
+# processes that start prior to the audit daemon.
+# CAT III (Low)
+#
+# Sets audit_backlog_limit=8192 on every installed kernel (grubby --update-
+# kernel=ALL) and in GRUB_CMDLINE_LINUX in /etc/default/grub, so it survives
+# the next kernel install: an existing audit_backlog_limit= value is
+# corrected, otherwise audit_backlog_limit=8192 is appended. The checks read
+# both. The running kernel uses it from the next boot.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-653120 | fix
+  block:
+    - name: RHEL-09-653120 | read the installed kernels' arguments
+      ansible.builtin.command: grubby --info=ALL
+      register: _653120_info
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-653120 | add audit_backlog_limit=8192 to every installed kernel
+      ansible.builtin.command: grubby --update-kernel=ALL --args=audit_backlog_limit=8192
+      register: _653120_kern
+      when: >-
+        (_653120_info.stdout_lines | select('match', '^args=') | list | length == 0)
+        or (_653120_info.stdout_lines | select('match', '^args=')
+            | reject('search', '(^args="|[ ])audit_backlog_limit=8192([ ]|"$)') | list | length > 0)
+
+    - name: RHEL-09-653120 | correct an existing audit_backlog_limit= in GRUB_CMDLINE_LINUX
+      ansible.builtin.replace:
+        path: /etc/default/grub
+        regexp: '^([ \t]*GRUB_CMDLINE_LINUX="(?:[^"]*[ ])?)audit_backlog_limit=[^" ]*'
+        replace: '\g<1>audit_backlog_limit=8192'
+      register: _653120_fix
+
+    - name: RHEL-09-653120 | add audit_backlog_limit=8192 to GRUB_CMDLINE_LINUX where it has no audit_backlog_limit=
+      ansible.builtin.lineinfile:
+        path: /etc/default/grub
+        regexp: '^([ \t]*GRUB_CMDLINE_LINUX=")(?!(?:[^"]*[ ])?audit_backlog_limit=)([^"]*)"(.*)$'
+        line: '\1\2 audit_backlog_limit=8192"\3'
+        backrefs: true
+      register: _653120_add
+
+    - name: RHEL-09-653120 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-653120'] }}"
+      when: (_653120_kern is changed) or (_653120_fix is changed) or (_653120_add is changed)
+  rescue:
+    - name: RHEL-09-653120 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-653120': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-653120'] }}"
