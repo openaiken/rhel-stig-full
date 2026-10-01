@@ -1,0 +1,37 @@
+---
+# RHEL-09-232225 | V-257925 | fix
+# RHEL 9 audit tools must be group-owned by root.
+# CAT II (Medium)
+#
+# Sets the group of every audit tool the check lists to root, using the
+# check's own find command. A file a package owns is then changed from its
+# packaged state, which is what the STIG requires.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-232225 | fix
+  block:
+    - name: RHEL-09-232225 | list what the check found
+      ansible.builtin.shell: find /sbin/auditctl /sbin/aureport /sbin/ausearch /sbin/autrace /sbin/auditd /sbin/rsyslogd /sbin/augenrules -maxdepth 0 ! -group root 2>/dev/null || true
+      register: _232225_paths
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-232225 | correct them
+      ansible.builtin.file:
+        path: "{{ item }}"
+        group: root
+      loop: "{{ _232225_paths.stdout_lines }}"
+      register: _232225_fix
+
+    - name: RHEL-09-232225 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232225'] }}"
+      when: (_232225_fix is changed)
+  rescue:
+    - name: RHEL-09-232225 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-232225': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232225'] }}"

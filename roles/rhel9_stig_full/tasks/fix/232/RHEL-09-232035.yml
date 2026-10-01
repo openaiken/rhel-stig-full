@@ -1,0 +1,38 @@
+---
+# RHEL-09-232035 | V-257887 | fix
+# RHEL 9 audit tools must have a mode of 0755 or less permissive.
+# CAT II (Medium)
+#
+# Removes setuid, setgid, sticky and group and other write from every audit
+# tool the check lists (leaving 0755 or less), using the check's own find
+# command. A file a package owns is then changed from its packaged state,
+# which is what the STIG requires.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-232035 | fix
+  block:
+    - name: RHEL-09-232035 | list what the check found
+      ansible.builtin.shell: find /sbin/auditctl /sbin/aureport /sbin/ausearch /sbin/autrace /sbin/auditd /sbin/rsyslogd /sbin/augenrules -maxdepth 0 -perm /7022 2>/dev/null || true
+      register: _232035_paths
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-232035 | correct them
+      ansible.builtin.file:
+        path: "{{ item }}"
+        mode: 'u-s,g-ws,o-wt'
+      loop: "{{ _232035_paths.stdout_lines }}"
+      register: _232035_fix
+
+    - name: RHEL-09-232035 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232035'] }}"
+      when: (_232035_fix is changed)
+  rescue:
+    - name: RHEL-09-232035 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-232035': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232035'] }}"

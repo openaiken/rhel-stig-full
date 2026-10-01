@@ -1,0 +1,37 @@
+---
+# RHEL-09-232020 | V-257884 | fix
+# RHEL 9 library files must have mode 755 or less permissive.
+# CAT II (Medium)
+#
+# Removes group and other write from every shared library file the check
+# lists, using the check's own find command. A file a package owns is then
+# changed from its packaged state, which is what the STIG requires.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-232020 | fix
+  block:
+    - name: RHEL-09-232020 | list what the check found
+      ansible.builtin.shell: find -L /lib /lib64 /usr/lib /usr/lib64 -type f -name '*.so*' -perm /022 2>/dev/null || true
+      register: _232020_paths
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-232020 | correct them
+      ansible.builtin.file:
+        path: "{{ item }}"
+        mode: 'go-w'
+      loop: "{{ _232020_paths.stdout_lines }}"
+      register: _232020_fix
+
+    - name: RHEL-09-232020 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232020'] }}"
+      when: (_232020_fix is changed)
+  rescue:
+    - name: RHEL-09-232020 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-232020': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232020'] }}"
