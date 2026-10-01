@@ -1,0 +1,38 @@
+---
+# RHEL-09-232160 | V-257912
+# RHEL 9 /etc/shadow- file must be owned by root.
+# CAT II (Medium) | CCI-000366
+
+# Previously decided only by the formal role, whose check-mode result says
+# whether a task would change something. Checked here directly, as the STIG
+# command does, so the formal role is no longer needed for assessment.
+
+- name: RHEL-09-232160 | check /etc/shadow- owner
+  shell: |
+    val=$(stat -c '%U' /etc/shadow- 2>/dev/null)
+    echo "/etc/shadow- owner: ${val:-(file not found)}"
+    if [ "$val" = "root" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: /etc/shadow- must exist with owner root"
+    fi
+  register: _232160_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-232160 | record status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-232160': {
+        'status':
+          'not_a_finding' if _232160_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _232160_result.stdout | trim,
+        'comments':
+          'sudo chown root /etc/shadow-'
+      }
+    }) }}"
+  tags: [validate]

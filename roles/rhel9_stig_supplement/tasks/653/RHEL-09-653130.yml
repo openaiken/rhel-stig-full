@@ -1,0 +1,38 @@
+---
+# RHEL-09-653130 | V-258175
+# RHEL 9 audispd-plugins package must be installed.
+# CAT II (Medium) | CCI-001851
+
+# Previously decided only by the formal role, whose check-mode result says
+# whether a task would change something. Checked here directly, as the STIG
+# command does, so the formal role is no longer needed for assessment.
+
+- name: RHEL-09-653130 | check audispd-plugins is installed
+  shell: |
+    if rpm -q --quiet audispd-plugins; then state=installed; else state="not installed"; fi
+    echo "audispd-plugins: $state ($(rpm -q audispd-plugins 2>&1 | head -1))"
+    if [ "$state" = "installed" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: audispd-plugins must be installed"
+    fi
+  register: _653130_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-653130 | record status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-653130': {
+        'status':
+          'not_a_finding' if _653130_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _653130_result.stdout | trim,
+        'comments':
+          'Install the package: sudo dnf install audispd-plugins'
+      }
+    }) }}"
+  tags: [validate]

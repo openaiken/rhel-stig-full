@@ -1,0 +1,41 @@
+---
+# RHEL-09-215075 | V-257838
+# RHEL 9 must have the openssl-pkcs11 package installed.
+# CAT II (Medium) | CCI-000765, CCI-004046, CCI-001953, CCI-001954, CCI-001948
+
+# Previously decided only by the formal role, whose check-mode result says
+# whether a task would change something. Checked here directly, as the STIG
+# command does, so the formal role is no longer needed for assessment.
+# Not applicable with an approved alternate MFA method
+# (rhel9_attest_alt_mfa_no_pki).
+
+- name: RHEL-09-215075 | check openssl-pkcs11 is installed
+  shell: |
+    if rpm -q --quiet openssl-pkcs11; then state=installed; else state="not installed"; fi
+    echo "openssl-pkcs11: $state ($(rpm -q openssl-pkcs11 2>&1 | head -1))"
+    if [ "$state" = "installed" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: openssl-pkcs11 must be installed"
+    fi
+  register: _215075_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-215075 | record status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-215075': {
+        'status':
+          'not_applicable' if (rhel9_attest_alt_mfa_no_pki | bool)
+          else 'not_a_finding' if _215075_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _215075_result.stdout | trim,
+        'comments':
+          'Install the package: sudo dnf install openssl-pkcs11'
+      }
+    }) }}"
+  tags: [validate]

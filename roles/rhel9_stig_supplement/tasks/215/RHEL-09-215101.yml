@@ -1,0 +1,41 @@
+---
+# RHEL-09-215101 | V-272488
+# RHEL 9 must have the Postfix package installed.
+# CAT II (Medium) | CCI-000015
+
+# Previously decided only by the formal role, whose check-mode result says
+# whether a task would change something. Checked here directly, as the STIG
+# command does, so the formal role is no longer needed for assessment.
+# Not applicable when another service sends audit failure notifications
+# (rhel9_attest_audit_notification_compliant).
+
+- name: RHEL-09-215101 | check postfix is installed
+  shell: |
+    if rpm -q --quiet postfix; then state=installed; else state="not installed"; fi
+    echo "postfix: $state ($(rpm -q postfix 2>&1 | head -1))"
+    if [ "$state" = "installed" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: postfix must be installed"
+    fi
+  register: _215101_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-215101 | record status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-215101': {
+        'status':
+          'not_applicable' if (rhel9_attest_audit_notification_compliant | bool)
+          else 'not_a_finding' if _215101_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _215101_result.stdout | trim,
+        'comments':
+          'Install the package: sudo dnf install postfix'
+      }
+    }) }}"
+  tags: [validate]

@@ -1,0 +1,38 @@
+---
+# RHEL-09-232140 | V-257908
+# RHEL 9 /etc/passwd- file must be owned by root.
+# CAT II (Medium) | CCI-000366
+
+# Previously decided only by the formal role, whose check-mode result says
+# whether a task would change something. Checked here directly, as the STIG
+# command does, so the formal role is no longer needed for assessment.
+
+- name: RHEL-09-232140 | check /etc/passwd- owner
+  shell: |
+    val=$(stat -c '%U' /etc/passwd- 2>/dev/null)
+    echo "/etc/passwd- owner: ${val:-(file not found)}"
+    if [ "$val" = "root" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: /etc/passwd- must exist with owner root"
+    fi
+  register: _232140_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-232140 | record status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-232140': {
+        'status':
+          'not_a_finding' if _232140_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _232140_result.stdout | trim,
+        'comments':
+          'sudo chown root /etc/passwd-'
+      }
+    }) }}"
+  tags: [validate]

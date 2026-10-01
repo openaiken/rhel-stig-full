@@ -1,0 +1,38 @@
+---
+# RHEL-09-431030 | V-258082
+# RHEL 9 policycoreutils-python-utils package must be installed.
+# CAT II (Medium) | CCI-000366
+
+# Previously decided only by the formal role, whose check-mode result says
+# whether a task would change something. Checked here directly, as the STIG
+# command does, so the formal role is no longer needed for assessment.
+
+- name: RHEL-09-431030 | check policycoreutils-python-utils is installed
+  shell: |
+    if rpm -q --quiet policycoreutils-python-utils; then state=installed; else state="not installed"; fi
+    echo "policycoreutils-python-utils: $state ($(rpm -q policycoreutils-python-utils 2>&1 | head -1))"
+    if [ "$state" = "installed" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: policycoreutils-python-utils must be installed"
+    fi
+  register: _431030_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-431030 | record status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-431030': {
+        'status':
+          'not_a_finding' if _431030_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _431030_result.stdout | trim,
+        'comments':
+          'Install the package: sudo dnf install policycoreutils-python-utils'
+      }
+    }) }}"
+  tags: [validate]

@@ -55,6 +55,7 @@ CHECKS = {
     "UNANCHORED-MARKER": "status decided by a substring test such as 'STATUS: PASS' in x.stdout; anchor it: x.stdout is search('^STATUS: PASS', multiline=True)",
     "DQUOTE-IN-SETFACT": "double quote inside the supp_facts set_fact string, which is itself a double-quoted YAML scalar",
     "RPM-Q-ECHO":   "rpm -q X && echo ... prints the package name as well, so the output never equals the echoed word; use rpm -q --quiet",
+    "JINJA-SYNTAX": "a templated value does not parse as Jinja; at run time this aborts the whole supplement play",
     "JINJA-COMMENT": "'{#' opens a Jinja comment (e.g. bash ${#arr[@]}); Ansible fails to parse the role",
     "FILE-NOT-EFFECTIVE":
                     "greps config files for a setting whose effective value can differ "
@@ -162,6 +163,32 @@ def lint(sid, path):
         if re.search(r"rpm -q (?!--quiet)\S+[^|&]*&&\s*echo", l):
             hits.append(("RPM-Q-ECHO", i, l.strip()[:70]))
 
+    # C6e: every templated value must parse. A syntax error (unbalanced
+    # parentheses in a status expression) fails the set_fact on every host and
+    # aborts the play, dropping every later rule.
+    try:
+        import jinja2
+        import yaml as _yaml
+        env = jinja2.Environment()
+
+        def _walk(node):
+            if isinstance(node, dict):
+                for v in node.values():
+                    yield from _walk(v)
+            elif isinstance(node, list):
+                for v in node:
+                    yield from _walk(v)
+            elif isinstance(node, str) and ("{{" in node or "{%" in node):
+                yield node
+
+        for value in _walk(_yaml.safe_load(src) or []):
+            try:
+                env.parse(value)
+            except jinja2.TemplateSyntaxError as e:
+                hits.append(("JINJA-SYNTAX", 0, str(e)[:70]))
+    except ImportError:
+        pass
+
     # C6b: "{#" anywhere opens a Jinja comment. Bash ${#var} / ${#arr[@]} is the
     # usual culprit. Ansible then cannot split the task's arguments and the
     # include_role fails, aborting the entire supplement run, not one rule.
@@ -170,7 +197,8 @@ def lint(sid, path):
             hits.append(("JINJA-COMMENT", i, l.strip()[:70]))
 
     # C7: file-grep where the effective value can differ
-    if re.search(r"/etc/systemd/[\w.]*\.conf\.d|/etc/sysctl\.d|sshd_config", src):
+    # (file ownership and mode checks, which use stat, read no setting)
+    if re.search(r"/etc/systemd/[\w.]*\.conf\.d|/etc/sysctl\.d|sshd_config", src) and "stat -c" not in src:
         if not re.search(r"systemctl show|sysctl -n|sshd -T", src):
             hits.append(("FILE-NOT-EFFECTIVE", 0,
                          "greps config files without querying the effective value"))

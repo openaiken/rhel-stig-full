@@ -1,0 +1,39 @@
+---
+# RHEL-09-232065 | V-257893
+# RHEL 9 /etc/gshadow file must have mode 0000 or less permissive to prevent
+# unauthorized access.
+# CAT II (Medium) | CCI-000366
+
+# Previously decided only by the formal role, whose check-mode result says
+# whether a task would change something. Checked here directly, as the STIG
+# command does, so the formal role is no longer needed for assessment.
+
+- name: RHEL-09-232065 | check /etc/gshadow mode 0000
+  shell: |
+    mode=$(stat -c '%a' /etc/gshadow 2>/dev/null)
+    echo "/etc/gshadow mode: ${mode:-(file not found)} (required 0)"
+    if [ "$mode" = "0" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: /etc/gshadow must exist with mode 0000"
+    fi
+  register: _232065_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-232065 | record status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-232065': {
+        'status':
+          'not_a_finding' if _232065_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _232065_result.stdout | trim,
+        'comments':
+          'sudo chmod 0000 /etc/gshadow'
+      }
+    }) }}"
+  tags: [validate]

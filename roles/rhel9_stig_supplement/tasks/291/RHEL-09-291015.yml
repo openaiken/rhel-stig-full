@@ -1,0 +1,45 @@
+---
+# RHEL-09-291015 | V-258035
+# RHEL 9 must have the USBGuard package installed.
+# CAT II (Medium) | CCI-001958, CCI-003959
+
+# Previously decided only by the formal role, whose check-mode result says
+# whether a task would change something. Checked here directly, as the STIG
+# command does, so the formal role is no longer needed for assessment.
+# Not a finding for a VM with no USB peripherals (rhel9_attest_usbguard_na) or
+# with another documented blocking mechanism (rhel9_attest_usbguard_compliant),
+# as in RHEL-09-291030.
+
+- name: RHEL-09-291015 | check usbguard is installed
+  shell: |
+    if rpm -q --quiet usbguard; then state=installed; else state="not installed"; fi
+    echo "usbguard: $state ($(rpm -q usbguard 2>&1 | head -1))"
+    if [ "$state" = "installed" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: usbguard must be installed"
+    fi
+  register: _291015_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-291015 | record status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-291015': {
+        'status':
+          'not_a_finding' if _291015_result.stdout is search('^STATUS: PASS', multiline=True)
+          else ('not_a_finding' if ((rhel9_attest_usbguard_na | bool) or (rhel9_attest_usbguard_compliant | bool))
+          else 'open'),
+        'finding_details':
+          _291015_result.stdout | trim
+          ~ '\nAttestation (rhel9_attest_usbguard_na): ' ~ (rhel9_attest_usbguard_na | bool | string | lower)
+          ~ '\nAttestation (rhel9_attest_usbguard_compliant): ' ~ (rhel9_attest_usbguard_compliant | bool | string | lower)
+          ~ '\nSA documented method: ' ~ (rhel9_attest_usbguard_method if rhel9_attest_usbguard_method else '(not provided)'),
+        'comments':
+          'Install the package: sudo dnf install usbguard'
+      }
+    }) }}"
+  tags: [validate]

@@ -1,0 +1,41 @@
+---
+# RHEL-09-252065 | V-257954
+# RHEL 9 libreswan package must be installed.
+# CAT II (Medium) | CCI-000803
+
+# Previously decided only by the formal role, whose check-mode result says
+# whether a task would change something. Checked here directly, as the STIG
+# command does, so the formal role is no longer needed for assessment.
+# Not applicable when there is no operational need for Libreswan: record
+# that in rhel9_attest_documented_exceptions.
+
+- name: RHEL-09-252065 | check libreswan is installed
+  shell: |
+    if rpm -q --quiet libreswan; then state=installed; else state="not installed"; fi
+    echo "libreswan: $state ($(rpm -q libreswan 2>&1 | head -1))"
+    if [ "$state" = "installed" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: libreswan must be installed"
+    fi
+  register: _252065_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-252065 | record status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-252065': {
+        'status':
+          'not_applicable' if ((rhel9_attest_documented_exceptions | default({})).get('RHEL-09-252065'))
+          else 'not_a_finding' if _252065_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _252065_result.stdout | trim,
+        'comments':
+          'Install the package: sudo dnf install libreswan'
+      }
+    }) }}"
+  tags: [validate]

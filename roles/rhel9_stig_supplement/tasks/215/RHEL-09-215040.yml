@@ -1,0 +1,38 @@
+---
+# RHEL-09-215040 | V-257831
+# RHEL 9 must not have the telnet-server package installed.
+# CAT II (Medium) | CCI-000381
+
+# Previously decided only by the formal role, whose check-mode result says
+# whether a task would change something. Checked here directly, as the STIG
+# command does, so the formal role is no longer needed for assessment.
+
+- name: RHEL-09-215040 | check telnet-server is not installed
+  shell: |
+    if rpm -q --quiet telnet-server; then state=installed; else state="not installed"; fi
+    echo "telnet-server: $state ($(rpm -q telnet-server 2>&1 | head -1))"
+    if [ "$state" = "not installed" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: telnet-server must be not installed"
+    fi
+  register: _215040_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-215040 | record status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-215040': {
+        'status':
+          'not_a_finding' if _215040_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _215040_result.stdout | trim,
+        'comments':
+          'Remove the package: sudo dnf remove telnet-server'
+      }
+    }) }}"
+  tags: [validate]

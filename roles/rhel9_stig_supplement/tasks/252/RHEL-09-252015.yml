@@ -1,0 +1,39 @@
+---
+# RHEL-09-252015 | V-257944
+# RHEL 9 chronyd service must be enabled.
+# CAT II (Medium) | CCI-004923, CCI-001891
+
+# Previously decided only by the formal role, whose check-mode result says
+# whether a task would change something. Checked here directly, as the STIG
+# command does, so the formal role is no longer needed for assessment.
+
+- name: RHEL-09-252015 | check chronyd is active
+  shell: |
+    active=$(systemctl is-active chronyd 2>/dev/null)
+    sub=$(systemctl show chronyd -p SubState --value 2>/dev/null)
+    echo "chronyd: ActiveState=${active:-unknown} SubState=${sub:-unknown}"
+    if [ "$active" = "active" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: chronyd is not active"
+    fi
+  register: _252015_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-252015 | record status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-252015': {
+        'status':
+          'not_a_finding' if _252015_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _252015_result.stdout | trim,
+        'comments':
+          'Enable and start it: sudo systemctl enable --now chronyd'
+      }
+    }) }}"
+  tags: [validate]

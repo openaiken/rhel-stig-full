@@ -14,14 +14,24 @@ supp_rules:
   RHEL-09-211030: true
   # CAT III  RHEL 9 must enable the hardware random number generator entropy gather
   RHEL-09-211035: true
+  # CAT II   RHEL 9 systemd-journald service must be enabled.
+  RHEL-09-211040: true
   # CAT I    The systemd Ctrl-Alt-Delete burst key sequence in RHEL 9 must be disab
   RHEL-09-211045: true
+  # CAT I    The x86 Ctrl-Alt-Delete key sequence must be disabled on RHEL 9.
+  RHEL-09-211050: true
+  # CAT II   RHEL 9 debug-shell systemd service must be disabled.
+  RHEL-09-211055: true
   # CAT II   RHEL 9 must require a boot loader superuser password.
   RHEL-09-212010: true
   # CAT II   RHEL 9 must disable the ability of systemd to spawn an interactive boo
   RHEL-09-212015: true
   # CAT I    RHEL 9 must require a unique superusers name upon booting into single-
   RHEL-09-212020: true
+  # CAT II   RHEL 9 /boot/grub2/grub.cfg file must be group-owned by root.
+  RHEL-09-212025: true
+  # CAT II   RHEL 9 /boot/grub2/grub.cfg file must be owned by root.
+  RHEL-09-212030: true
   # CAT II   RHEL 9 must disable virtual system calls.
   RHEL-09-212035: true
   # CAT II   RHEL 9 must clear the page allocator to prevent use-after-free attacks
@@ -74,6 +84,8 @@ supp_rules:
   RHEL-09-213105: true
   # CAT II   RHEL 9 must implement nonexecutable data to protect its memory from un
   RHEL-09-213110: true
+  # CAT II   The kdump service on RHEL 9 must be disabled.
+  RHEL-09-213115: true
   # CAT II   RHEL 9 must ensure cryptographic verification of vendor software packa
   RHEL-09-214010: true
   # CAT I    RHEL 9 must check the GPG signature of software packages originating
@@ -86,12 +98,46 @@ supp_rules:
   RHEL-09-214030: true
   # CAT III  RHEL 9 must remove all software components after updated versions hav
   RHEL-09-214035: true
+  # CAT II   RHEL 9 subscription-manager package must be installed.
+  RHEL-09-215010: true
   # CAT I    RHEL 9 must not have a File Transfer Protocol (FTP) server package ins
   RHEL-09-215015: true
+  # CAT II   RHEL 9 must not have the sendmail package installed.
+  RHEL-09-215020: true
+  # CAT II   RHEL 9 must not have the nfs-utils package installed.
+  RHEL-09-215025: true
+  # CAT II   RHEL 9 must not have the ypserv package installed.
+  RHEL-09-215030: true
+  # CAT II   RHEL 9 must not install packages from the Extra Packages for Enterpri
+  RHEL-09-215035: true
+  # CAT II   RHEL 9 must not have the telnet-server package installed.
+  RHEL-09-215040: true
+  # CAT II   RHEL 9 must not have the gssproxy package installed.
+  RHEL-09-215045: true
+  # CAT II   RHEL 9 must not have the iprutils package installed.
+  RHEL-09-215050: true
+  # CAT II   RHEL 9 must not have the tuned package installed.
+  RHEL-09-215055: true
   # CAT I    The Trivial File Transfer Protocol (TFTP) server must not be installed
   RHEL-09-215060: true
+  # CAT II   RHEL 9 must not have the quagga package installed.
+  RHEL-09-215065: true
   # CAT II   A graphical display manager must not be installed on RHEL 9 unless app
   RHEL-09-215070: true
+  # CAT II   RHEL 9 must have the openssl-pkcs11 package installed.
+  RHEL-09-215075: true
+  # CAT II   RHEL 9 must have the gnutls-utils package installed.
+  RHEL-09-215080: true
+  # CAT II   RHEL 9 must have the nss-tools package installed.
+  RHEL-09-215085: true
+  # CAT II   RHEL 9 must have the rng-tools package installed.
+  RHEL-09-215090: true
+  # CAT II   RHEL 9 must have the s-nail package installed.
+  RHEL-09-215095: true
+  # CAT I    RHEL 9 must have the crypto-policies package installed.
+  RHEL-09-215100: true
+  # CAT II   RHEL 9 must have the Postfix package installed.
+  RHEL-09-215101: true
   # CAT I    RHEL 9 must implement a FIPS 140-3-compliant systemwide cryptographic 
   RHEL-09-215105: true
   # CAT II   A separate RHEL 9 file system must be used for user home directories (
@@ -192,14 +238,60 @@ supp_rules:
   RHEL-09-232055: true
   # CAT II   RHEL 9 /etc/group- file must have mode 0644 or less permissive to pre
   RHEL-09-232060: true
+  # CAT II   RHEL 9 /etc/gshadow file must have mode 0000 or less permissive to pr
+  RHEL-09-232065: true
+  # CAT II   RHEL 9 /etc/gshadow- file must have mode 0000 or less permissive to p
+  RHEL-09-232070: true
   # CAT II   RHEL 9 /etc/passwd file must have mode 0644 or less permissive to pre
   RHEL-09-232075: true
   # CAT II   RHEL 9 /etc/passwd- file must have mode 0644 or less permissive to pr
   RHEL-09-232080: true
+  # CAT II   RHEL 9 /etc/shadow- file must have mode 0000 or less permissive to pr
+  RHEL-09-232085: true
+  # CAT II   RHEL 9 /etc/group file must be owned by root.
+  RHEL-09-232090: true
+  # CAT II   RHEL 9 /etc/group file must be group-owned by root.
+  RHEL-09-232095: true
+  # CAT II   RHEL 9 /etc/group- file must be owned by root.
+  RHEL-09-232100: true
   # CAT II   RHEL 9 "/etc/audit/" must be owned by root.
   RHEL-09-232103: true
   # CAT II   RHEL 9 "/etc/audit/" must be group-owned by root.
   RHEL-09-232104: true
+  # CAT II   RHEL 9 /etc/group- file must be group-owned by root.
+  RHEL-09-232105: true
+  # CAT II   RHEL 9 /etc/gshadow file must be owned by root.
+  RHEL-09-232110: true
+  # CAT II   RHEL 9 /etc/gshadow file must be group-owned by root.
+  RHEL-09-232115: true
+  # CAT II   RHEL 9 /etc/gshadow- file must be owned by root.
+  RHEL-09-232120: true
+  # CAT II   RHEL 9 /etc/gshadow- file must be group-owned by root.
+  RHEL-09-232125: true
+  # CAT II   RHEL 9 /etc/passwd file must be owned by root.
+  RHEL-09-232130: true
+  # CAT II   RHEL 9 /etc/passwd file must be group-owned by root.
+  RHEL-09-232135: true
+  # CAT II   RHEL 9 /etc/passwd- file must be owned by root.
+  RHEL-09-232140: true
+  # CAT II   RHEL 9 /etc/passwd- file must be group-owned by root.
+  RHEL-09-232145: true
+  # CAT II   RHEL 9 /etc/shadow file must be owned by root.
+  RHEL-09-232150: true
+  # CAT II   RHEL 9 /etc/shadow file must be group-owned by root.
+  RHEL-09-232155: true
+  # CAT II   RHEL 9 /etc/shadow- file must be owned by root.
+  RHEL-09-232160: true
+  # CAT II   RHEL 9 /etc/shadow- file must be group-owned by root.
+  RHEL-09-232165: true
+  # CAT II   RHEL 9 /var/log directory must be owned by root.
+  RHEL-09-232170: true
+  # CAT II   RHEL 9 /var/log directory must be group-owned by root.
+  RHEL-09-232175: true
+  # CAT II   RHEL 9 /var/log/messages file must be owned by root.
+  RHEL-09-232180: true
+  # CAT II   RHEL 9 /var/log/messages file must be group-owned by root.
+  RHEL-09-232185: true
   # CAT II   RHEL 9 system commands must be owned by root.
   RHEL-09-232190: true
   # CAT II   RHEL 9 system commands must be group-owned by root or a system account
@@ -230,6 +322,12 @@ supp_rules:
   RHEL-09-232255: true
   # CAT II   RHEL 9 must be configured so that all system device files are correctl
   RHEL-09-232260: true
+  # CAT II   RHEL 9 /etc/shadow file must have mode 0000 to prevent unauthorized a
+  RHEL-09-232270: true
+  # CAT II   RHEL 9 must have the firewalld package installed.
+  RHEL-09-251010: true
+  # CAT II   The firewalld service on RHEL 9 must be active.
+  RHEL-09-251015: true
   # CAT II   The RHEL 9 firewall must employ a deny-all, allow-by-exception policy 
   RHEL-09-251020: true
   # CAT II   RHEL 9 must protect against or limit the effects of denial-of-service
@@ -240,6 +338,10 @@ supp_rules:
   RHEL-09-251040: true
   # CAT II   RHEL 9 must enable hardening for the Berkeley Packet Filter just-in-t
   RHEL-09-251045: true
+  # CAT II   RHEL 9 must have the chrony package installed.
+  RHEL-09-252010: true
+  # CAT II   RHEL 9 chronyd service must be enabled.
+  RHEL-09-252015: true
   # CAT II   RHEL 9 must securely compare internal information system clocks at lea
   RHEL-09-252020: true
   # CAT III  RHEL 9 must disable the chrony daemon from acting as a server.
@@ -256,6 +358,8 @@ supp_rules:
   RHEL-09-252050: true
   # CAT II   RHEL 9 must forward mail from postmaster to the root account using a p
   RHEL-09-252060: true
+  # CAT II   RHEL 9 libreswan package must be installed.
+  RHEL-09-252065: true
   # CAT I    There must be no shosts.equiv files on RHEL 9.
   RHEL-09-252070: true
   # CAT I    There must be no .shosts files on RHEL 9.
@@ -306,6 +410,8 @@ supp_rules:
   RHEL-09-255010: true
   # CAT II   All RHEL 9 networked systems must have and implement SSH to protect t
   RHEL-09-255015: true
+  # CAT II   RHEL 9 must have the openssh-clients package installed.
+  RHEL-09-255020: true
   # CAT II   RHEL 9 must display the Standard Mandatory DOD Notice and Consent Ban
   RHEL-09-255025: true
   # CAT II   RHEL 9 must log SSH connection attempts and failures to the server.
@@ -336,6 +442,10 @@ supp_rules:
   RHEL-09-255095: true
   # CAT II   RHEL 9 must be configured so that all network connections associated
   RHEL-09-255100: true
+  # CAT II   RHEL 9 SSH server configuration file must be group-owned by root.
+  RHEL-09-255105: true
+  # CAT II   The RHEL 9 SSH server configuration file must be owned by root.
+  RHEL-09-255110: true
   # CAT II   RHEL 9 SSH server configuration files' permissions must not be modifie
   RHEL-09-255115: true
   # CAT II   RHEL 9 SSH private host key files must have mode 0600 or less permissi
@@ -404,6 +514,8 @@ supp_rules:
   RHEL-09-271115: true
   # CAT II   RHEL 9 must be configured to disable USB mass storage.
   RHEL-09-291010: true
+  # CAT II   RHEL 9 must have the USBGuard package installed.
+  RHEL-09-291015: true
   # CAT II   RHEL 9 must have the USBGuard package enabled.
   RHEL-09-291020: true
   # CAT III  RHEL 9 must enable Linux audit logging for the USBGuard daemon.
@@ -482,6 +594,12 @@ supp_rules:
   RHEL-09-431016: true
   # CAT II   RHEL 9 must configure SELinux context type to allow the use of a nonde
   RHEL-09-431020: true
+  # CAT II   RHEL 9 must have policycoreutils package installed.
+  RHEL-09-431025: true
+  # CAT II   RHEL 9 policycoreutils-python-utils package must be installed.
+  RHEL-09-431030: true
+  # CAT II   RHEL 9 must have the sudo package installed.
+  RHEL-09-432010: true
   # CAT II   RHEL 9 must require reauthentication when using the "sudo" command.
   RHEL-09-432015: true
   # CAT II   RHEL 9 must use the invoking user's password for privilege escalation 
@@ -492,6 +610,8 @@ supp_rules:
   RHEL-09-432030: true
   # CAT II   RHEL 9 must restrict the use of the "su" command.
   RHEL-09-432035: true
+  # CAT II   RHEL 9 fapolicy module must be installed.
+  RHEL-09-433010: true
   # CAT II   RHEL 9 fapolicy module must be enabled.
   RHEL-09-433015: true
   # CAT II   The RHEL 9 fapolicy module must be configured to employ a deny-all, pe
@@ -554,8 +674,12 @@ supp_rules:
   RHEL-09-611165: true
   # CAT II   RHEL 9 must implement certificate status checking for multifactor auth
   RHEL-09-611170: true
+  # CAT II   RHEL 9 must have the pcsc-lite package installed.
+  RHEL-09-611175: true
   # CAT II   The pcscd socket on RHEL 9 must be active.
   RHEL-09-611180: true
+  # CAT II   RHEL 9 must have the opensc package installed.
+  RHEL-09-611185: true
   # CAT II   RHEL 9, for PKI-based authentication, must enforce authorized access t
   RHEL-09-611190: true
   # CAT II   RHEL 9 must require authentication to access emergency mode.
@@ -580,6 +704,10 @@ supp_rules:
   RHEL-09-651030: true
   # CAT III  RHEL 9 must be configured so that the file integrity tool verifies ext
   RHEL-09-651035: true
+  # CAT II   RHEL 9 must have the rsyslog package installed.
+  RHEL-09-652010: true
+  # CAT II   RHEL 9 must have the packages required for encrypting offloaded audit
+  RHEL-09-652015: true
   # CAT II   The rsyslog service on RHEL 9 must be active.
   RHEL-09-652020: true
   # CAT II   RHEL 9 must be configured so that the rsyslog daemon does not accept l
@@ -596,6 +724,10 @@ supp_rules:
   RHEL-09-652055: true
   # CAT II   RHEL 9 must use cron logging.
   RHEL-09-652060: true
+  # CAT II   RHEL 9 audit package must be installed.
+  RHEL-09-653010: true
+  # CAT II   RHEL 9 audit service must be enabled.
+  RHEL-09-653015: true
   # CAT II   RHEL 9 audit system must take appropriate action when an error writin
   RHEL-09-653020: true
   # CAT II   RHEL 9 audit system must take appropriate action when the audit stora
@@ -638,6 +770,8 @@ supp_rules:
   RHEL-09-653120: true
   # CAT II   RHEL 9 must have mail aliases to notify the information system securit
   RHEL-09-653125: true
+  # CAT II   RHEL 9 audispd-plugins package must be installed.
+  RHEL-09-653130: true
   # CAT II   RHEL 9 must audit uses of the "execve" system call.
   RHEL-09-654010: true
   # CAT II   RHEL 9 must audit all uses of the chmod, fchmod, and fchmodat system

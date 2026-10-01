@@ -1,0 +1,38 @@
+---
+# RHEL-09-611185 | V-258126
+# RHEL 9 must have the opensc package installed.
+# CAT II (Medium) | CCI-004046, CCI-001953, CCI-001948
+
+# Previously decided only by the formal role, whose check-mode result says
+# whether a task would change something. Checked here directly, as the STIG
+# command does, so the formal role is no longer needed for assessment.
+
+- name: RHEL-09-611185 | check opensc is installed
+  shell: |
+    if rpm -q --quiet opensc; then state=installed; else state="not installed"; fi
+    echo "opensc: $state ($(rpm -q opensc 2>&1 | head -1))"
+    if [ "$state" = "installed" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: opensc must be installed"
+    fi
+  register: _611185_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-611185 | record status
+  set_fact:
+    supp_facts: "{{ supp_facts | combine({
+      'RHEL-09-611185': {
+        'status':
+          'not_a_finding' if _611185_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _611185_result.stdout | trim,
+        'comments':
+          'Install the package: sudo dnf install opensc'
+      }
+    }) }}"
+  tags: [validate]
