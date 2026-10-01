@@ -1,0 +1,40 @@
+---
+# RHEL-09-211020 | V-257779 | fix
+# RHEL 9 must display the Standard Mandatory DOD Notice and Consent Banner
+# before granting local or remote access to the system via a command line user
+# logon.
+# CAT II (Medium)
+#
+# Writes the Standard Mandatory DOD Notice and Consent Banner (verbatim from
+# the check) to /etc/issue, replacing its contents.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-211020 | fix
+  block:
+    - name: RHEL-09-211020 | write the DOD banner to /etc/issue
+      ansible.builtin.copy:
+        dest: /etc/issue
+        content: |
+          You are accessing a U.S. Government (USG) Information System (IS) that is provided for USG-authorized use only.
+          By using this IS (which includes any device attached to this IS), you consent to the following conditions:
+          -The USG routinely intercepts and monitors communications on this IS for purposes including, but not limited to, penetration testing, COMSEC monitoring, network operations and defense, personnel misconduct (PM), law enforcement (LE), and counterintelligence (CI) investigations.
+          -At any time, the USG may inspect and seize data stored on this IS.
+          -Communications using, or data stored on, this IS are not private, are subject to routine monitoring, interception, and search, and may be disclosed or used for any USG-authorized purpose.
+          -This IS includes security measures (e.g., authentication and access controls) to protect USG interests--not for your personal benefit or privacy.
+          -Notwithstanding the above, using this IS does not constitute consent to PM, LE or CI investigative searching or monitoring of the content of privileged communications, or work product, related to personal representation or services by attorneys, psychotherapists, or clergy, and their assistants. Such communications and work product are private and confidential. See User Agreement for details.
+        owner: root
+        group: root
+        mode: '0644'
+      register: _211020_fix
+
+    - name: RHEL-09-211020 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-211020'] }}"
+      when: (_211020_fix is changed)
+  rescue:
+    - name: RHEL-09-211020 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-211020': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-211020'] }}"

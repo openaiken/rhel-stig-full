@@ -1,0 +1,36 @@
+---
+# RHEL-09-231195 | V-257880 | fix
+# RHEL 9 must disable mounting of cramfs.
+# CAT III (Low)
+#
+# Writes /etc/modprobe.d/rhel9-stig-full-cramfs.conf with install cramfs
+# /bin/false and blacklist cramfs, the two lines the check requires. Takes
+# effect at the next attempt to load the module; a module already loaded stays
+# loaded until reboot (the STIG checks configuration, not the running kernel).
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-231195 | fix
+  block:
+    - name: RHEL-09-231195 | prevent loading cramfs
+      ansible.builtin.copy:
+        dest: /etc/modprobe.d/rhel9-stig-full-cramfs.conf
+        content: |
+          # Managed by rhel9_stig_full (RHEL-09-231195)
+          install cramfs /bin/false
+          blacklist cramfs
+        owner: root
+        group: root
+        mode: '0644'
+      register: _231195_fix
+
+    - name: RHEL-09-231195 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-231195'] }}"
+      when: (_231195_fix is changed)
+  rescue:
+    - name: RHEL-09-231195 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-231195': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-231195'] }}"

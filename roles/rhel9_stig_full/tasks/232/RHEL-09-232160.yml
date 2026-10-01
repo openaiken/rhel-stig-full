@@ -1,0 +1,38 @@
+---
+# RHEL-09-232160 | V-257912
+# RHEL 9 /etc/shadow- file must be owned by root.
+# CAT II (Medium) | CCI-000366
+
+# Checked directly, as the STIG command does. (The DISA Ansible role's check
+# mode only says whether one of its tasks would change something.)
+
+- name: RHEL-09-232160 | check /etc/shadow- owner
+  shell: |
+    val=$(stat -c '%U' /etc/shadow- 2>/dev/null)
+    echo "/etc/shadow- owner: ${val:-(file not found)}"
+    if [ "$val" = "root" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: /etc/shadow- must exist with owner root"
+    fi
+  register: _232160_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-232160 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-232160': {
+        'status':
+          'not_a_finding' if _232160_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _232160_result.stdout | trim,
+        'comments':
+          'sudo chown root /etc/shadow-'
+      }
+    }) }}"
+  tags: [validate]

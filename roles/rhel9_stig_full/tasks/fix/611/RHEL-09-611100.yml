@@ -1,0 +1,32 @@
+---
+# RHEL-09-611100 | V-258109 | fix
+# RHEL 9 must enforce password complexity by requiring that at least one
+# special character be used.
+# CAT II (Medium)
+#
+# Sets ocredit = -1 in /etc/security/pwquality.conf, replacing the last
+# ocredit line. libpwquality reads pwquality.conf.d/*.conf first and
+# pwquality.conf last, so this is the value in effect (a drop-in cannot
+# override it).
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-611100 | fix
+  block:
+    - name: RHEL-09-611100 | set ocredit in /etc/security/pwquality.conf
+      ansible.builtin.lineinfile:
+        path: /etc/security/pwquality.conf
+        regexp: '^[ \t]*ocredit[ \t]*='
+        line: 'ocredit = -1'
+      register: _611100_fix
+
+    - name: RHEL-09-611100 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-611100'] }}"
+      when: (_611100_fix is changed)
+  rescue:
+    - name: RHEL-09-611100 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-611100': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-611100'] }}"

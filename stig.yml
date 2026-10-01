@@ -1,0 +1,25 @@
+---
+# Single entry point, driven by tags (run.sh passes them):
+#   --tags validate             every rule is checked and a checklist rendered
+#   --tags remediate            check every rule, fix the open ones that have a
+#                               fix (tasks/fix/), report what changed; no
+#                               results file, no checklist
+#   --tags remediate,validate   check, fix, re-check, render the checklist
+#   --tags RHEL-09-XXXXXX       check one rule (the checklist merges it with
+#                               earlier results; add validate to render)
+#   --tags render               re-render the checklist from earlier results
+# Without --tags: check and render. The fixes run only when remediate is
+# named, so a tag union can never select them.
+
+- name: Assess and remediate RHEL 9 STIG rules, and render the checklist
+  hosts: "{{ my_host | default('default_host_group') }}"
+  become: true
+  # No task reads gathered facts; skipping them saves time and keeps fact
+  # gathering out of tag selection.
+  gather_facts: false
+  ignore_errors: "{{ ignore_task_failures | default('no') | bool }}"
+  tasks:
+    - name: RHEL 9 STIG assessment
+      include_role:
+        name: rhel9_stig_full
+      tags: always

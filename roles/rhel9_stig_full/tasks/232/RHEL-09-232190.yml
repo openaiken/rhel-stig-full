@@ -1,0 +1,26 @@
+---
+# RHEL-09-232190 | V-257918
+# RHEL 9 system commands must be owned by root.
+# CAT II (Medium) | CCI-001494
+
+- name: RHEL-09-232190 | find system commands not owned by root
+  shell: >-
+    find -L /bin /sbin /usr/bin /usr/sbin /usr/libexec /usr/local/bin /usr/local/sbin ! -user root 2>/dev/null || true
+  register: _232190_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-232190 | record system commands ownership status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-232190': {
+        'status': 'not_a_finding' if not (_232190_result.stdout | trim) else 'open',
+        'finding_details':
+          'System commands not owned by root:\n'
+          ~ (_232190_result.stdout | trim if _232190_result.stdout | trim else '(none)'),
+        'comments': 'Run chown root <file> for each listed file.'
+      }
+    }) }}"
+  tags: [validate]

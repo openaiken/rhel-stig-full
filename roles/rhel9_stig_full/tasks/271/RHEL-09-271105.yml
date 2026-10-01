@@ -1,0 +1,46 @@
+---
+# RHEL-09-271105 | V-258031
+# RHEL 9 must disable the ability of a user to accidentally press
+# Ctrl-Alt-Del and cause a system to shut down or reboot.
+# CAT II (Medium) | CCI-000366
+
+# Not Applicable if GDM is not installed.
+# Queries the effective setting the way the STIG check does (gsettings),
+# through the user dconf profile, rather than grepping keyfiles. A keyfile grep
+# cannot see GNOME defaults, which of several keyfiles wins, whether dconf
+# update has compiled them, or whether a lock line is commented out.
+# XDG_CONFIG_HOME points at nothing so the root user db cannot mask a value.
+# An empty or error result is a finding: an unverifiable control is open.
+
+- name: RHEL-09-271105 | check Ctrl-Alt-Del logout key (effective value)
+  shell: |
+    rpm -q gdm &>/dev/null || { echo "NA: gdm not installed"; exit 0; }
+    val=$(XDG_CONFIG_HOME=/nonexistent DCONF_PROFILE=user gsettings get org.gnome.settings-daemon.plugins.media-keys logout 2>&1)
+    # The fix sets ['']; an empty array is equally unbound. The GNOME
+    # default binds Ctrl-Alt-Del, so an unconfigured host fails here.
+    case "$val" in
+      "['']"|"[]"|"@as []") echo "PASS: logout=$val" ;;
+      *) echo "FAIL: logout=${val:-no output} (required: [''])" ;;
+    esac
+  register: _271105_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-271105 | record Ctrl-Alt-Del logout key status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-271105': {
+        'status':
+          'not_applicable' if _271105_result.stdout is search('^NA:', multiline=True)
+          else ('not_a_finding' if _271105_result.stdout is search('^PASS:', multiline=True)
+          else 'open'),
+        'finding_details': _271105_result.stdout | trim,
+        'comments':
+          'Set logout=[''''] in a dconf keyfile under /etc/dconf/db/local.d/ '
+          ~ 'in the [org/gnome/settings-daemon/plugins/media-keys] section. '
+          ~ 'Run dconf update.'
+      }
+    }) }}"
+  tags: [validate]

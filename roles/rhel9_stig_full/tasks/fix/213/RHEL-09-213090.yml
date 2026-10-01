@@ -1,0 +1,45 @@
+---
+# RHEL-09-213090 | V-257813 | fix
+# RHEL 9 must disable storing core dumps.
+# CAT II (Medium)
+#
+# Sets Storage=none in [Coredump] of /etc/systemd/coredump.conf.d/rhel9-stig-
+# full.conf (a drop-in ending in .conf, read after coredump.conf; the check
+# reads the merged value with systemd-analyze cat-config). Read by systemd-
+# coredump at its next invocation.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-213090 | fix
+  block:
+    - name: RHEL-09-213090 | create the coredump drop-in directory
+      ansible.builtin.file:
+        path: /etc/systemd/coredump.conf.d
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: RHEL-09-213090 | set Storage=none
+      community.general.ini_file:
+        path: /etc/systemd/coredump.conf.d/rhel9-stig-full.conf
+        section: Coredump
+        option: Storage
+        value: 'none'
+        no_extra_spaces: true
+        create: true
+        owner: root
+        group: root
+        mode: '0644'
+      register: _213090_fix
+
+    - name: RHEL-09-213090 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-213090'] }}"
+      when: (_213090_fix is changed)
+  rescue:
+    - name: RHEL-09-213090 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-213090': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-213090'] }}"

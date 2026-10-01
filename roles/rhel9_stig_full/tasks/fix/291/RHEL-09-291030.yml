@@ -1,0 +1,52 @@
+---
+# RHEL-09-291030 | V-258038 | fix
+# RHEL 9 must block unauthorized peripherals before establishing a connection.
+# CAT II (Medium)
+#
+# If /etc/usbguard/rules.conf has no rules, first installs an allow-list of
+# the USB devices attached now (usbguard generate-policy --no-hash, the STIG
+# fix), so enabling USBGuard does not block the keyboard and mouse in use. A
+# device attached later is blocked until allowed. An existing policy is never
+# replaced. A running usbguard is restarted to load it.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-291030 | fix
+  block:
+    - name: RHEL-09-291030 | read the current USBGuard policy
+      ansible.builtin.slurp:
+        src: /etc/usbguard/rules.conf
+      register: _291030_rules
+      failed_when: false
+
+    - name: RHEL-09-291030 | build an allow-list of the USB devices attached now
+      ansible.builtin.command: usbguard generate-policy --no-hash
+      register: _291030_policy
+      changed_when: false
+      check_mode: false
+      when: (_291030_rules.content | default('') | b64decode | regex_findall('(?m)^[ \t]*[^#\s]') | length) == 0
+
+    - name: RHEL-09-291030 | install the allow-list as the policy
+      ansible.builtin.copy:
+        dest: /etc/usbguard/rules.conf
+        content: "{{ _291030_policy.stdout }}\n"
+        owner: root
+        group: root
+        mode: '0600'
+      register: _291030_gen
+      when: _291030_policy is not skipped
+
+    - name: RHEL-09-291030 | restart a running usbguard to load the policy
+      ansible.builtin.command: systemctl try-restart usbguard
+      when: _291030_gen is changed
+
+    - name: RHEL-09-291030 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-291030'] }}"
+      when: (_291030_gen is changed)
+  rescue:
+    - name: RHEL-09-291030 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-291030': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-291030'] }}"

@@ -1,0 +1,26 @@
+---
+# RHEL-09-232230 | V-257926
+# RHEL 9 cron configuration files directory must be owned by root.
+# CAT II (Medium) | CCI-000366
+
+- name: RHEL-09-232230 | find cron config paths not owned by root
+  shell: >-
+    find /etc/cron* -maxdepth 0 ! -user root 2>/dev/null || true
+  register: _232230_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-232230 | record cron config ownership status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-232230': {
+        'status': 'not_a_finding' if not (_232230_result.stdout | trim) else 'open',
+        'finding_details':
+          'Cron config paths not owned by root:\n'
+          ~ (_232230_result.stdout | trim if _232230_result.stdout | trim else '(none)'),
+        'comments': 'Run chown root <path> for each listed path.'
+      }
+    }) }}"
+  tags: [validate]

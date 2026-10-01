@@ -1,0 +1,31 @@
+---
+# RHEL-09-411090 | V-258057 | fix
+# RHEL 9 must maintain an account lock until the locked account is released by
+# an administrator.
+# CAT II (Medium)
+#
+# Sets unlock_time = 0 in /etc/security/faillock.conf. A locked account (root
+# included, with RHEL-09-411080) then stays locked until an administrator runs
+# faillock --reset.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-411090 | fix
+  block:
+    - name: RHEL-09-411090 | set unlock_time in /etc/security/faillock.conf
+      ansible.builtin.lineinfile:
+        path: /etc/security/faillock.conf
+        regexp: '^[ \t]*unlock_time[ \t]*='
+        line: 'unlock_time = 0'
+      register: _411090_fix
+
+    - name: RHEL-09-411090 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-411090'] }}"
+      when: (_411090_fix is changed)
+  rescue:
+    - name: RHEL-09-411090 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-411090': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-411090'] }}"

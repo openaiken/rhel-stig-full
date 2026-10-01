@@ -1,0 +1,40 @@
+---
+# RHEL-09-654205 | V-258215
+# Successful/unsuccessful uses of the umount system call in RHEL 9 must
+# generate an audit record.
+# CAT II (Medium) | CCI-000130, CCI-000169, CCI-000172, CCI-002884
+
+# Loaded rules (auditctl -l), as the STIG check reads them.
+# Each expected rule below (from the STIG check text) must be covered by a
+# rule that records at least the same events; keys, syscall order, merged
+# syscall lists, -w watches and auid!=unset are all accepted. See
+# filter_plugins/audit_rules.py. The DISA Ansible role checked for its own lines in
+# /etc/audit/rules.d/audit.rules, so hosts hardened any other way were open.
+
+- name: RHEL-09-654205 | read audit rules
+  command: auditctl -l
+  register: _654205_rules
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-654205 | record audit rule coverage
+  vars:
+    _654205_expected:
+      - "-a always,exit -F arch=b32 -S umount -F auid>=1000 -F auid!=-1 -F key=privileged-umount"
+    _654205_cov: "{{ _654205_rules.stdout | default('') | rhel9_audit_coverage(_654205_expected) }}"
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-654205': {
+        'status':
+          'not_a_finding'
+          if (_654205_rules.rc | default(1) == 0 and _654205_cov.loaded > 0 and _654205_cov.missing | length == 0)
+          else 'open',
+        'finding_details': _654205_cov.report,
+        'comments':
+          'Add rules covering each MISSING line to a file in /etc/audit/rules.d/, '
+          ~ 'then run augenrules --load. Any key may be used.'
+      }
+    }) }}"
+  tags: [validate]

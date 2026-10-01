@@ -1,0 +1,35 @@
+---
+# RHEL-09-671010 | V-258230
+# RHEL 9 must enable FIPS mode.
+# CAT I (High) | CCI-002450
+
+- name: RHEL-09-671010 | check FIPS mode is enabled
+  shell: |
+    fips=$(cat /proc/sys/crypto/fips_enabled 2>/dev/null)
+    if [ "$fips" = "1" ]; then
+      echo "STATUS: PASS"
+      echo "PASS: /proc/sys/crypto/fips_enabled = 1"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: /proc/sys/crypto/fips_enabled = ${fips:-unavailable}"
+    fi
+  register: _671010_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-671010 | record FIPS mode status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-671010': {
+        'status':
+          'not_a_finding' if _671010_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details': _671010_result.stdout | trim,
+        'comments':
+          'Enable FIPS mode: fips-mode-setup --enable. '
+          ~ 'Reboot required. Verify with: fips-mode-setup --check'
+      }
+    }) }}"
+  tags: [validate]

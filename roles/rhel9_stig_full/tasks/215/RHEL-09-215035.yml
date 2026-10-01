@@ -1,0 +1,53 @@
+---
+# RHEL-09-215035 | V-257830
+# RHEL 9 must not install packages from the Extra Packages for Enterprise
+# Linux (EPEL) repository.
+# CAT II (Medium) | CCI-000381
+
+# Checked directly, as the STIG command does. (The DISA Ansible role's check
+# mode only says whether one of its tasks would change something.)
+# The STIG lists repositories with dnf repolist; that can fetch metadata over
+# the network, so enabled repositories are read from the .repo files instead
+# (enabled unless enabled=0). Any repository id or name containing epel is a
+# finding, as is the epel-release package.
+
+- name: RHEL-09-215035 | check no EPEL repository is enabled
+  shell: |
+    shopt -s nullglob
+    epel=$(awk '
+      FNR == 1 { flush() }
+      /^[[:space:]]*[#;]/ { next }
+      /^[[:space:]]*\[/ { flush(); id = $0; gsub(/[][[:space:]]/, "", id); en = 1; nm = ""; next }
+      /^[[:space:]]*enabled[[:space:]]*=/ { v = $0; sub(/^[^=]*=[[:space:]]*/, "", v); en = (tolower(v) ~ /^(1|true|yes)/) }
+      /^[[:space:]]*name[[:space:]]*=/ { nm = $0; sub(/^[^=]*=[[:space:]]*/, "", nm) }
+      function flush() { if (id != "" && en && tolower(id " " nm) ~ /epel/) print FILENAME ": [" id "] " nm; id = "" }
+      END { flush() }' /etc/yum.repos.d/*.repo)
+    rpm -q --quiet epel-release && epel="${epel}${epel:+
+    }epel-release package is installed"
+    echo "enabled EPEL repositories: ${epel:-(none)}"
+    if [ -z "$epel" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: EPEL is configured"
+    fi
+  register: _215035_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-215035 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-215035': {
+        'status':
+          'not_a_finding' if _215035_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _215035_result.stdout | trim,
+        'comments':
+          'Remove or disable the EPEL repositories and the epel-release package.'
+      }
+    }) }}"
+  tags: [validate]

@@ -1,0 +1,32 @@
+---
+# RHEL-09-611125 | V-258114 | fix
+# RHEL 9 must require the maximum number of repeating characters be limited to
+# three when passwords are changed.
+# CAT II (Medium)
+#
+# Sets maxrepeat = 3 in /etc/security/pwquality.conf, replacing the last
+# maxrepeat line. libpwquality reads pwquality.conf.d/*.conf first and
+# pwquality.conf last, so this is the value in effect (a drop-in cannot
+# override it).
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-611125 | fix
+  block:
+    - name: RHEL-09-611125 | set maxrepeat in /etc/security/pwquality.conf
+      ansible.builtin.lineinfile:
+        path: /etc/security/pwquality.conf
+        regexp: '^[ \t]*maxrepeat[ \t]*='
+        line: 'maxrepeat = 3'
+      register: _611125_fix
+
+    - name: RHEL-09-611125 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-611125'] }}"
+      when: (_611125_fix is changed)
+  rescue:
+    - name: RHEL-09-611125 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-611125': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-611125'] }}"

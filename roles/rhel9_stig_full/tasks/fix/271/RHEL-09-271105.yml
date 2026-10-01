@@ -1,0 +1,55 @@
+---
+# RHEL-09-271105 | V-258031 | fix
+# RHEL 9 must disable the ability of a user to accidentally press Ctrl-Alt-Del
+# and cause a system to shut down or reboot.
+# CAT II (Medium)
+#
+# Sets org.gnome.settings-daemon.plugins.media-keys logout to [''] in
+# /etc/dconf/db/local.d/00-rhel9-stig-full. Applies only where gdm is
+# installed (the check is not applicable otherwise). The local system database
+# is what the check reads through the user profile, which is made to include
+# system-db:local; the databases are then compiled with dconf update. Takes
+# effect at the next login.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-271105 | fix
+  block:
+    - name: RHEL-09-271105 | make sure the user profile reads the local database
+      ansible.builtin.lineinfile:
+        path: /etc/dconf/profile/user
+        line: system-db:local
+        insertafter: '^user-db:user'
+        create: true
+        owner: root
+        group: root
+        mode: '0644'
+      register: _271105_prof
+
+    - name: RHEL-09-271105 | set logout in /etc/dconf/db/local.d/00-rhel9-stig-full
+      community.general.ini_file:
+        path: /etc/dconf/db/local.d/00-rhel9-stig-full
+        section: org/gnome/settings-daemon/plugins/media-keys
+        option: logout
+        value: "['']"
+        no_extra_spaces: true
+        create: true
+        owner: root
+        group: root
+        mode: '0644'
+      register: _271105_set0
+
+    - name: RHEL-09-271105 | compile the dconf databases
+      ansible.builtin.command: dconf update
+      when: (_271105_prof is changed) or (_271105_set0 is changed)
+
+    - name: RHEL-09-271105 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-271105'] }}"
+      when: (_271105_prof is changed) or (_271105_set0 is changed)
+  rescue:
+    - name: RHEL-09-271105 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-271105': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-271105'] }}"

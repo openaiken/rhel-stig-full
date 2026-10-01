@@ -1,0 +1,90 @@
+---
+# RHEL-09-653125 | V-258174
+# RHEL 9 must have mail aliases to notify the ISSO and SA (at a minimum) in
+# the event of an audit processing failure.
+# CAT II (Medium) | CCI-000139, CCI-000140
+
+# Checks that root has a forwarding alias in the postfix alias map, which
+# redirects root mail (including audit failure notifications) to the ISSO/SA.
+# Not applicable if postfix is not installed.
+#
+# If an alternate notification mechanism is in use (monitoring system, SNMP
+# trap, etc.), set rhel9_attest_audit_notification_compliant: true and document
+# the mechanism in rhel9_attest_audit_notification_method. This var is shared
+# with RHEL-09-252060 (postmaster alias) since both address the same underlying
+# audit-failure notification requirement.
+
+- name: RHEL-09-653125 | check mail alias for audit failure notification
+  shell: |
+    # The STIG has no not-applicable clause: without postfix there is no
+    # alias to query, so notification must be attested
+    # (rhel9_attest_audit_notification_compliant) or this is open.
+    if ! rpm -q postfix &>/dev/null; then
+      echo "STATUS: FAIL"
+      echo "FAIL: postfix not installed; no root alias to verify"
+      exit 0
+    fi
+
+    alias_maps=$(postconf -h alias_maps 2>/dev/null || true)
+    if [ -z "$alias_maps" ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: could not determine alias_maps from postfix"
+      exit 0
+    fi
+
+    # Try each map entry (space or comma separated); stop at first hit
+    alias_val=""
+    for entry in $(echo "$alias_maps" | tr ',' ' '); do
+      map_type=$(echo "$entry" | cut -d: -f1)
+      map_path=$(echo "$entry" | cut -d: -f2-)
+      # any map type postmap can read (hash, lmdb, ...), not only hash
+      val=$(postmap -q root "${map_type}:${map_path}" 2>/dev/null || true)
+      if [ -n "$val" ]; then
+        alias_val="$val"
+        echo "INFO: alias map: $map_path"
+        break
+      fi
+    done
+
+    # The DISA Ansible role default is the placeholder change_me@localhost, which
+    # notifies nobody; it used to pass.
+    if echo "$alias_val" | grep -qiE 'change_?me'; then
+      echo "STATUS: FAIL"
+      echo "FAIL: root -> $alias_val is a placeholder, not a monitored recipient"
+    elif [ -n "$alias_val" ]; then
+      echo "STATUS: PASS"
+      echo "PASS: root -> $alias_val"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: no alias for root found in alias_maps ($alias_maps)"
+      echo "INFO: root mail should forward to the ISSO/SA contact address"
+    fi
+  register: _653125_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-653125 | record mail alias notification status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-653125': {
+        'status':
+          'not_applicable' if _653125_result.stdout is search('^NA:')
+          else ('not_a_finding' if (_653125_result.stdout is search('^STATUS: PASS', multiline=True)
+                                    or (rhel9_attest_audit_notification_compliant | bool))
+          else 'open'),
+        'finding_details':
+          _653125_result.stdout | trim
+          ~ '\nAttestation (rhel9_attest_audit_notification_compliant): '
+          ~ (rhel9_attest_audit_notification_compliant | bool | string | lower)
+          ~ '\nAlt method: '
+          ~ (rhel9_attest_audit_notification_method
+             if rhel9_attest_audit_notification_method else '(not provided)'),
+        'comments':
+          'Add to /etc/aliases: root: isso@example.com,sa@example.com. '
+          ~ 'Then run newaliases to rebuild the alias database. '
+          ~ 'Verify with: postmap -q root hash:/etc/aliases'
+      }
+    }) }}"
+  tags: [validate]

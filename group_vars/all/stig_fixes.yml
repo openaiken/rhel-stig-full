@@ -1,0 +1,14 @@
+---
+# Remediation controls (./run.sh remediate). Assessment is unaffected.
+#
+# A fix runs only when its rule is enabled in stig_rules.yml, its check
+# reported open, and its STIG ID is not listed here. List a rule to keep
+# assessing it but never change it automatically, e.g. a setting a site
+# manages another way, or a fix whose effect needs review first:
+#
+#   stig_fix_skip:
+#     - RHEL-09-211030   # keep the graphical boot target on workstations
+#     - RHEL-09-251015   # firewalld is managed by the network team
+#
+# Per-host or per-group overrides go in host_vars/ or group_vars/<group>/.
+stig_fix_skip: []

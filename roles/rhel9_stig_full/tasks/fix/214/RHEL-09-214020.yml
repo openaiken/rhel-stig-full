@@ -1,0 +1,32 @@
+---
+# RHEL-09-214020 | V-257821 | fix
+# RHEL 9 must check the GPG signature of locally installed software packages
+# before installation.
+# CAT I (High)
+#
+# Sets localpkg_gpgcheck=1 in [main] of /etc/dnf/dnf.conf, so dnf checks the
+# signature of local package files before installing them.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-214020 | fix
+  block:
+    - name: RHEL-09-214020 | check signatures of local packages
+      community.general.ini_file:
+        path: /etc/dnf/dnf.conf
+        section: main
+        option: localpkg_gpgcheck
+        value: '1'
+        no_extra_spaces: true
+      register: _214020_fix
+
+    - name: RHEL-09-214020 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-214020'] }}"
+      when: (_214020_fix is changed)
+  rescue:
+    - name: RHEL-09-214020 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-214020': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-214020'] }}"

@@ -1,0 +1,70 @@
+---
+# RHEL-09-611115 | V-258112
+# RHEL 9 must require the change of at least eight characters when passwords
+# are changed.
+# CAT II (Medium) | CCI-004066, CCI-000195
+
+# The DISA Ansible role checks for its own line in one specific file, so a host
+# configured equivalently elsewhere (a drop-in, other spacing or case) was
+# reported open while compliant.
+# The DISA Ansible role also enforces one exact value, but the STIG sets a limit
+# ("X or more", "X or less", one of a set); a stricter value was reported open.
+# The files are read as the consuming library reads them (drop-ins where it
+# has them, comments ignored, last value wins) and compared as the STIG says.
+
+- name: RHEL-09-611115 | check pwquality difok
+  shell: |
+    shopt -s nullglob
+    # libpwquality reads pwquality.conf.d/*.conf first (sorted) and
+    # pwquality.conf last, later values overriding earlier ones, so the main
+    # file wins (man pwquality.conf; confirmed with pwscore). Reading them the
+    # other way round passed a drop-in minlen = 15 under a main-file minlen = 8.
+    files=(/etc/security/pwquality.conf.d/*.conf /etc/security/pwquality.conf)
+    isint() { [[ "$1" =~ ^-?[0-9]+$ ]]; }
+    val=$(awk -v k="difok" -v m="eq" '
+      { line = $0; sub(/#.*/, "", line) }
+      line ~ /^[[:space:]]*$/ { next }
+      m == "eq" && index(line, "=") {
+        kk = substr(line, 1, index(line, "=") - 1); gsub(/[[:space:]]/, "", kk)
+        if (tolower(kk) == tolower(k)) { v = substr(line, index(line, "=") + 1); gsub(/^[[:space:]]+|[[:space:]]+$/, "", v); f = 1 }
+      }
+      m == "ws" { split(line, a, " "); if (tolower(a[1]) == tolower(k)) { v = a[2]; f = 1 } }
+      m == "flag" { t = line; gsub(/[[:space:]]/, "", t); if (tolower(t) == tolower(k)) { v = "set"; f = 1 } }
+      END { if (f) print v }' "${files[@]}" 2>/dev/null)
+    # pam_pwquality.so arguments override the configuration files
+    # (man pam_pwquality): a difok= on the PAM line is the value in effect.
+    # Two different values (system-auth vs password-auth) fail.
+    pamv=$(grep -hE '^[[:space:]]*password[[:space:]]+[^[:space:]]+[[:space:]]+pam_pwquality[.]so' /etc/pam.d/system-auth /etc/pam.d/password-auth 2>/dev/null \
+           | grep -oE '(^|[[:space:]])difok=[^[:space:]]+' | cut -d= -f2 | sort -u)
+    if [ -n "$pamv" ]; then
+      echo "pam_pwquality.so argument overrides the configuration: difok=$(echo $pamv)"
+      [ "$(echo "$pamv" | wc -l)" -eq 1 ] && val=$pamv || val=conflicting
+    fi
+    echo "difok (effective, last uncommented occurrence): ${val:-(not set)}"
+    echo "lines: $(grep -Hi 'difok' "${files[@]}" 2>/dev/null | grep -vE ':[[:space:]]*#' | tr '\n' ' ')"
+    if isint "$val" && [ "$val" -ge 8 ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: difok must be 8 or more"
+    fi
+  register: _611115_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-611115 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-611115': {
+        'status':
+          'not_a_finding' if _611115_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _611115_result.stdout | trim,
+        'comments':
+          'Set difok = 8 in /etc/security/pwquality.conf (read last, so it overrides conf.d).'
+      }
+    }) }}"
+  tags: [validate]

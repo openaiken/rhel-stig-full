@@ -1,0 +1,26 @@
+---
+# RHEL-09-215095 | V-257842 | fix
+# RHEL 9 must have the s-nail package installed.
+# CAT II (Medium)
+#
+# Installs s-nail.
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-215095 | fix
+  block:
+    - name: RHEL-09-215095 | install s-nail
+      ansible.builtin.dnf:
+        name: s-nail
+        state: present
+      register: _215095_fix
+
+    - name: RHEL-09-215095 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-215095'] }}"
+      when: (_215095_fix is changed)
+  rescue:
+    - name: RHEL-09-215095 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-215095': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-215095'] }}"

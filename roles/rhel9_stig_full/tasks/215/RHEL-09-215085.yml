@@ -1,0 +1,38 @@
+---
+# RHEL-09-215085 | V-257840
+# RHEL 9 must have the nss-tools package installed.
+# CAT II (Medium) | CCI-000366
+
+# Checked directly, as the STIG command does. (The DISA Ansible role's check
+# mode only says whether one of its tasks would change something.)
+
+- name: RHEL-09-215085 | check nss-tools is installed
+  shell: |
+    if rpm -q --quiet nss-tools; then state=installed; else state="not installed"; fi
+    echo "nss-tools: $state ($(rpm -q nss-tools 2>&1 | head -1))"
+    if [ "$state" = "installed" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: nss-tools must be installed"
+    fi
+  register: _215085_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-215085 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-215085': {
+        'status':
+          'not_a_finding' if _215085_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _215085_result.stdout | trim,
+        'comments':
+          'Install the package: sudo dnf install nss-tools'
+      }
+    }) }}"
+  tags: [validate]

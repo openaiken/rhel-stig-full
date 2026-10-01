@@ -1,0 +1,54 @@
+---
+# RHEL-09-213115 | V-257818 | fix
+# The kdump service on RHEL 9 must be disabled.
+# CAT II (Medium)
+#
+# Stops, disables and masks kdump.service, as the STIG fix does. Crash dumps
+# are no longer captured. An existing /etc/systemd/system/kdump.service that
+# is not a link to /dev/null (an admin override, which makes systemctl mask
+# refuse) is removed first; the fix then confirms LoadState=masked, since the
+# systemd module has reported success when the mask was refused.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-213115 | fix
+  block:
+    - name: RHEL-09-213115 | look for an override of kdump.service in /etc/systemd/system
+      ansible.builtin.stat:
+        path: /etc/systemd/system/kdump.service
+      register: _213115_ovr
+
+    - name: RHEL-09-213115 | remove the override, which blocks masking
+      ansible.builtin.file:
+        path: /etc/systemd/system/kdump.service
+        state: absent
+      register: _213115_rm
+      when: _213115_ovr.stat.exists and (_213115_ovr.stat.lnk_source | default('')) != '/dev/null'
+
+    - name: RHEL-09-213115 | mask kdump.service
+      ansible.builtin.systemd_service:
+        name: kdump.service
+        masked: true
+        enabled: false
+        state: stopped
+        daemon_reload: true
+      register: _213115_fix
+
+    - name: RHEL-09-213115 | confirm kdump.service is masked
+      ansible.builtin.command: systemctl show -p LoadState --value kdump.service
+      register: _213115_state
+      changed_when: false
+      failed_when: _213115_state.stdout | trim != 'masked'
+      check_mode: false
+      when: not ansible_check_mode
+
+    - name: RHEL-09-213115 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-213115'] }}"
+      when: (_213115_rm is changed) or (_213115_fix is changed)
+  rescue:
+    - name: RHEL-09-213115 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-213115': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-213115'] }}"

@@ -1,0 +1,38 @@
+---
+# RHEL-09-431025 | V-258081
+# RHEL 9 must have policycoreutils package installed.
+# CAT II (Medium) | CCI-001084
+
+# Checked directly, as the STIG command does. (The DISA Ansible role's check
+# mode only says whether one of its tasks would change something.)
+
+- name: RHEL-09-431025 | check policycoreutils is installed
+  shell: |
+    if rpm -q --quiet policycoreutils; then state=installed; else state="not installed"; fi
+    echo "policycoreutils: $state ($(rpm -q policycoreutils 2>&1 | head -1))"
+    if [ "$state" = "installed" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: policycoreutils must be installed"
+    fi
+  register: _431025_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-431025 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-431025': {
+        'status':
+          'not_a_finding' if _431025_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _431025_result.stdout | trim,
+        'comments':
+          'Install the package: sudo dnf install policycoreutils'
+      }
+    }) }}"
+  tags: [validate]

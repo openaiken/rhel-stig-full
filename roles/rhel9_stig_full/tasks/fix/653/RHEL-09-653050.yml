@@ -1,0 +1,35 @@
+---
+# RHEL-09-653050 | V-258159 | fix
+# RHEL 9 must take action when allocated audit record storage volume reaches
+# 95 percent of the repository maximum audit record storage capacity.
+# CAT II (Medium)
+#
+# Sets admin_space_left_action = single in /etc/audit/auditd.conf (replacing
+# the last admin_space_left_action line, the one in effect) and has auditd
+# reread its configuration. At that threshold auditd puts the system in
+# single-user mode, as the STIG requires.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-653050 | fix
+  block:
+    - name: RHEL-09-653050 | set admin_space_left_action
+      ansible.builtin.lineinfile:
+        path: /etc/audit/auditd.conf
+        regexp: '^[ \t]*admin_space_left_action[ \t]*='
+        line: 'admin_space_left_action = single'
+      register: _653050_fix
+    - name: RHEL-09-653050 | have auditd reread its configuration
+      ansible.builtin.command: auditctl --signal reload
+      when: _653050_fix is changed
+
+    - name: RHEL-09-653050 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-653050'] }}"
+      when: (_653050_fix is changed)
+  rescue:
+    - name: RHEL-09-653050 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-653050': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-653050'] }}"

@@ -1,0 +1,37 @@
+---
+# RHEL-09-255015 | V-257979 | fix
+# All RHEL 9 networked systems must have and implement SSH to protect the
+# confidentiality and integrity of transmitted and received information, as
+# well as information during preparation for transmission.
+# CAT II (Medium)
+#
+# Enables and starts sshd (installing openssh-server first if needed). Not run
+# when rhel9_attest_no_sshd documents the exception.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-255015 | fix
+  block:
+    - name: RHEL-09-255015 | install openssh-server
+      ansible.builtin.dnf:
+        name: openssh-server
+        state: present
+      register: _255015_pkg
+
+    - name: RHEL-09-255015 | enable and start sshd
+      ansible.builtin.systemd_service:
+        name: sshd
+        enabled: true
+        state: started
+      register: _255015_fix
+
+    - name: RHEL-09-255015 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-255015'] }}"
+      when: (_255015_pkg is changed) or (_255015_fix is changed)
+  rescue:
+    - name: RHEL-09-255015 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-255015': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-255015'] }}"

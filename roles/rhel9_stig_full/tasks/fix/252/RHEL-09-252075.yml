@@ -1,0 +1,36 @@
+---
+# RHEL-09-252075 | V-257956 | fix
+# There must be no .shosts files on RHEL 9.
+# CAT I (High)
+#
+# Deletes every .shosts file on local file systems (the check command, without
+# its 40-line limit).
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-252075 | fix
+  block:
+    - name: RHEL-09-252075 | find .shosts files
+      ansible.builtin.shell: df --local -P | awk 'NR > 1 { print $6 }' | xargs -I{} find {} -xdev -name .shosts 2>/dev/null || true
+      register: _252075_files
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-252075 | delete them
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop: "{{ _252075_files.stdout_lines }}"
+      register: _252075_fix
+
+    - name: RHEL-09-252075 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-252075'] }}"
+      when: (_252075_fix is changed)
+  rescue:
+    - name: RHEL-09-252075 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-252075': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-252075'] }}"

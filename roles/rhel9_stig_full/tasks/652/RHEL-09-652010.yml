@@ -1,0 +1,38 @@
+---
+# RHEL-09-652010 | V-258140
+# RHEL 9 must have the rsyslog package installed.
+# CAT II (Medium) | CCI-000154, CCI-001851
+
+# Checked directly, as the STIG command does. (The DISA Ansible role's check
+# mode only says whether one of its tasks would change something.)
+
+- name: RHEL-09-652010 | check rsyslog is installed
+  shell: |
+    if rpm -q --quiet rsyslog; then state=installed; else state="not installed"; fi
+    echo "rsyslog: $state ($(rpm -q rsyslog 2>&1 | head -1))"
+    if [ "$state" = "installed" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: rsyslog must be installed"
+    fi
+  register: _652010_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-652010 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-652010': {
+        'status':
+          'not_a_finding' if _652010_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _652010_result.stdout | trim,
+        'comments':
+          'Install the package: sudo dnf install rsyslog'
+      }
+    }) }}"
+  tags: [validate]

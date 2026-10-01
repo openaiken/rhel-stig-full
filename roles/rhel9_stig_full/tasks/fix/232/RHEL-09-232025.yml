@@ -1,0 +1,33 @@
+---
+# RHEL-09-232025 | V-257885 | fix
+# RHEL 9 /var/log directory must have mode 0755 or less permissive.
+# CAT II (Medium)
+#
+# Sets mode 'u-s,g-sw,o-tw' on /var/log (removes only the bits 0755 forbids,
+# so a stricter mode is kept); skipped if the file does not exist.
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-232025 | fix
+  block:
+    - name: RHEL-09-232025 | look for /var/log
+      ansible.builtin.stat:
+        path: /var/log
+      register: _232025_stat
+
+    - name: RHEL-09-232025 | set mode 'u-s,g-sw,o-tw' on /var/log
+      ansible.builtin.file:
+        path: /var/log
+        mode: 'u-s,g-sw,o-tw'
+      when: _232025_stat.stat.exists
+      register: _232025_fix
+
+    - name: RHEL-09-232025 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232025'] }}"
+      when: (_232025_fix is changed)
+  rescue:
+    - name: RHEL-09-232025 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-232025': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232025'] }}"

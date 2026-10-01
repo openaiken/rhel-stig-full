@@ -1,0 +1,57 @@
+---
+# RHEL-09-255085 | V-257993
+# RHEL 9 must not allow users to override SSH environment variables.
+# CAT II (Medium) | CCI-000366
+
+# The DISA Ansible role manages this setting only where openssh-server is installed,
+# so on a host without it the rule had no result and rendered not_reviewed.
+# Without openssh-server this is not applicable (RHEL-09-255010 reports the
+# missing package). Otherwise both STIG conditions must hold: the effective
+# value (sshd -T) is compliant, and the keyword is set, uncommented, in
+# sshd_config or a file it Includes; the STIG makes a missing line a finding
+# even where the sshd default would comply. Unverifiable is open.
+
+- name: RHEL-09-255085 | check sshd permituserenvironment (effective and configured)
+  shell: |
+    rpm -q openssh-server &>/dev/null || { echo "NA: openssh-server not installed"; exit 0; }
+    # sshd_config plus the files its Include lines name (relative to /etc/ssh)
+    files=/etc/ssh/sshd_config
+    while read -r pat; do
+      case "$pat" in /*) ;; *) pat="/etc/ssh/$pat" ;; esac
+      for f in $pat; do [ -f "$f" ] && files="$files $f"; done
+    done < <(awk 'tolower($1) == "include" {for (i = 2; i <= NF; i++) print $i}' /etc/ssh/sshd_config 2>/dev/null)
+    conf=$(grep -iHE '^[[:space:]]*permituserenvironment([[:space:]]|=)' $files 2>/dev/null)
+    val_raw=$(sshd -T 2>/dev/null | awk '$1 == "permituserenvironment" {$1 = ""; sub(/^ /, ""); print; exit}')
+    val=${val_raw,,}
+    echo "EFFECTIVE (sshd -T): permituserenvironment ${val_raw:-(unavailable)}"
+    echo "CONFIGURED: ${conf:-(not set in any sshd config file)}"
+    if [ -z "$conf" ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: permituserenvironment is not set in sshd_config or an included file"
+    elif [ -n "$val" ] && [ "$val" = "no" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: permituserenvironment must be no"
+    fi
+  register: _255085_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-255085 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-255085': {
+        'status':
+          'not_applicable' if _255085_result.stdout is search('^NA:', multiline=True)
+          else ('not_a_finding' if _255085_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open'),
+        'finding_details':
+          _255085_result.stdout | trim,
+        'comments':
+          'Required: permituserenvironment no. Set it in /etc/ssh/sshd_config or an included .conf file, then restart sshd.'
+      }
+    }) }}"
+  tags: [validate]

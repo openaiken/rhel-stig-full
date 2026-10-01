@@ -1,0 +1,68 @@
+---
+# RHEL-09-654275 | V-258229 | fix
+# RHEL 9 audit system must protect auditing rules from unauthorized change.
+# CAT II (Medium)
+#
+# Writes -e 2 to /etc/audit/rules.d/zz-rhel9-stig-full-immutable.rules,
+# sorting after every other rules file so it is the last rule in
+# /etc/audit/audit.rules (what the check reads), and loads it. From then on
+# the loaded audit rules cannot change until reboot: a later run that adds
+# audit rules records that they load at the next boot. Within one run this fix
+# comes after every other audit rule fix (fixes run in STIG ID order).
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-654275 | fix
+  block:
+    - name: RHEL-09-654275 | write -e 2
+      ansible.builtin.copy:
+        dest: /etc/audit/rules.d/zz-rhel9-stig-full-immutable.rules
+        content: |
+          ## Managed by rhel9_stig_full (RHEL-09-654275)
+          -e 2
+        owner: root
+        group: root
+        mode: '0600'
+      register: _654275_fix
+
+    - name: RHEL-09-654275 | read the audit status
+      ansible.builtin.command: auditctl -s
+      register: _654275_status
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-654275 | stop if the loaded rules are immutable
+      ansible.builtin.fail:
+        msg: "/etc/audit/rules.d/zz-rhel9-stig-full-immutable.rules is in place, but the loaded audit rules are immutable (-e 2); it loads at the next boot"
+      when: _654275_fix is changed and not ansible_check_mode and _654275_status.stdout is search('(?m)^enabled 2$')
+
+    - name: RHEL-09-654275 | note the mode of /etc/audit/audit.rules
+      ansible.builtin.stat:
+        path: /etc/audit/audit.rules
+      register: _654275_rmode
+
+    - name: RHEL-09-654275 | load the audit rules
+      ansible.builtin.command: augenrules --load
+      register: _654275_load
+      failed_when: _654275_load.rc != 0 or _654275_load.stderr is search('(?i)error')
+      when: _654275_fix is changed
+
+    # augenrules always leaves audit.rules at 0640; keep the mode it had
+    # (RHEL-09-653110 requires 0600)
+    - name: RHEL-09-654275 | restore the mode of /etc/audit/audit.rules
+      ansible.builtin.file:
+        path: /etc/audit/audit.rules
+        mode: "{{ _654275_rmode.stat.mode }}"
+      when: _654275_load is not skipped and _654275_rmode.stat.exists | default(false)
+
+    - name: RHEL-09-654275 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-654275'] }}"
+      when: (_654275_fix is changed)
+  rescue:
+    - name: RHEL-09-654275 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-654275': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-654275'] }}"

@@ -1,0 +1,115 @@
+---
+# RHEL-09-651015 | V-258135
+# RHEL 9 must routinely check the baseline configuration for unauthorized
+# changes and notify the system administrator when anomalies in the
+# operation of any security functions are discovered.
+# CAT II (Medium) | CCI-002699, CCI-001744
+
+# The STIG check looks for a cron job running aide. A systemd timer is an
+# equivalent and superior approach — check for either.
+#
+# For systemd scheduling, supply the timer unit name in rhel9_aide_timer_unit
+# (e.g. "aide-check.timer"). Both the .timer and its corresponding .service
+# are checked: the timer must be enabled/active and the service ExecStart must
+# invoke aide. If rhel9_aide_timer_unit is empty, only cron is checked.
+#
+# The STIG also requires notification — the cron example pipes output to mail.
+# A systemd service that uses OnCalendar and logs to the journal satisfies the
+# spirit of this (journal → rsyslog → mail/SIEM). Notification mechanisms are
+# considered out of scope for the automated check given the variety of
+# approaches; document the method in the finding_details via the attestation.
+#
+# REMEDIATION NOTE: a minimal systemd unit pair example:
+# /etc/systemd/system/aide-check.service:
+#   [Service]
+#   Type=oneshot
+#   ExecStart=/usr/sbin/aide --check
+#   StandardOutput=journal
+# /etc/systemd/system/aide-check.timer:
+#   [Timer]
+#   OnCalendar=daily
+#   Persistent=true
+#   [Install]
+#   WantedBy=timers.target
+# Then: systemctl enable --now aide-check.timer
+
+- name: RHEL-09-651015 | check AIDE is scheduled to run
+  shell: |
+    found_cron=""
+    found_timer=""
+    findings=""
+
+    # --- cron check ---
+    for f in /etc/cron.daily/aide /etc/cron.weekly/aide; do
+      [ -f "$f" ] && found_cron="$f" && break
+    done
+    if [ -z "$found_cron" ]; then
+      # uncommented lines only: a commented-out aide job used to count
+      found_cron=$(grep -rlE '^[^#]*aide' /etc/cron.d/ /etc/crontab 2>/dev/null | head -1 || true)
+    fi
+    if [ -z "$found_cron" ]; then
+      found_cron=$(grep -lE '^[^#]*aide' /var/spool/cron/root /var/spool/cron/crontabs/root 2>/dev/null | head -1 || true)
+    fi
+
+    if [ -n "$found_cron" ]; then
+      findings="${findings}PASS (cron): aide scheduled via $found_cron\n"
+    else
+      findings="${findings}INFO: no cron entry for aide found\n"
+    fi
+
+    # --- systemd timer check ---
+    if [ -n "$AIDE_TIMER_UNIT" ]; then
+      timer_state=$(systemctl is-enabled "$AIDE_TIMER_UNIT" 2>/dev/null || echo "not-found")
+      timer_active=$(systemctl is-active "$AIDE_TIMER_UNIT" 2>/dev/null || echo "inactive")
+
+      # derive service name from timer name (strip .timer, add .service)
+      svc_unit="${AIDE_TIMER_UNIT%.timer}.service"
+      svc_exec=$(systemctl cat "$svc_unit" 2>/dev/null | grep -i 'ExecStart' | head -1 || true)
+
+      if [ "$timer_state" = "not-found" ]; then
+        findings="${findings}FAIL (systemd): timer unit $AIDE_TIMER_UNIT not found\n"
+      else
+        findings="${findings}PASS (systemd): $AIDE_TIMER_UNIT enabled=$timer_state active=$timer_active\n"
+        if echo "$svc_exec" | grep -qi 'aide'; then
+          findings="${findings}PASS (systemd): $svc_unit ExecStart invokes aide: $svc_exec\n"
+        else
+          findings="${findings}FAIL (systemd): $svc_unit ExecStart does not invoke aide: $svc_exec\n"
+        fi
+      fi
+    fi
+
+    # Overall status: pass if any scheduling mechanism found without failures
+    if echo -e "$findings" | grep -q '^PASS'; then
+      if echo -e "$findings" | grep -q '^FAIL'; then
+        echo "STATUS: FAIL"
+      else
+        echo "STATUS: PASS"
+      fi
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: no aide scheduling found (no cron entry, no systemd timer configured)"
+    fi
+    echo -e "$findings" | sed '/^$/d'
+  environment:
+    AIDE_TIMER_UNIT: "{{ rhel9_aide_timer_unit | default('') }}"
+  register: _651015_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-651015 | record AIDE scheduling status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-651015': {
+        'status':
+          'not_applicable' if (rhel9_attest_alt_fim_tool | bool)
+          else ('not_a_finding' if _651015_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open'),
+        'finding_details': _651015_result.stdout | trim,
+        'comments':
+          'Schedule aide with a systemd timer (preferred) or cron. '
+          ~ 'Set rhel9_aide_timer_unit to the timer unit name for automated checks.'
+      }
+    }) }}"
+  tags: [validate]

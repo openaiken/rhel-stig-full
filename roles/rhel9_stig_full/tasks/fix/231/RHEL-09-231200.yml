@@ -1,0 +1,60 @@
+---
+# RHEL-09-231200 | V-257881 | fix
+# RHEL 9 must prevent special devices on non-root local partitions.
+# CAT II (Medium)
+#
+# For every /dev-backed file system mounted somewhere other than / without
+# nodev (the check command: mount | grep ^/dev\S* on /\S | grep -v nodev),
+# adds nodev to its /etc/fstab entry and remounts it with nodev. A mount with
+# no fstab entry is reported as a failure for a person.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-231200 | fix
+  block:
+    - name: RHEL-09-231200 | list non-root local file systems mounted without nodev
+      ansible.builtin.shell: mount | grep '^/dev\S* on /\S' | grep --invert-match nodev | awk '{ print $3 }' || true
+      register: _231200_targets
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-231200 | read their /etc/fstab entries
+      ansible.builtin.command: awk -v mp="{{ item }}" '$1 !~ /^#/ && $2 == mp' /etc/fstab
+      loop: "{{ _231200_targets.stdout_lines }}"
+      register: _231200_fstab
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-231200 | stop if one has no /etc/fstab entry
+      ansible.builtin.fail:
+        msg: "{{ item.item }} has no /etc/fstab entry; add nodev to whatever mounts it"
+      loop: "{{ _231200_fstab.results }}"
+      loop_control:
+        label: "{{ item.item }}"
+      when: item.stdout | trim == ''
+
+    - name: RHEL-09-231200 | add nodev to their /etc/fstab entries
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '^([ \t]*[^#\s]\S*\s+{{ item | regex_escape }}\s+\S+\s+)(?!(?:\S*,)?nodev(?:,|\s))(\S+)'
+        replace: '\g<1>\g<2>,nodev'
+      loop: "{{ _231200_targets.stdout_lines }}"
+      register: _231200_fix
+
+    - name: RHEL-09-231200 | remount them with nodev
+      ansible.builtin.command: mount -o remount,nodev {{ item }}
+      loop: "{{ _231200_targets.stdout_lines }}"
+      register: _231200_remount
+
+    - name: RHEL-09-231200 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-231200'] }}"
+      when: (_231200_fix is changed) or (_231200_remount is changed)
+  rescue:
+    - name: RHEL-09-231200 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-231200': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-231200'] }}"

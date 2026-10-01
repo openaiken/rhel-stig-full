@@ -1,0 +1,34 @@
+---
+# RHEL-09-653065 | V-258162 | fix
+# RHEL 9 must take appropriate action when the internal event queue is full.
+# CAT II (Medium)
+#
+# Sets overflow_action = SYSLOG (the STIG fix value) in
+# /etc/audit/auditd.conf, replacing the last overflow_action line (the one in
+# effect), and has auditd reread its configuration.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-653065 | fix
+  block:
+    - name: RHEL-09-653065 | set overflow_action
+      ansible.builtin.lineinfile:
+        path: /etc/audit/auditd.conf
+        regexp: '^[ \t]*overflow_action[ \t]*='
+        line: 'overflow_action = SYSLOG'
+      register: _653065_fix
+
+    - name: RHEL-09-653065 | have auditd reread its configuration
+      ansible.builtin.command: auditctl --signal reload
+      when: _653065_fix is changed
+
+    - name: RHEL-09-653065 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-653065'] }}"
+      when: (_653065_fix is changed)
+  rescue:
+    - name: RHEL-09-653065 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-653065': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-653065'] }}"

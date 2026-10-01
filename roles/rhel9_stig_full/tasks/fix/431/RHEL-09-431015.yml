@@ -1,0 +1,41 @@
+---
+# RHEL-09-431015 | V-258079 | fix
+# RHEL 9 must enable the SELinux targeted policy.
+# CAT II (Medium)
+#
+# Sets SELINUXTYPE=targeted in /etc/selinux/config (ansible.posix.selinux,
+# keeping the current mode). A different loaded policy changes only at the
+# next reboot; the fix records that.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-431015 | fix
+  block:
+    - name: RHEL-09-431015 | read the current SELinux mode
+      ansible.builtin.command: getenforce
+      register: _431015_mode
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-431015 | set the targeted policy
+      ansible.posix.selinux:
+        policy: targeted
+        state: "{{ (_431015_mode.stdout | trim | lower) if (_431015_mode.stdout | trim | lower) in ['enforcing', 'permissive', 'disabled'] else 'enforcing' }}"
+      register: _431015_fix
+
+    - name: RHEL-09-431015 | report that a reboot is required
+      ansible.builtin.fail:
+        msg: "SELINUXTYPE=targeted is set in /etc/selinux/config; the targeted policy loads at the next reboot"
+      when: _431015_fix.reboot_required | default(false) and not ansible_check_mode
+
+    - name: RHEL-09-431015 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-431015'] }}"
+      when: (_431015_fix is changed)
+  rescue:
+    - name: RHEL-09-431015 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-431015': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-431015'] }}"

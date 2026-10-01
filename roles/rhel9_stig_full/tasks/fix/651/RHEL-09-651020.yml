@@ -1,0 +1,39 @@
+---
+# RHEL-09-651020 | V-258136 | fix
+# RHEL 9 must use a file integrity tool that is configured to use FIPS
+# 140-3-approved cryptographic hashes for validating file contents and
+# directories.
+# CAT II (Medium)
+#
+# Appends +sha512 to the rule of every uncommented selection line in
+# /etc/aide.conf (lines starting with / or =/) whose rule does not already add
+# sha512 (an earlier -sha512, as in LOG-xattrs-n, does not count), as the STIG
+# fix says (sha512 on all uncommented selection lists). Appending last means a
+# macro that removes it (e.g. LOG-...) cannot win. Exclusion lines (!/path)
+# carry no rule and are left alone. The AIDE database is not rebuilt here.
+#
+# Review: this widens what AIDE records for every selection, logs included;
+# the STIG suggests excluding frequently changing files, which is a site
+# decision.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-651020 | fix
+  block:
+    - name: RHEL-09-651020 | add sha512 to every selection line that lacks it
+      ansible.builtin.replace:
+        path: /etc/aide.conf
+        regexp: '^([ \t]*=?/[^ \t#\n]*[ \t]+)(?!(?:sha512\b|[^ \t#\n]*\+sha512\b)(?![^ \t#\n]*-sha512\b))([^ \t#\n]+)([ \t]*(?:#[^\n]*)?)$'
+        replace: '\g<1>\g<2>+sha512\g<3>'
+      register: _651020_fix
+
+    - name: RHEL-09-651020 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-651020'] }}"
+      when: (_651020_fix is changed)
+  rescue:
+    - name: RHEL-09-651020 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-651020': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-651020'] }}"

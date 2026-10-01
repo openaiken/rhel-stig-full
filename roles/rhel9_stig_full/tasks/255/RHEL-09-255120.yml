@@ -1,0 +1,48 @@
+---
+# RHEL-09-255120 | V-258000
+# RHEL 9 SSH private host key files must have mode 0600 or less permissive.
+# CAT II (Medium) | CCI-000366
+
+# "0600 or less permissive" means no permission bits outside owner read/write.
+# Test that with a bitmask, not a numeric compare of the octal digit string: a
+# string compare misses any mode whose owner digit is 0, so 0004 (world-readable
+# private key) would score 4, fall under a 600 threshold, and pass as compliant.
+# 8#NNN is bash base-8 notation; mask 0177 clears the allowed owner-rw bits.
+
+- name: RHEL-09-255120 | check SSH private host key modes
+  shell: |
+    for f in /etc/ssh/*_key; do
+      [ -e "$f" ] || continue
+      mode=$(stat -c '%a' "$f" 2>/dev/null) || continue
+      if [ $(( 8#$mode & 8#177 )) -ne 0 ]; then
+        echo "OVER_LIMIT: $mode $f"
+      fi
+    done
+  register: _255120_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-255120 | collect all private key modes for context
+  shell: stat -c "%a %n" /etc/ssh/*_key 2>/dev/null || true
+  register: _255120_all
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-255120 | record SSH private key mode status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-255120': {
+        'status': 'not_a_finding' if not (_255120_result.stdout | trim) else 'open',
+        'finding_details':
+          'Private key modes (mode filename):\n'
+          ~ (_255120_all.stdout | trim if _255120_all.stdout | trim else '(no private keys found)')
+          ~ '\nKeys more permissive than 0600:\n'
+          ~ (_255120_result.stdout | trim if _255120_result.stdout | trim else '(none)'),
+        'comments': 'Set mode: sudo chmod 0600 /etc/ssh/*_key && sudo systemctl restart sshd'
+      }
+    }) }}"
+  tags: [validate]

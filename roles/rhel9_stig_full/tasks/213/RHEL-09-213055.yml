@@ -1,0 +1,54 @@
+---
+# RHEL-09-213055 | V-257806
+# RHEL 9 must be configured to disable the FireWire kernel module.
+# CAT II (Medium) | CCI-000381
+
+# The DISA Ansible role checks for its own line in one specific file, so a host
+# configured equivalently elsewhere (a drop-in, other spacing or case) was
+# reported open while compliant.
+# Both lines the STIG shows are required, uncommented, in any file it lists
+# (install <module> /bin/false, and blacklist <module>); the module name is
+# matched as a whole word. /bin/true is accepted as well: either prevents
+# loading. A use documented with the ISSO is accepted
+# (rhel9_attest_documented_exceptions).
+
+- name: RHEL-09-213055 | check firewire-core module is disabled
+  shell: |
+    # The effective configuration, as modprobe reads it: only *.conf files in
+    # /etc/modprobe.d (and /run, /usr/lib) count. Grepping /etc/modprobe.d/*,
+    # as the STIG command does, also matched a renamed firewire-core.conf.bak that
+    # modprobe ignores, so the module still loaded while this passed.
+    # modprobe prints - in module names as _, so both spellings match.
+    lines=$(modprobe --showconfig 2>/dev/null | grep -E '^(install|blacklist)[[:space:]]+firewire[-_]core([[:space:]]|$)')
+    echo "modprobe lines for firewire-core: $(echo "$lines" | tr '\n' ' ')"
+    inst=$(echo "$lines" | grep -E '^[[:space:]]*install[[:space:]]+firewire[-_]core[[:space:]]+/(usr/)?bin/(false|true)[[:space:]]*$')
+    bl=$(echo "$lines" | grep -E '^[[:space:]]*blacklist[[:space:]]+firewire[-_]core[[:space:]]*$')
+    if [ -n "$inst" ] && [ -n "$bl" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: both install firewire-core /bin/false and blacklist firewire-core are required"
+    fi
+  register: _213055_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-213055 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-213055': {
+        'status':
+          'not_a_finding' if _213055_result.stdout is search('^STATUS: PASS', multiline=True)
+          else ('not_a_finding' if (rhel9_attest_documented_exceptions | default({})).get('RHEL-09-213055')
+          else 'open'),
+        'finding_details':
+          _213055_result.stdout | trim
+          ~ '\nDocumented exception (rhel9_attest_documented_exceptions): '
+          ~ ((rhel9_attest_documented_exceptions | default({})).get('RHEL-09-213055') or '(none)'),
+        'comments':
+          'Add install firewire-core /bin/false and blacklist firewire-core to a file in /etc/modprobe.d/.'
+      }
+    }) }}"
+  tags: [validate]

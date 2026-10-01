@@ -1,0 +1,32 @@
+---
+# RHEL-09-232125 | V-257905 | fix
+# RHEL 9 /etc/gshadow- file must be group-owned by root.
+# CAT II (Medium)
+#
+# Sets group root on /etc/gshadow-; skipped if the file does not exist.
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-232125 | fix
+  block:
+    - name: RHEL-09-232125 | look for /etc/gshadow-
+      ansible.builtin.stat:
+        path: /etc/gshadow-
+      register: _232125_stat
+
+    - name: RHEL-09-232125 | set group root on /etc/gshadow-
+      ansible.builtin.file:
+        path: /etc/gshadow-
+        group: root
+      when: _232125_stat.stat.exists
+      register: _232125_fix
+
+    - name: RHEL-09-232125 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232125'] }}"
+      when: (_232125_fix is changed)
+  rescue:
+    - name: RHEL-09-232125 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-232125': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232125'] }}"

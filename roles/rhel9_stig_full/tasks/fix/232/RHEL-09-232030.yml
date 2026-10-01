@@ -1,0 +1,34 @@
+---
+# RHEL-09-232030 | V-257886 | fix
+# RHEL 9 /var/log/messages file must have mode 0640 or less permissive.
+# CAT II (Medium)
+#
+# Sets mode 'u-sx,g-swx,o-trwx' on /var/log/messages (removes only the bits
+# 0640 forbids, so a stricter mode is kept); skipped if the file does not
+# exist.
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-232030 | fix
+  block:
+    - name: RHEL-09-232030 | look for /var/log/messages
+      ansible.builtin.stat:
+        path: /var/log/messages
+      register: _232030_stat
+
+    - name: RHEL-09-232030 | set mode 'u-sx,g-swx,o-trwx' on /var/log/messages
+      ansible.builtin.file:
+        path: /var/log/messages
+        mode: 'u-sx,g-swx,o-trwx'
+      when: _232030_stat.stat.exists
+      register: _232030_fix
+
+    - name: RHEL-09-232030 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232030'] }}"
+      when: (_232030_fix is changed)
+  rescue:
+    - name: RHEL-09-232030 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-232030': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232030'] }}"

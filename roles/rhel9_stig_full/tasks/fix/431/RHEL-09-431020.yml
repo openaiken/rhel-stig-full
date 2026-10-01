@@ -1,0 +1,47 @@
+---
+# RHEL-09-431020 | V-258080 | fix
+# RHEL 9 must configure SELinux context type to allow the use of a nondefault
+# faillock tally directory.
+# CAT II (Medium)
+#
+# Labels the faillock tally directory named by dir in
+# /etc/security/faillock.conf faillog_t (semanage fcontext, then restorecon),
+# as the STIG fix does.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-431020 | fix
+  block:
+    - name: RHEL-09-431020 | read the faillock tally directory
+      ansible.builtin.shell: awk -F= '$1 ~ /^[[:space:]]*dir[[:space:]]*$/ { v = $2 } END { gsub(/[[:space:]]/, "", v); print v }' /etc/security/faillock.conf
+      register: _431020_dir
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-431020 | stop if no tally directory is configured
+      ansible.builtin.fail:
+        msg: "no dir is set in /etc/security/faillock.conf (RHEL-09-411105 sets it)"
+      when: _431020_dir.stdout | trim == ''
+
+    - name: RHEL-09-431020 | label the tally directory faillog_t
+      community.general.sefcontext:
+        target: "{{ _431020_dir.stdout | trim }}(/.*)?"
+        setype: faillog_t
+        state: present
+      register: _431020_fix
+
+    - name: RHEL-09-431020 | apply the file context
+      ansible.builtin.command: restorecon -RF "{{ _431020_dir.stdout | trim }}"
+      register: _431020_restore
+
+    - name: RHEL-09-431020 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-431020'] }}"
+      when: (_431020_fix is changed) or (_431020_restore is changed)
+  rescue:
+    - name: RHEL-09-431020 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-431020': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-431020'] }}"

@@ -1,0 +1,47 @@
+---
+# RHEL-09-211010 | V-257777
+# RHEL 9 must be a vendor-supported release.
+# CAT I (High) | CCI-000366
+
+- name: RHEL-09-211010 | get installed RHEL minor version
+  command: rpm -q --queryformat '%{VERSION}' redhat-release
+  register: _rhel_version
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-211010 | resolve EOL date and today
+  set_fact:
+    _211010_eol: "{{ rhel9_eol_dates[_rhel_version.stdout] | default('') }}"
+    _211010_today: "{{ now().strftime('%Y-%m-%d') }}"
+  tags: [validate]
+
+- name: RHEL-09-211010 | record vendor support status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-211010': {
+        'status':
+          'open' if (_rhel_version.stdout | trim) == ''
+          else ('open' if (_211010_eol != '' and _211010_today > _211010_eol)
+                else 'not_a_finding'),
+        'finding_details':
+          'Installed: RHEL ' ~ _rhel_version.stdout
+          ~ '\nEOL date:  ' ~ (_211010_eol if _211010_eol else 'not set (assumed current release)')
+          ~ '\nChecked:   ' ~ _211010_today
+          ~ '\nResult:    ' ~ (
+              'UNDETERMINED - could not read redhat-release version'
+              if (_rhel_version.stdout | trim) == ''
+              else ('EXPIRED - upgrade required'
+                    if (_211010_eol != '' and _211010_today > _211010_eol)
+                    else 'within vendor support window')),
+        'comments':
+          'Date-based check using rhel9_eol_dates in '
+          ~ 'roles/rhel9_stig_supplement/defaults/main.yml. '
+          ~ 'Versions not listed are assumed current, but a version that cannot be '
+          ~ 'read at all is an open finding rather than a pass. '
+          ~ 'Update EOL dates as Red Hat publishes lifecycle changes. '
+          ~ 'Ref: https://access.redhat.com/support/policy/updates/errata'
+      }
+    }) }}"
+  tags: [validate]

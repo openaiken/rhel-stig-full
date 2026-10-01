@@ -1,0 +1,49 @@
+---
+# Per-run results (one JSON file per host and run) and rendered checklists.
+stig_facts_dir: "{{ playbook_dir }}/reports/results"
+cklb_output_dir: "{{ playbook_dir }}/reports"
+cklb_template_path: "{{ playbook_dir }}/files/empty-checklist-rhel9v2r9.cklb"
+# Results are merged per rule across a host's result files, newest winning.
+# Ignore result files older than this many days, so a rule is not reported
+# from a scan months old. A rule with no result inside the window renders as
+# not_reviewed. 0 disables the limit. run.sh: --max-result-age DAYS
+cklb_max_result_age_days: 30
+
+# End-of-support dates per RHEL 9 minor version (security patch cutoff).
+# Uses the most generous applicable date (EUS/Enhanced EUS where available).
+# Versions not listed here are assumed current and still supported.
+# Update as Red Hat publishes lifecycle changes.
+# Ref: https://access.redhat.com/support/policy/updates/errata
+#
+#   9.0 - EUS ended 2024-05-31
+#   9.1 - standard only (odd); ended ~6mo after 9.2 GA (May 2023)
+#   9.2 - EUS ended 2025-05-31
+#   9.3 - standard only (odd); ended ~6mo after 9.4 GA (Apr 2024)
+#   9.4 - Enhanced EUS until 2028-04-30
+#   9.5 - standard only (odd); ended ~6mo after 9.6 GA (May 2025)
+#   9.6 - EUS until 2027-05-20 (2yr from GA)
+#   9.7 - standard only (odd); GA 2025-11-12, ~6mo after 9.8 GA (2026-05-20)
+#   9.8 - latest minor as of 2026-09-30 (GA 2026-05-20); EUS-eligible, but
+#         no published end date found yet, so no entry: assumed current.
+#         Add it, and 9.9+, once Red Hat publishes the dates.
+rhel9_eol_dates:
+  "9.0": "2024-05-31"
+  "9.1": "2023-11-30"
+  "9.2": "2025-05-31"
+  "9.3": "2024-10-31"
+  "9.4": "2028-04-30"
+  "9.5": "2025-11-30"
+  "9.6": "2027-05-20"
+  "9.7": "2026-11-30"
+
+# ── Remediation choices (tasks/fix/) ─────────────────────────────────────────
+# Where the STIG allows more than one compliant value, the fix applies the
+# STIG fix text's default. Override per host where the alternative is
+# documented with the ISSO.
+#
+# disk_error_action / disk_full_action (RHEL-09-653020/653025): HALT, or
+# SYSLOG / SINGLE where availability is an overriding concern.
+rhel9_fix_audit_failure_action: HALT
+# Audit failure flag -f (RHEL-09-654265): 2 (panic), or 1 (printk) where
+# availability is documented as an overriding concern.
+rhel9_fix_audit_failure_flag: 2

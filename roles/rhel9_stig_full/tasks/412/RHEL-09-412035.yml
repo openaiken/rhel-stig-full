@@ -1,0 +1,76 @@
+---
+# RHEL-09-412035 | V-258068
+# RHEL 9 must automatically exit interactive command shell user sessions after
+# 10 minutes of inactivity.
+# CAT II (Medium) | CCI-002361
+
+# TMOUT must be set to 600 or less AND declared readonly (-r) and exported (-x)
+# so that users cannot override it. The STIG check looks for "declare -xr TMOUT"
+# in /etc/profile.d/*.sh. A plain "TMOUT=600" without readonly is insufficient.
+
+- name: RHEL-09-412035 | check TMOUT readonly setting in profile.d
+  shell: |
+    # collect all TMOUT-related lines from global profile sources
+    findings=""
+    tmout_val=""
+    is_readonly=false
+
+    for f in /etc/profile /etc/profile.d/*.sh /etc/bashrc; do
+      [ -f "$f" ] || continue
+      while IFS= read -r line; do
+        [[ "$line" =~ ^[[:space:]]*# ]] && continue
+        [[ "${line^^}" =~ TMOUT ]] || continue
+        findings="${findings}FILE: ${f}: ${line}\n"
+        # extract numeric value whether set as declare -xr TMOUT=N or TMOUT=N
+        val=$(echo "$line" | grep -oP 'TMOUT=\K[0-9]+' | head -1)
+        [ -n "$val" ] && tmout_val="$val"
+        # check for readonly declaration
+        # typeset is a bash synonym for declare, so typeset -xr TMOUT=600 is
+        # readonly just as declare -xr is. Matching only declare reported a
+        # correctly hardened host as a finding.
+        if echo "$line" | grep -qP '(declare|typeset)\s+-\w*r\w*\s'; then
+          is_readonly=true
+        fi
+        if echo "$line" | grep -qP '^\s*readonly\s+TMOUT'; then
+          is_readonly=true
+        fi
+      done < "$f"
+    done
+
+    if [ -z "$tmout_val" ]; then
+      echo "STATUS: FAIL"
+      echo "RAW: TMOUT is not set in any global profile source"
+    elif [ "$tmout_val" -eq 0 ]; then
+      echo "STATUS: FAIL"
+      echo "RAW: TMOUT=0 disables the idle timeout"
+    elif [ "$tmout_val" -gt 600 ]; then
+      echo "STATUS: FAIL"
+      echo "RAW: TMOUT=$tmout_val (must be <= 600)"
+      $is_readonly || echo "RAW: TMOUT is not declared readonly"
+    elif ! $is_readonly; then
+      echo "STATUS: FAIL"
+      echo "RAW: TMOUT=$tmout_val but not declared readonly (users can override)"
+    else
+      echo "STATUS: PASS"
+      echo "RAW: TMOUT=$tmout_val (readonly)"
+    fi
+    # An if, not [ ] && ...: with no TMOUT lines the bare test was the last
+    # command, so the script exited 1 and aborted the play.
+    if [ -n "$findings" ]; then echo -e "$findings" | sed '/^$/d'; fi
+  register: _412035_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-412035 | record TMOUT setting status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-412035': {
+        'status': 'not_a_finding' if _412035_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
+        'finding_details': _412035_result.stdout | trim,
+        'comments':
+          'Create /etc/profile.d/tmout.sh containing: declare -xr TMOUT=600'
+      }
+    }) }}"
+  tags: [validate]

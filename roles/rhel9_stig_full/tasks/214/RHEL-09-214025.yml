@@ -1,0 +1,60 @@
+---
+# RHEL-09-214025 | V-257822
+# RHEL 9 must have GPG signature verification enabled for all software repositories.
+# CAT I (High) | CCI-001749
+#
+# Every repo section in every /etc/yum.repos.d/*.repo file must set gpgcheck
+# to an enabled value (1, true, yes; case-insensitive). A section with no
+# gpgcheck, or only a commented one, is a finding (the STIG says missing or
+# commented out). Parsed per [section], last occurrence wins as in dnf.
+# Previously a file-level grep: a commented gpgcheck=1 satisfied it, one repo
+# in a multi-repo file could lack the option unnoticed, and repo_gpgcheck
+# lines were misread as gpgcheck. A file with no sections (an unsubscribed
+# redhat.repo) defines no repos and is not a finding.
+
+- name: RHEL-09-214025 | check gpgcheck in every repo section
+  shell: |
+    # set -- and $# rather than an array length: a brace followed by a hash
+    # opens a Jinja comment, and Ansible then fails to parse the whole role.
+    shopt -s nullglob
+    set -- /etc/yum.repos.d/*.repo
+    echo "REPO FILES: $#"
+    [ $# -gt 0 ] && awk '
+      # fn: the file the open section came from; FILENAME has already moved on
+      # to the next file by the time its first line flushes the old section.
+      function flush() {
+        if (sec == "") return
+        nsec++
+        if (!(sec in val)) print "FAIL: " fn " [" sec "] gpgcheck missing"
+        else if (tolower(val[sec]) !~ /^(1|true|yes)$/) print "FAIL: " fn " [" sec "] gpgcheck=" val[sec]
+        else print "OK: " fn " [" sec "] gpgcheck=" val[sec]
+      }
+      FNR == 1 { flush(); sec = ""; delete val }
+      /^[[:space:]]*[#;]/ { next }
+      /^[[:space:]]*\[/ { flush(); fn = FILENAME; sec = $0; gsub(/^[[:space:]]*\[|\][[:space:]]*$/, "", sec); next }
+      sec != "" && /^[[:space:]]*gpgcheck[[:space:]]*=/ {
+        v = $0; sub(/^[^=]*=[[:space:]]*/, "", v); sub(/[[:space:]]+$/, "", v); val[sec] = v }
+      END { flush(); print "REPO SECTIONS: " nsec + 0 }' "$@"
+  register: _214025_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-214025 | record GPG repo check status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-214025': {
+        'status':
+          'not_a_finding'
+          if (_214025_result.stdout is search('^REPO FILES: ', multiline=True)
+              and 'FAIL:' not in _214025_result.stdout)
+          else 'open',
+        'finding_details': _214025_result.stdout | trim,
+        'comments':
+          'Set gpgcheck=1 in every repo section under /etc/yum.repos.d/. If an '
+          ~ 'unsigned local repository is required, document the organization '
+          ~ 'approved signature verification process with the ISSO.'
+      }
+    }) }}"
+  tags: [validate]

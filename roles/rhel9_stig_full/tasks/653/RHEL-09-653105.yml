@@ -1,0 +1,56 @@
+---
+# RHEL-09-653105 | V-258170
+# RHEL 9 must write audit records to disk.
+# CAT II (Medium) | CCI-000366
+
+# The DISA Ansible role checks for its own line in one specific file, so a host
+# configured equivalently elsewhere (a drop-in, other spacing or case) was
+# reported open while compliant.
+# The DISA Ansible role also enforces one exact value, but the STIG sets a limit
+# ("X or more", "X or less", one of a set); a stricter value was reported open.
+# The files are read as the consuming library reads them (drop-ins where it
+# has them, comments ignored, last value wins) and compared as the STIG says.
+
+- name: RHEL-09-653105 | check auditd write_logs
+  shell: |
+    shopt -s nullglob
+    files=(/etc/audit/auditd.conf)
+    isint() { [[ "$1" =~ ^-?[0-9]+$ ]]; }
+    val=$(awk -v k="write_logs" -v m="eq" '
+      { line = $0; sub(/#.*/, "", line) }
+      line ~ /^[[:space:]]*$/ { next }
+      m == "eq" && index(line, "=") {
+        kk = substr(line, 1, index(line, "=") - 1); gsub(/[[:space:]]/, "", kk)
+        if (tolower(kk) == tolower(k)) { v = substr(line, index(line, "=") + 1); gsub(/^[[:space:]]+|[[:space:]]+$/, "", v); f = 1 }
+      }
+      m == "ws" { split(line, a, " "); if (tolower(a[1]) == tolower(k)) { v = a[2]; f = 1 } }
+      m == "flag" { t = line; gsub(/[[:space:]]/, "", t); if (tolower(t) == tolower(k)) { v = "set"; f = 1 } }
+      END { if (f) print v }' "${files[@]}" 2>/dev/null)
+    echo "write_logs (effective, last uncommented occurrence): ${val:-(not set)}"
+    echo "lines: $(grep -Hi 'write_logs' "${files[@]}" 2>/dev/null | grep -vE ':[[:space:]]*#' | tr '\n' ' ')"
+    if [[ "${val,,}" =~ ^(yes)$ ]]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: write_logs must be yes"
+    fi
+  register: _653105_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-653105 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-653105': {
+        'status':
+          'not_a_finding' if _653105_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _653105_result.stdout | trim,
+        'comments':
+          'Set write_logs = yes in /etc/audit/auditd.conf.'
+      }
+    }) }}"
+  tags: [validate]

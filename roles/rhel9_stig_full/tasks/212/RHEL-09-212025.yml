@@ -1,0 +1,38 @@
+---
+# RHEL-09-212025 | V-257790
+# RHEL 9 /boot/grub2/grub.cfg file must be group-owned by root.
+# CAT II (Medium) | CCI-000366
+
+# Checked directly, as the STIG command does. (The DISA Ansible role's check
+# mode only says whether one of its tasks would change something.)
+
+- name: RHEL-09-212025 | check /boot/grub2/grub.cfg group owner
+  shell: |
+    val=$(stat -c '%G' /boot/grub2/grub.cfg 2>/dev/null)
+    echo "/boot/grub2/grub.cfg group owner: ${val:-(file not found)}"
+    if [ "$val" = "root" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: /boot/grub2/grub.cfg must exist with group owner root"
+    fi
+  register: _212025_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-212025 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-212025': {
+        'status':
+          'not_a_finding' if _212025_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _212025_result.stdout | trim,
+        'comments':
+          'sudo chgrp root /boot/grub2/grub.cfg'
+      }
+    }) }}"
+  tags: [validate]

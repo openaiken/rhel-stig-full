@@ -1,0 +1,46 @@
+---
+# RHEL-09-212045 | V-257794
+# RHEL 9 must clear memory when it is freed to prevent use-after-free attacks.
+# CAT II (Medium) | CCI-001084
+#
+# init_on_free=1 must appear in GRUB_CMDLINE_LINUX in /etc/default/grub.
+# This check follows the STIG method (grub default file, not grubby runtime).
+
+- name: RHEL-09-212045 | check init_on_free=1 in /etc/default/grub
+  # Uncommented GRUB_CMDLINE_LINUX= only: a plain grep also matched a
+  # commented-out line (which the STIG calls a finding) and _DEFAULT.
+  # /etc/default/grub is a shell file grub2-mkconfig sources: the last
+  # assignment wins, so print the sourced value, not every matching line.
+  shell: |
+    if [ -f /etc/default/grub ]; then
+      ( . /etc/default/grub >/dev/null 2>&1; printf 'GRUB_CMDLINE_LINUX="%s"\n' "$GRUB_CMDLINE_LINUX" )
+    fi
+  register: _212045_cmdline
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-212045 | record init_on_free status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-212045': {
+        'status':
+          'not_a_finding'
+          if (_212045_cmdline.stdout | default('')) is search('(?<![\\w.])init_on_free=1(?!\\w)')
+          else 'open',
+        'finding_details':
+          'GRUB_CMDLINE_LINUX: '
+          ~ (_212045_cmdline.stdout | default('') | trim
+             if _212045_cmdline.stdout | default('') | trim else '(not found)')
+          ~ '\nResult: '
+          ~ ('not_a_finding - init_on_free=1 present in GRUB_CMDLINE_LINUX'
+             if (_212045_cmdline.stdout | default('')) is search('(?<![\\w.])init_on_free=1(?!\\w)')
+             else 'OPEN - init_on_free=1 missing from GRUB_CMDLINE_LINUX in /etc/default/grub'),
+        'comments':
+          'To remediate: sudo grubby --update-kernel=ALL --args=init_on_free=1 && '
+          ~ 'add init_on_free=1 to GRUB_CMDLINE_LINUX in /etc/default/grub && '
+          ~ 'sudo grub2-mkconfig -o /boot/grub2/grub.cfg'
+      }
+    }) }}"
+  tags: [validate]

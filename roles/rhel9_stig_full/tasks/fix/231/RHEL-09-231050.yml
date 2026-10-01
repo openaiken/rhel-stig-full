@@ -1,0 +1,61 @@
+---
+# RHEL-09-231050 | V-257851 | fix
+# RHEL 9 must prevent files with the setuid and setgid bit set from being
+# executed on file systems that contain user home directories.
+# CAT II (Medium)
+#
+# Adds nosuid to the /etc/fstab entry for /home (keeping its other options)
+# and remounts it with nosuid; the check reads the live mount table. A host
+# where /home is not a separate file system, or is mounted by a systemd unit
+# rather than fstab, gets a recorded failure: that needs a person.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-231050 | fix
+  block:
+    - name: RHEL-09-231050 | read how /home is mounted
+      ansible.builtin.command: findmnt -rn -o OPTIONS --mountpoint /home
+      register: _231050_mnt
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-231050 | stop if /home is not a separate file system
+      ansible.builtin.fail:
+        msg: "/home is not a separate file system; that needs repartitioning, not a mount option"
+      when: _231050_mnt.rc != 0
+
+    - name: RHEL-09-231050 | read the /etc/fstab entry for /home
+      ansible.builtin.command: awk '$1 !~ /^#/ && $2 == "/home"' /etc/fstab
+      register: _231050_fstab
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-231050 | stop if /home has no /etc/fstab entry
+      ansible.builtin.fail:
+        msg: "/home has no /etc/fstab entry (mounted by a systemd unit?); add nosuid to the Options= of that unit"
+      when: _231050_fstab.stdout | trim == ''
+
+    - name: RHEL-09-231050 | add nosuid to the /etc/fstab entry for /home
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '^([ \t]*[^#\s]\S*\s+/home\s+\S+\s+)(?!(?:\S*,)?nosuid(?:,|\s))(\S+)'
+        replace: '\g<1>\g<2>,nosuid'
+      register: _231050_fix
+
+    - name: RHEL-09-231050 | remount /home with nosuid
+      ansible.builtin.command: mount -o remount,nosuid /home
+      register: _231050_remount
+      when: _231050_mnt.stdout is not search('(^|,)nosuid(,|$)')
+
+    - name: RHEL-09-231050 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-231050'] }}"
+      when: (_231050_fix is changed) or (_231050_remount is changed)
+  rescue:
+    - name: RHEL-09-231050 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-231050': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-231050'] }}"

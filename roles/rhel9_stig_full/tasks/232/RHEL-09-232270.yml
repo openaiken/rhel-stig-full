@@ -1,0 +1,38 @@
+---
+# RHEL-09-232270 | V-257934
+# RHEL 9 /etc/shadow file must have mode 0000 to prevent unauthorized access.
+# CAT II (Medium) | CCI-000366
+
+# Checked directly, as the STIG command does. (The DISA Ansible role's check
+# mode only says whether one of its tasks would change something.)
+
+- name: RHEL-09-232270 | check /etc/shadow mode 0000
+  shell: |
+    mode=$(stat -c '%a' /etc/shadow 2>/dev/null)
+    echo "/etc/shadow mode: ${mode:-(file not found)} (required 0)"
+    if [ "$mode" = "0" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: /etc/shadow must exist with mode 0000"
+    fi
+  register: _232270_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-232270 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-232270': {
+        'status':
+          'not_a_finding' if _232270_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _232270_result.stdout | trim,
+        'comments':
+          'sudo chmod 0000 /etc/shadow'
+      }
+    }) }}"
+  tags: [validate]

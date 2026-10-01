@@ -1,0 +1,41 @@
+---
+# RHEL-09-611175 | V-258124
+# RHEL 9 must have the pcsc-lite package installed.
+# CAT II (Medium) | CCI-004046, CCI-001948
+
+# Checked directly, as the STIG command does. (The DISA Ansible role's check
+# mode only says whether one of its tasks would change something.)
+# Not applicable with an approved alternate MFA method
+# (rhel9_attest_alt_mfa_no_pki).
+
+- name: RHEL-09-611175 | check pcsc-lite is installed
+  shell: |
+    if rpm -q --quiet pcsc-lite; then state=installed; else state="not installed"; fi
+    echo "pcsc-lite: $state ($(rpm -q pcsc-lite 2>&1 | head -1))"
+    if [ "$state" = "installed" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: pcsc-lite must be installed"
+    fi
+  register: _611175_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-611175 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-611175': {
+        'status':
+          'not_applicable' if (rhel9_attest_alt_mfa_no_pki | bool)
+          else 'not_a_finding' if _611175_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _611175_result.stdout | trim,
+        'comments':
+          'Install the package: sudo dnf install pcsc-lite'
+      }
+    }) }}"
+  tags: [validate]

@@ -1,0 +1,44 @@
+---
+# RHEL-09-412080 | V-258077 | fix
+# RHEL 9 must terminate idle user sessions.
+# CAT II (Medium)
+#
+# Writes StopIdleSessionSec=600 to a systemd-logind drop-in
+# (/etc/systemd/logind.conf.d/, name ending in .conf). systemd-logind reads it
+# at its next start (in practice, the next reboot); it is not restarted here
+# because that can end running graphical sessions.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-412080 | fix
+  block:
+    - name: RHEL-09-412080 | create the logind drop-in directory
+      ansible.builtin.file:
+        path: /etc/systemd/logind.conf.d
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: RHEL-09-412080 | set StopIdleSessionSec=600
+      ansible.builtin.copy:
+        dest: /etc/systemd/logind.conf.d/rhel9-stig-full-idle.conf
+        content: |
+          # Managed by rhel9_stig_full (RHEL-09-412080)
+          [Login]
+          StopIdleSessionSec=600
+        owner: root
+        group: root
+        mode: '0644'
+      register: _412080_fix
+
+    - name: RHEL-09-412080 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-412080'] }}"
+      when: (_412080_fix is changed)
+  rescue:
+    - name: RHEL-09-412080 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-412080': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-412080'] }}"

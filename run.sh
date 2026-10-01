@@ -9,9 +9,9 @@ export XML_PATH="$HOME/oss/rhel-stig-full/reports"
 # ── defaults ──────────────────────────────────────────────────────────────────
 TAG=""
 HOST="default_host_group"
-SKIP_FORMAL=false
 SKIP_SUPPLEMENT=false
 SKIP_CKLB=false
+AND_VALIDATE=false
 MAX_RESULT_AGE=
 VERBOSITY="-v"
 VAULT_MODE=""        # "file" or "prompt"
@@ -30,11 +30,12 @@ usage() {
 Usage: run.sh <validate|remediate> [OPTIONS] [-- ANSIBLE_ARGS]
 
 Modes (required):
-  validate    Dry-run: formal role runs in check mode, supplement runs
-              validation checks, CKLB checklist is generated.
-  remediate   Apply: formal role enforces STIG settings, supplement runs
-              remediation then validation. CKLB is NOT generated
-              (use validate after to produce a deliverable).
+  validate    Assess: every rule is checked (read-only) by the rhel9_stig_full
+              role and the CKLB checklist is generated.
+  remediate   Apply: every rule is checked and the open rules that
+              rhel9_stig_full can fix are fixed. Compliant, not-applicable and
+              attested rules are never changed. No checklist unless
+              --validate is given.
 
 Target:
   -H HOST_OR_GROUP, --host HOST_OR_GROUP
@@ -49,10 +50,14 @@ Auth (mutually exclusive — choose one):
                             file for the duration of the run); become
                             credentials are read from the vault
 
-Skip plays:
-  --skip-formal             Skip the rhel9STIG formal role play
-  --skip-supplement         Skip the supplement checks/remediation play
-  --skip-cklb               Skip the CKLB renderer (validate mode only)
+Stages:
+  --skip-supplement         validate: skip the checks (re-render from earlier
+                            results only)
+  --skip-cklb               validate, or remediate --validate: write results
+                            without rendering a checklist
+  --validate                remediate: then re-check the rules a fix changed
+                            and render the checklist (check, fix, re-check,
+                            render, in one run)
 
 Checklist:
   --max-result-age DAYS     Merge only result files from the last DAYS days
@@ -76,7 +81,8 @@ Examples:
   ./run.sh validate
   ./run.sh validate --host stigging-sandbox2
   ./run.sh remediate --host prod-servers --vault-pass-file ~/.vault_pass
-  ./run.sh validate --skip-formal -vvv
+  ./run.sh remediate --validate --host stigging-sandbox2
+  ./run.sh validate --skip-supplement     # re-render from earlier results
   ./run.sh validate --vault -- -e "extra_var=foo"
 EOF
   exit 0
@@ -95,11 +101,15 @@ while [[ $# -gt 0 ]]; do
     --host=*)
       HOST="${1#*=}"; shift ;;
     --skip-formal)
-      SKIP_FORMAL=true; shift ;;
+      # the DISA role it skipped has been removed; accepted so old
+      # invocations keep working
+      warn "--skip-formal is obsolete (the DISA role was removed) and is ignored"; shift ;;
     --skip-supplement)
       SKIP_SUPPLEMENT=true; shift ;;
     --skip-cklb)
       SKIP_CKLB=true; shift ;;
+    --validate)
+      AND_VALIDATE=true; shift ;;
     --max-result-age)
       [[ $# -lt 2 ]] && die "--max-result-age requires a number of days"
       [[ "$2" =~ ^[0-9]+$ ]] || die "--max-result-age takes a whole number of days, got: $2"
@@ -149,7 +159,8 @@ if [[ "$VAULT_MODE" == "prompt" ]]; then
   VAULT_FILE="$VAULT_TMPFILE"
 elif [[ -z "$VAULT_MODE" ]]; then
   # no vault — prompt for become password and write to a temp file
-  if [[ "$SKIP_FORMAL" == false || "$SKIP_SUPPLEMENT" == false ]]; then
+  # only the stage that touches hosts needs privilege
+  if [[ "$TAG" == "remediate" || "$SKIP_SUPPLEMENT" == false ]]; then
     read -rsp "BECOME password for $HOST: " _bp; echo
     BECOME_TMPFILE=$(mktemp)
     chmod 600 "$BECOME_TMPFILE"
@@ -195,22 +206,37 @@ run_play() {
   rm -f "$log"
 }
 
-if [[ "$SKIP_FORMAL" == false ]]; then
-  info "Formal role ($TAG) → $HOST"
-  run_play "Formal role" ./formal-role.yml --tags "$TAG" "${COMMON[@]}"
+# One playbook, selected by tag: remediate checks, fixes and (with --validate)
+# re-checks and renders; validate assesses every rule, then renders the
+# checklist.
+PLAY_ARGS=()
+if [[ "$TAG" == "remediate" ]]; then
+  PLAY_ARGS=(--tags remediate)
+  info "Remediate → $HOST"
+  if [[ "$AND_VALIDATE" == true ]]; then
+    PLAY_ARGS[1]+=",validate"
+    if [[ "$SKIP_CKLB" == true ]]; then
+      PLAY_ARGS+=(--skip-tags render)
+      info "  then re-check what changed (no checklist: --skip-cklb)"
+    else
+      info "  then re-check what changed and render the checklist"
+    fi
+  fi
+else
+  if [[ "$SKIP_SUPPLEMENT" == true && "$SKIP_CKLB" == true ]]; then
+    info "Nothing to do: validate with --skip-supplement and --skip-cklb"
+    exit 0
+  elif [[ "$SKIP_SUPPLEMENT" == true ]]; then
+    PLAY_ARGS=(--tags render)                       # re-render from earlier results
+    info "Render checklist from earlier results → $HOST"
+  else
+    PLAY_ARGS=(--tags validate)
+    [[ "$SKIP_CKLB" == true ]] && PLAY_ARGS+=(--skip-tags render)
+    info "Assess every rule$([[ "$SKIP_CKLB" == true ]] || echo ' and render the checklist') → $HOST"
+  fi
 fi
-
-if [[ "$SKIP_SUPPLEMENT" == false ]]; then
-  info "Supplement ($TAG) → $HOST"
-  run_play "Supplement" ./supplement.yml --tags "$TAG" "${COMMON[@]}"
-fi
-
-if [[ "$SKIP_CKLB" == false && "$TAG" == "validate" ]]; then
-  info "CKLB renderer → $HOST"
-  CKLB_ARGS=()
-  [[ -n "$MAX_RESULT_AGE" ]] && CKLB_ARGS+=(-e "cklb_max_result_age_days=$MAX_RESULT_AGE")
-  run_play "CKLB renderer" ./cklb.yml --tags validate "${COMMON[@]}" "${CKLB_ARGS[@]}"
-fi
+[[ -n "$MAX_RESULT_AGE" ]] && PLAY_ARGS+=(-e "cklb_max_result_age_days=$MAX_RESULT_AGE")
+run_play "$TAG" ./stig.yml "${PLAY_ARGS[@]}" "${COMMON[@]}"
 
 if [[ ${#SKIPPED_HOSTS[@]} -gt 0 ]]; then
   warn "not fully processed: $(printf '%s\n' "${SKIPPED_HOSTS[@]}" | sort -u | tr '\n' ' ')"

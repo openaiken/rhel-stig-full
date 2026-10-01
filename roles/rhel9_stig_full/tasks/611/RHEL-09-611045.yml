@@ -1,0 +1,39 @@
+---
+# RHEL-09-611045 | V-258098
+# RHEL 9 must ensure the password complexity module is enabled in the
+# system-auth file.
+# CAT II (Medium) | CCI-000366
+
+# Mirror of 611040 for system-auth.
+# REMEDIATION NOTE: same authselect guidance applies — check current profile
+# before manually editing system-auth.
+
+- name: RHEL-09-611045 | check pam_pwquality in system-auth
+  shell: |
+    found=$(grep -v '^\s*#' /etc/pam.d/system-auth 2>/dev/null \
+            | grep 'pam_pwquality\.so' || true)
+    if [ -n "$found" ]; then
+      echo "STATUS: PASS"
+      echo "PASS: $found"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: no active pam_pwquality.so line in /etc/pam.d/system-auth"
+    fi
+  register: _611045_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-611045 | record pam_pwquality system-auth status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-611045': {
+        'status': 'not_a_finding' if _611045_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
+        'finding_details': _611045_result.stdout | trim,
+        'comments':
+          'Add: password required pam_pwquality.so  to /etc/pam.d/system-auth  '
+          ~ '(prefer authselect profile update over direct file edit)'
+      }
+    }) }}"
+  tags: [validate]

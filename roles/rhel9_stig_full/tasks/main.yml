@@ -1,0 +1,1822 @@
+---
+- name: set run timestamp
+  set_fact:
+    # Four-digit year so it cannot be misread as a day; seconds so a
+    # tag-limited run in the same minute cannot overwrite a full run.
+    stig_run_ts: "{{ '%Y%b%d-%H:%M:%S' | strftime }}"
+  delegate_to: localhost
+  become: false
+  tags: always
+
+- name: initialize results accumulator
+  set_fact:
+    stig_facts: {}
+  tags: always
+
+- import_tasks: 211/RHEL-09-211010.yml
+  tags: [RHEL-09-211010, remediate]
+  when: stig_rules['RHEL-09-211010'] | default(true) | bool
+
+- import_tasks: 211/RHEL-09-211015.yml
+  tags: [RHEL-09-211015, remediate]
+  when: stig_rules['RHEL-09-211015'] | default(true) | bool
+
+- import_tasks: 211/RHEL-09-211020.yml
+  tags: [RHEL-09-211020, remediate]
+  when: stig_rules['RHEL-09-211020'] | default(true) | bool
+
+- import_tasks: 211/RHEL-09-211030.yml
+  tags: [RHEL-09-211030, remediate]
+  when: stig_rules['RHEL-09-211030'] | default(true) | bool
+
+- import_tasks: 211/RHEL-09-211035.yml
+  tags: [RHEL-09-211035, remediate]
+  when: stig_rules['RHEL-09-211035'] | default(true) | bool
+
+- import_tasks: 211/RHEL-09-211040.yml
+  tags: [RHEL-09-211040, remediate]
+  when: stig_rules['RHEL-09-211040'] | default(true) | bool
+
+- import_tasks: 211/RHEL-09-211045.yml
+  tags: [RHEL-09-211045, remediate]
+  when: stig_rules['RHEL-09-211045'] | default(true) | bool
+
+- import_tasks: 211/RHEL-09-211050.yml
+  tags: [RHEL-09-211050, remediate]
+  when: stig_rules['RHEL-09-211050'] | default(true) | bool
+
+- import_tasks: 211/RHEL-09-211055.yml
+  tags: [RHEL-09-211055, remediate]
+  when: stig_rules['RHEL-09-211055'] | default(true) | bool
+
+- import_tasks: 212/RHEL-09-212010.yml
+  tags: [RHEL-09-212010, remediate]
+  when: stig_rules['RHEL-09-212010'] | default(true) | bool
+
+- import_tasks: 212/RHEL-09-212015.yml
+  tags: [RHEL-09-212015, remediate]
+  when: stig_rules['RHEL-09-212015'] | default(true) | bool
+
+- import_tasks: 212/RHEL-09-212020.yml
+  tags: [RHEL-09-212020, remediate]
+  when: stig_rules['RHEL-09-212020'] | default(true) | bool
+
+- import_tasks: 212/RHEL-09-212025.yml
+  tags: [RHEL-09-212025, remediate]
+  when: stig_rules['RHEL-09-212025'] | default(true) | bool
+
+- import_tasks: 212/RHEL-09-212030.yml
+  tags: [RHEL-09-212030, remediate]
+  when: stig_rules['RHEL-09-212030'] | default(true) | bool
+
+- import_tasks: 212/RHEL-09-212035.yml
+  tags: [RHEL-09-212035, remediate]
+  when: stig_rules['RHEL-09-212035'] | default(true) | bool
+
+- import_tasks: 212/RHEL-09-212040.yml
+  tags: [RHEL-09-212040, remediate]
+  when: stig_rules['RHEL-09-212040'] | default(true) | bool
+
+- import_tasks: 212/RHEL-09-212045.yml
+  tags: [RHEL-09-212045, remediate]
+  when: stig_rules['RHEL-09-212045'] | default(true) | bool
+
+- import_tasks: 212/RHEL-09-212050.yml
+  tags: [RHEL-09-212050, remediate]
+  when: stig_rules['RHEL-09-212050'] | default(true) | bool
+
+- import_tasks: 212/RHEL-09-212055.yml
+  tags: [RHEL-09-212055, remediate]
+  when: stig_rules['RHEL-09-212055'] | default(true) | bool
+
+- import_tasks: 213/RHEL-09-213010.yml
+  tags: [RHEL-09-213010, remediate]
+  when: stig_rules['RHEL-09-213010'] | default(true) | bool
+
+- import_tasks: 213/RHEL-09-213015.yml
+  tags: [RHEL-09-213015, remediate]
+  when: stig_rules['RHEL-09-213015'] | default(true) | bool
+
+- import_tasks: 213/RHEL-09-213020.yml
+  tags: [RHEL-09-213020, remediate]
+  when: stig_rules['RHEL-09-213020'] | default(true) | bool
+
+- import_tasks: 213/RHEL-09-213025.yml
+  tags: [RHEL-09-213025, remediate]
+  when: stig_rules['RHEL-09-213025'] | default(true) | bool
+
+- import_tasks: 213/RHEL-09-213030.yml
+  tags: [RHEL-09-213030, remediate]
+  when: stig_rules['RHEL-09-213030'] | default(true) | bool
+
+- import_tasks: 213/RHEL-09-213035.yml
+  tags: [RHEL-09-213035, remediate]
+  when: stig_rules['RHEL-09-213035'] | default(true) | bool
+
+- import_tasks: 213/RHEL-09-213040.yml
+  tags: [RHEL-09-213040, remediate]
+  when: stig_rules['RHEL-09-213040'] | default(true) | bool
+
+- import_tasks: 213/RHEL-09-213045.yml
+  tags: [RHEL-09-213045, remediate]
+  when: stig_rules['RHEL-09-213045'] | default(true) | bool
+
+- import_tasks: 213/RHEL-09-213050.yml
+  tags: [RHEL-09-213050, remediate]
+  when: stig_rules['RHEL-09-213050'] | default(true) | bool
+
+- import_tasks: 213/RHEL-09-213055.yml
+  tags: [RHEL-09-213055, remediate]
+  when: stig_rules['RHEL-09-213055'] | default(true) | bool
+
+- import_tasks: 213/RHEL-09-213060.yml
+  tags: [RHEL-09-213060, remediate]
+  when: stig_rules['RHEL-09-213060'] | default(true) | bool
+
+- import_tasks: 213/RHEL-09-213065.yml
+  tags: [RHEL-09-213065, remediate]
+  when: stig_rules['RHEL-09-213065'] | default(true) | bool
+
+- import_tasks: 213/RHEL-09-213070.yml
+  tags: [RHEL-09-213070, remediate]
+  when: stig_rules['RHEL-09-213070'] | default(true) | bool
+
+- import_tasks: 213/RHEL-09-213075.yml
+  tags: [RHEL-09-213075, remediate]
+  when: stig_rules['RHEL-09-213075'] | default(true) | bool
+
+- import_tasks: 213/RHEL-09-213080.yml
+  tags: [RHEL-09-213080, remediate]
+  when: stig_rules['RHEL-09-213080'] | default(true) | bool
+
+- import_tasks: 213/RHEL-09-213085.yml
+  tags: [RHEL-09-213085, remediate]
+  when: stig_rules['RHEL-09-213085'] | default(true) | bool
+
+- import_tasks: 213/RHEL-09-213090.yml
+  tags: [RHEL-09-213090, remediate]
+  when: stig_rules['RHEL-09-213090'] | default(true) | bool
+
+- import_tasks: 213/RHEL-09-213095.yml
+  tags: [RHEL-09-213095, remediate]
+  when: stig_rules['RHEL-09-213095'] | default(true) | bool
+
+- import_tasks: 213/RHEL-09-213100.yml
+  tags: [RHEL-09-213100, remediate]
+  when: stig_rules['RHEL-09-213100'] | default(true) | bool
+
+- import_tasks: 213/RHEL-09-213105.yml
+  tags: [RHEL-09-213105, remediate]
+  when: stig_rules['RHEL-09-213105'] | default(true) | bool
+
+- import_tasks: 213/RHEL-09-213110.yml
+  tags: [RHEL-09-213110, remediate]
+  when: stig_rules['RHEL-09-213110'] | default(true) | bool
+
+- import_tasks: 213/RHEL-09-213115.yml
+  tags: [RHEL-09-213115, remediate]
+  when: stig_rules['RHEL-09-213115'] | default(true) | bool
+
+- import_tasks: 214/RHEL-09-214010.yml
+  tags: [RHEL-09-214010, remediate]
+  when: stig_rules['RHEL-09-214010'] | default(true) | bool
+
+- import_tasks: 214/RHEL-09-214015.yml
+  tags: [RHEL-09-214015, remediate]
+  when: stig_rules['RHEL-09-214015'] | default(true) | bool
+
+- import_tasks: 214/RHEL-09-214020.yml
+  tags: [RHEL-09-214020, remediate]
+  when: stig_rules['RHEL-09-214020'] | default(true) | bool
+
+- import_tasks: 214/RHEL-09-214025.yml
+  tags: [RHEL-09-214025, remediate]
+  when: stig_rules['RHEL-09-214025'] | default(true) | bool
+
+- import_tasks: 214/RHEL-09-214030.yml
+  tags: [RHEL-09-214030, remediate]
+  when: stig_rules['RHEL-09-214030'] | default(true) | bool
+
+- import_tasks: 214/RHEL-09-214035.yml
+  tags: [RHEL-09-214035, remediate]
+  when: stig_rules['RHEL-09-214035'] | default(true) | bool
+
+- import_tasks: 215/RHEL-09-215010.yml
+  tags: [RHEL-09-215010, remediate]
+  when: stig_rules['RHEL-09-215010'] | default(true) | bool
+
+- import_tasks: 215/RHEL-09-215015.yml
+  tags: [RHEL-09-215015, remediate]
+  when: stig_rules['RHEL-09-215015'] | default(true) | bool
+
+- import_tasks: 215/RHEL-09-215020.yml
+  tags: [RHEL-09-215020, remediate]
+  when: stig_rules['RHEL-09-215020'] | default(true) | bool
+
+- import_tasks: 215/RHEL-09-215025.yml
+  tags: [RHEL-09-215025, remediate]
+  when: stig_rules['RHEL-09-215025'] | default(true) | bool
+
+- import_tasks: 215/RHEL-09-215030.yml
+  tags: [RHEL-09-215030, remediate]
+  when: stig_rules['RHEL-09-215030'] | default(true) | bool
+
+- import_tasks: 215/RHEL-09-215035.yml
+  tags: [RHEL-09-215035, remediate]
+  when: stig_rules['RHEL-09-215035'] | default(true) | bool
+
+- import_tasks: 215/RHEL-09-215040.yml
+  tags: [RHEL-09-215040, remediate]
+  when: stig_rules['RHEL-09-215040'] | default(true) | bool
+
+- import_tasks: 215/RHEL-09-215045.yml
+  tags: [RHEL-09-215045, remediate]
+  when: stig_rules['RHEL-09-215045'] | default(true) | bool
+
+- import_tasks: 215/RHEL-09-215050.yml
+  tags: [RHEL-09-215050, remediate]
+  when: stig_rules['RHEL-09-215050'] | default(true) | bool
+
+- import_tasks: 215/RHEL-09-215055.yml
+  tags: [RHEL-09-215055, remediate]
+  when: stig_rules['RHEL-09-215055'] | default(true) | bool
+
+- import_tasks: 215/RHEL-09-215060.yml
+  tags: [RHEL-09-215060, remediate]
+  when: stig_rules['RHEL-09-215060'] | default(true) | bool
+
+- import_tasks: 215/RHEL-09-215065.yml
+  tags: [RHEL-09-215065, remediate]
+  when: stig_rules['RHEL-09-215065'] | default(true) | bool
+
+- import_tasks: 215/RHEL-09-215070.yml
+  tags: [RHEL-09-215070, remediate]
+  when: stig_rules['RHEL-09-215070'] | default(true) | bool
+
+- import_tasks: 215/RHEL-09-215075.yml
+  tags: [RHEL-09-215075, remediate]
+  when: stig_rules['RHEL-09-215075'] | default(true) | bool
+
+- import_tasks: 215/RHEL-09-215080.yml
+  tags: [RHEL-09-215080, remediate]
+  when: stig_rules['RHEL-09-215080'] | default(true) | bool
+
+- import_tasks: 215/RHEL-09-215085.yml
+  tags: [RHEL-09-215085, remediate]
+  when: stig_rules['RHEL-09-215085'] | default(true) | bool
+
+- import_tasks: 215/RHEL-09-215090.yml
+  tags: [RHEL-09-215090, remediate]
+  when: stig_rules['RHEL-09-215090'] | default(true) | bool
+
+- import_tasks: 215/RHEL-09-215095.yml
+  tags: [RHEL-09-215095, remediate]
+  when: stig_rules['RHEL-09-215095'] | default(true) | bool
+
+- import_tasks: 215/RHEL-09-215100.yml
+  tags: [RHEL-09-215100, remediate]
+  when: stig_rules['RHEL-09-215100'] | default(true) | bool
+
+- import_tasks: 215/RHEL-09-215101.yml
+  tags: [RHEL-09-215101, remediate]
+  when: stig_rules['RHEL-09-215101'] | default(true) | bool
+
+- import_tasks: 215/RHEL-09-215105.yml
+  tags: [RHEL-09-215105, remediate]
+  when: stig_rules['RHEL-09-215105'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231010.yml
+  tags: [RHEL-09-231010, remediate]
+  when: stig_rules['RHEL-09-231010'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231015.yml
+  tags: [RHEL-09-231015, remediate]
+  when: stig_rules['RHEL-09-231015'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231020.yml
+  tags: [RHEL-09-231020, remediate]
+  when: stig_rules['RHEL-09-231020'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231025.yml
+  tags: [RHEL-09-231025, remediate]
+  when: stig_rules['RHEL-09-231025'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231030.yml
+  tags: [RHEL-09-231030, remediate]
+  when: stig_rules['RHEL-09-231030'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231035.yml
+  tags: [RHEL-09-231035, remediate]
+  when: stig_rules['RHEL-09-231035'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231040.yml
+  tags: [RHEL-09-231040, remediate]
+  when: stig_rules['RHEL-09-231040'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231045.yml
+  tags: [RHEL-09-231045, remediate]
+  when: stig_rules['RHEL-09-231045'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231050.yml
+  tags: [RHEL-09-231050, remediate]
+  when: stig_rules['RHEL-09-231050'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231055.yml
+  tags: [RHEL-09-231055, remediate]
+  when: stig_rules['RHEL-09-231055'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231065.yml
+  tags: [RHEL-09-231065, remediate]
+  when: stig_rules['RHEL-09-231065'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231070.yml
+  tags: [RHEL-09-231070, remediate]
+  when: stig_rules['RHEL-09-231070'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231075.yml
+  tags: [RHEL-09-231075, remediate]
+  when: stig_rules['RHEL-09-231075'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231080.yml
+  tags: [RHEL-09-231080, remediate]
+  when: stig_rules['RHEL-09-231080'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231085.yml
+  tags: [RHEL-09-231085, remediate]
+  when: stig_rules['RHEL-09-231085'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231090.yml
+  tags: [RHEL-09-231090, remediate]
+  when: stig_rules['RHEL-09-231090'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231095.yml
+  tags: [RHEL-09-231095, remediate]
+  when: stig_rules['RHEL-09-231095'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231100.yml
+  tags: [RHEL-09-231100, remediate]
+  when: stig_rules['RHEL-09-231100'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231105.yml
+  tags: [RHEL-09-231105, remediate]
+  when: stig_rules['RHEL-09-231105'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231110.yml
+  tags: [RHEL-09-231110, remediate]
+  when: stig_rules['RHEL-09-231110'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231115.yml
+  tags: [RHEL-09-231115, remediate]
+  when: stig_rules['RHEL-09-231115'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231120.yml
+  tags: [RHEL-09-231120, remediate]
+  when: stig_rules['RHEL-09-231120'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231125.yml
+  tags: [RHEL-09-231125, remediate]
+  when: stig_rules['RHEL-09-231125'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231130.yml
+  tags: [RHEL-09-231130, remediate]
+  when: stig_rules['RHEL-09-231130'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231135.yml
+  tags: [RHEL-09-231135, remediate]
+  when: stig_rules['RHEL-09-231135'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231140.yml
+  tags: [RHEL-09-231140, remediate]
+  when: stig_rules['RHEL-09-231140'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231145.yml
+  tags: [RHEL-09-231145, remediate]
+  when: stig_rules['RHEL-09-231145'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231150.yml
+  tags: [RHEL-09-231150, remediate]
+  when: stig_rules['RHEL-09-231150'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231155.yml
+  tags: [RHEL-09-231155, remediate]
+  when: stig_rules['RHEL-09-231155'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231160.yml
+  tags: [RHEL-09-231160, remediate]
+  when: stig_rules['RHEL-09-231160'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231165.yml
+  tags: [RHEL-09-231165, remediate]
+  when: stig_rules['RHEL-09-231165'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231170.yml
+  tags: [RHEL-09-231170, remediate]
+  when: stig_rules['RHEL-09-231170'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231175.yml
+  tags: [RHEL-09-231175, remediate]
+  when: stig_rules['RHEL-09-231175'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231180.yml
+  tags: [RHEL-09-231180, remediate]
+  when: stig_rules['RHEL-09-231180'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231185.yml
+  tags: [RHEL-09-231185, remediate]
+  when: stig_rules['RHEL-09-231185'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231190.yml
+  tags: [RHEL-09-231190, remediate]
+  when: stig_rules['RHEL-09-231190'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231195.yml
+  tags: [RHEL-09-231195, remediate]
+  when: stig_rules['RHEL-09-231195'] | default(true) | bool
+
+- import_tasks: 231/RHEL-09-231200.yml
+  tags: [RHEL-09-231200, remediate]
+  when: stig_rules['RHEL-09-231200'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232010.yml
+  tags: [RHEL-09-232010, remediate]
+  when: stig_rules['RHEL-09-232010'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232015.yml
+  tags: [RHEL-09-232015, remediate]
+  when: stig_rules['RHEL-09-232015'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232020.yml
+  tags: [RHEL-09-232020, remediate]
+  when: stig_rules['RHEL-09-232020'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232025.yml
+  tags: [RHEL-09-232025, remediate]
+  when: stig_rules['RHEL-09-232025'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232030.yml
+  tags: [RHEL-09-232030, remediate]
+  when: stig_rules['RHEL-09-232030'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232035.yml
+  tags: [RHEL-09-232035, remediate]
+  when: stig_rules['RHEL-09-232035'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232040.yml
+  tags: [RHEL-09-232040, remediate]
+  when: stig_rules['RHEL-09-232040'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232045.yml
+  tags: [RHEL-09-232045, remediate]
+  when: stig_rules['RHEL-09-232045'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232050.yml
+  tags: [RHEL-09-232050, remediate]
+  when: stig_rules['RHEL-09-232050'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232055.yml
+  tags: [RHEL-09-232055, remediate]
+  when: stig_rules['RHEL-09-232055'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232060.yml
+  tags: [RHEL-09-232060, remediate]
+  when: stig_rules['RHEL-09-232060'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232065.yml
+  tags: [RHEL-09-232065, remediate]
+  when: stig_rules['RHEL-09-232065'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232070.yml
+  tags: [RHEL-09-232070, remediate]
+  when: stig_rules['RHEL-09-232070'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232075.yml
+  tags: [RHEL-09-232075, remediate]
+  when: stig_rules['RHEL-09-232075'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232080.yml
+  tags: [RHEL-09-232080, remediate]
+  when: stig_rules['RHEL-09-232080'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232085.yml
+  tags: [RHEL-09-232085, remediate]
+  when: stig_rules['RHEL-09-232085'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232090.yml
+  tags: [RHEL-09-232090, remediate]
+  when: stig_rules['RHEL-09-232090'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232095.yml
+  tags: [RHEL-09-232095, remediate]
+  when: stig_rules['RHEL-09-232095'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232100.yml
+  tags: [RHEL-09-232100, remediate]
+  when: stig_rules['RHEL-09-232100'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232103.yml
+  tags: [RHEL-09-232103, remediate]
+  when: stig_rules['RHEL-09-232103'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232104.yml
+  tags: [RHEL-09-232104, remediate]
+  when: stig_rules['RHEL-09-232104'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232105.yml
+  tags: [RHEL-09-232105, remediate]
+  when: stig_rules['RHEL-09-232105'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232110.yml
+  tags: [RHEL-09-232110, remediate]
+  when: stig_rules['RHEL-09-232110'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232115.yml
+  tags: [RHEL-09-232115, remediate]
+  when: stig_rules['RHEL-09-232115'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232120.yml
+  tags: [RHEL-09-232120, remediate]
+  when: stig_rules['RHEL-09-232120'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232125.yml
+  tags: [RHEL-09-232125, remediate]
+  when: stig_rules['RHEL-09-232125'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232130.yml
+  tags: [RHEL-09-232130, remediate]
+  when: stig_rules['RHEL-09-232130'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232135.yml
+  tags: [RHEL-09-232135, remediate]
+  when: stig_rules['RHEL-09-232135'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232140.yml
+  tags: [RHEL-09-232140, remediate]
+  when: stig_rules['RHEL-09-232140'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232145.yml
+  tags: [RHEL-09-232145, remediate]
+  when: stig_rules['RHEL-09-232145'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232150.yml
+  tags: [RHEL-09-232150, remediate]
+  when: stig_rules['RHEL-09-232150'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232155.yml
+  tags: [RHEL-09-232155, remediate]
+  when: stig_rules['RHEL-09-232155'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232160.yml
+  tags: [RHEL-09-232160, remediate]
+  when: stig_rules['RHEL-09-232160'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232165.yml
+  tags: [RHEL-09-232165, remediate]
+  when: stig_rules['RHEL-09-232165'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232170.yml
+  tags: [RHEL-09-232170, remediate]
+  when: stig_rules['RHEL-09-232170'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232175.yml
+  tags: [RHEL-09-232175, remediate]
+  when: stig_rules['RHEL-09-232175'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232180.yml
+  tags: [RHEL-09-232180, remediate]
+  when: stig_rules['RHEL-09-232180'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232185.yml
+  tags: [RHEL-09-232185, remediate]
+  when: stig_rules['RHEL-09-232185'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232190.yml
+  tags: [RHEL-09-232190, remediate]
+  when: stig_rules['RHEL-09-232190'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232195.yml
+  tags: [RHEL-09-232195, remediate]
+  when: stig_rules['RHEL-09-232195'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232200.yml
+  tags: [RHEL-09-232200, remediate]
+  when: stig_rules['RHEL-09-232200'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232205.yml
+  tags: [RHEL-09-232205, remediate]
+  when: stig_rules['RHEL-09-232205'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232210.yml
+  tags: [RHEL-09-232210, remediate]
+  when: stig_rules['RHEL-09-232210'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232215.yml
+  tags: [RHEL-09-232215, remediate]
+  when: stig_rules['RHEL-09-232215'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232220.yml
+  tags: [RHEL-09-232220, remediate]
+  when: stig_rules['RHEL-09-232220'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232225.yml
+  tags: [RHEL-09-232225, remediate]
+  when: stig_rules['RHEL-09-232225'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232230.yml
+  tags: [RHEL-09-232230, remediate]
+  when: stig_rules['RHEL-09-232230'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232235.yml
+  tags: [RHEL-09-232235, remediate]
+  when: stig_rules['RHEL-09-232235'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232240.yml
+  tags: [RHEL-09-232240, remediate]
+  when: stig_rules['RHEL-09-232240'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232245.yml
+  tags: [RHEL-09-232245, remediate]
+  when: stig_rules['RHEL-09-232245'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232250.yml
+  tags: [RHEL-09-232250, remediate]
+  when: stig_rules['RHEL-09-232250'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232255.yml
+  tags: [RHEL-09-232255, remediate]
+  when: stig_rules['RHEL-09-232255'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232260.yml
+  tags: [RHEL-09-232260, remediate]
+  when: stig_rules['RHEL-09-232260'] | default(true) | bool
+
+- import_tasks: 232/RHEL-09-232270.yml
+  tags: [RHEL-09-232270, remediate]
+  when: stig_rules['RHEL-09-232270'] | default(true) | bool
+
+- import_tasks: 251/RHEL-09-251010.yml
+  tags: [RHEL-09-251010, remediate]
+  when: stig_rules['RHEL-09-251010'] | default(true) | bool
+
+- import_tasks: 251/RHEL-09-251015.yml
+  tags: [RHEL-09-251015, remediate]
+  when: stig_rules['RHEL-09-251015'] | default(true) | bool
+
+- import_tasks: 251/RHEL-09-251020.yml
+  tags: [RHEL-09-251020, remediate]
+  when: stig_rules['RHEL-09-251020'] | default(true) | bool
+
+- import_tasks: 251/RHEL-09-251030.yml
+  tags: [RHEL-09-251030, remediate]
+  when: stig_rules['RHEL-09-251030'] | default(true) | bool
+
+- import_tasks: 251/RHEL-09-251035.yml
+  tags: [RHEL-09-251035, remediate]
+  when: stig_rules['RHEL-09-251035'] | default(true) | bool
+
+- import_tasks: 251/RHEL-09-251040.yml
+  tags: [RHEL-09-251040, remediate]
+  when: stig_rules['RHEL-09-251040'] | default(true) | bool
+
+- import_tasks: 251/RHEL-09-251045.yml
+  tags: [RHEL-09-251045, remediate]
+  when: stig_rules['RHEL-09-251045'] | default(true) | bool
+
+- import_tasks: 252/RHEL-09-252010.yml
+  tags: [RHEL-09-252010, remediate]
+  when: stig_rules['RHEL-09-252010'] | default(true) | bool
+
+- import_tasks: 252/RHEL-09-252015.yml
+  tags: [RHEL-09-252015, remediate]
+  when: stig_rules['RHEL-09-252015'] | default(true) | bool
+
+- import_tasks: 252/RHEL-09-252020.yml
+  tags: [RHEL-09-252020, remediate]
+  when: stig_rules['RHEL-09-252020'] | default(true) | bool
+
+- import_tasks: 252/RHEL-09-252025.yml
+  tags: [RHEL-09-252025, remediate]
+  when: stig_rules['RHEL-09-252025'] | default(true) | bool
+
+- import_tasks: 252/RHEL-09-252030.yml
+  tags: [RHEL-09-252030, remediate]
+  when: stig_rules['RHEL-09-252030'] | default(true) | bool
+
+- import_tasks: 252/RHEL-09-252035.yml
+  tags: [RHEL-09-252035, remediate]
+  when: stig_rules['RHEL-09-252035'] | default(true) | bool
+
+- import_tasks: 252/RHEL-09-252040.yml
+  tags: [RHEL-09-252040, remediate]
+  when: stig_rules['RHEL-09-252040'] | default(true) | bool
+
+- import_tasks: 252/RHEL-09-252045.yml
+  tags: [RHEL-09-252045, remediate]
+  when: stig_rules['RHEL-09-252045'] | default(true) | bool
+
+- import_tasks: 252/RHEL-09-252050.yml
+  tags: [RHEL-09-252050, remediate]
+  when: stig_rules['RHEL-09-252050'] | default(true) | bool
+
+- import_tasks: 252/RHEL-09-252060.yml
+  tags: [RHEL-09-252060, remediate]
+  when: stig_rules['RHEL-09-252060'] | default(true) | bool
+
+- import_tasks: 252/RHEL-09-252065.yml
+  tags: [RHEL-09-252065, remediate]
+  when: stig_rules['RHEL-09-252065'] | default(true) | bool
+
+- import_tasks: 252/RHEL-09-252070.yml
+  tags: [RHEL-09-252070, remediate]
+  when: stig_rules['RHEL-09-252070'] | default(true) | bool
+
+- import_tasks: 252/RHEL-09-252075.yml
+  tags: [RHEL-09-252075, remediate]
+  when: stig_rules['RHEL-09-252075'] | default(true) | bool
+
+- import_tasks: 253/RHEL-09-253010.yml
+  tags: [RHEL-09-253010, remediate]
+  when: stig_rules['RHEL-09-253010'] | default(true) | bool
+
+- import_tasks: 253/RHEL-09-253015.yml
+  tags: [RHEL-09-253015, remediate]
+  when: stig_rules['RHEL-09-253015'] | default(true) | bool
+
+- import_tasks: 253/RHEL-09-253020.yml
+  tags: [RHEL-09-253020, remediate]
+  when: stig_rules['RHEL-09-253020'] | default(true) | bool
+
+- import_tasks: 253/RHEL-09-253025.yml
+  tags: [RHEL-09-253025, remediate]
+  when: stig_rules['RHEL-09-253025'] | default(true) | bool
+
+- import_tasks: 253/RHEL-09-253030.yml
+  tags: [RHEL-09-253030, remediate]
+  when: stig_rules['RHEL-09-253030'] | default(true) | bool
+
+- import_tasks: 253/RHEL-09-253035.yml
+  tags: [RHEL-09-253035, remediate]
+  when: stig_rules['RHEL-09-253035'] | default(true) | bool
+
+- import_tasks: 253/RHEL-09-253040.yml
+  tags: [RHEL-09-253040, remediate]
+  when: stig_rules['RHEL-09-253040'] | default(true) | bool
+
+- import_tasks: 253/RHEL-09-253045.yml
+  tags: [RHEL-09-253045, remediate]
+  when: stig_rules['RHEL-09-253045'] | default(true) | bool
+
+- import_tasks: 253/RHEL-09-253050.yml
+  tags: [RHEL-09-253050, remediate]
+  when: stig_rules['RHEL-09-253050'] | default(true) | bool
+
+- import_tasks: 253/RHEL-09-253055.yml
+  tags: [RHEL-09-253055, remediate]
+  when: stig_rules['RHEL-09-253055'] | default(true) | bool
+
+- import_tasks: 253/RHEL-09-253060.yml
+  tags: [RHEL-09-253060, remediate]
+  when: stig_rules['RHEL-09-253060'] | default(true) | bool
+
+- import_tasks: 253/RHEL-09-253065.yml
+  tags: [RHEL-09-253065, remediate]
+  when: stig_rules['RHEL-09-253065'] | default(true) | bool
+
+- import_tasks: 253/RHEL-09-253070.yml
+  tags: [RHEL-09-253070, remediate]
+  when: stig_rules['RHEL-09-253070'] | default(true) | bool
+
+- import_tasks: 253/RHEL-09-253075.yml
+  tags: [RHEL-09-253075, remediate]
+  when: stig_rules['RHEL-09-253075'] | default(true) | bool
+
+- import_tasks: 254/RHEL-09-254010.yml
+  tags: [RHEL-09-254010, remediate]
+  when: stig_rules['RHEL-09-254010'] | default(true) | bool
+
+- import_tasks: 254/RHEL-09-254015.yml
+  tags: [RHEL-09-254015, remediate]
+  when: stig_rules['RHEL-09-254015'] | default(true) | bool
+
+- import_tasks: 254/RHEL-09-254020.yml
+  tags: [RHEL-09-254020, remediate]
+  when: stig_rules['RHEL-09-254020'] | default(true) | bool
+
+- import_tasks: 254/RHEL-09-254025.yml
+  tags: [RHEL-09-254025, remediate]
+  when: stig_rules['RHEL-09-254025'] | default(true) | bool
+
+- import_tasks: 254/RHEL-09-254030.yml
+  tags: [RHEL-09-254030, remediate]
+  when: stig_rules['RHEL-09-254030'] | default(true) | bool
+
+- import_tasks: 254/RHEL-09-254035.yml
+  tags: [RHEL-09-254035, remediate]
+  when: stig_rules['RHEL-09-254035'] | default(true) | bool
+
+- import_tasks: 254/RHEL-09-254040.yml
+  tags: [RHEL-09-254040, remediate]
+  when: stig_rules['RHEL-09-254040'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255010.yml
+  tags: [RHEL-09-255010, remediate]
+  when: stig_rules['RHEL-09-255010'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255015.yml
+  tags: [RHEL-09-255015, remediate]
+  when: stig_rules['RHEL-09-255015'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255020.yml
+  tags: [RHEL-09-255020, remediate]
+  when: stig_rules['RHEL-09-255020'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255025.yml
+  tags: [RHEL-09-255025, remediate]
+  when: stig_rules['RHEL-09-255025'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255030.yml
+  tags: [RHEL-09-255030, remediate]
+  when: stig_rules['RHEL-09-255030'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255035.yml
+  tags: [RHEL-09-255035, remediate]
+  when: stig_rules['RHEL-09-255035'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255040.yml
+  tags: [RHEL-09-255040, remediate]
+  when: stig_rules['RHEL-09-255040'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255045.yml
+  tags: [RHEL-09-255045, remediate]
+  when: stig_rules['RHEL-09-255045'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255050.yml
+  tags: [RHEL-09-255050, remediate]
+  when: stig_rules['RHEL-09-255050'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255064.yml
+  tags: [RHEL-09-255064, remediate]
+  when: stig_rules['RHEL-09-255064'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255065.yml
+  tags: [RHEL-09-255065, remediate]
+  when: stig_rules['RHEL-09-255065'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255070.yml
+  tags: [RHEL-09-255070, remediate]
+  when: stig_rules['RHEL-09-255070'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255075.yml
+  tags: [RHEL-09-255075, remediate]
+  when: stig_rules['RHEL-09-255075'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255080.yml
+  tags: [RHEL-09-255080, remediate]
+  when: stig_rules['RHEL-09-255080'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255085.yml
+  tags: [RHEL-09-255085, remediate]
+  when: stig_rules['RHEL-09-255085'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255090.yml
+  tags: [RHEL-09-255090, remediate]
+  when: stig_rules['RHEL-09-255090'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255095.yml
+  tags: [RHEL-09-255095, remediate]
+  when: stig_rules['RHEL-09-255095'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255100.yml
+  tags: [RHEL-09-255100, remediate]
+  when: stig_rules['RHEL-09-255100'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255105.yml
+  tags: [RHEL-09-255105, remediate]
+  when: stig_rules['RHEL-09-255105'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255110.yml
+  tags: [RHEL-09-255110, remediate]
+  when: stig_rules['RHEL-09-255110'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255115.yml
+  tags: [RHEL-09-255115, remediate]
+  when: stig_rules['RHEL-09-255115'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255120.yml
+  tags: [RHEL-09-255120, remediate]
+  when: stig_rules['RHEL-09-255120'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255125.yml
+  tags: [RHEL-09-255125, remediate]
+  when: stig_rules['RHEL-09-255125'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255135.yml
+  tags: [RHEL-09-255135, remediate]
+  when: stig_rules['RHEL-09-255135'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255140.yml
+  tags: [RHEL-09-255140, remediate]
+  when: stig_rules['RHEL-09-255140'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255145.yml
+  tags: [RHEL-09-255145, remediate]
+  when: stig_rules['RHEL-09-255145'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255150.yml
+  tags: [RHEL-09-255150, remediate]
+  when: stig_rules['RHEL-09-255150'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255155.yml
+  tags: [RHEL-09-255155, remediate]
+  when: stig_rules['RHEL-09-255155'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255160.yml
+  tags: [RHEL-09-255160, remediate]
+  when: stig_rules['RHEL-09-255160'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255165.yml
+  tags: [RHEL-09-255165, remediate]
+  when: stig_rules['RHEL-09-255165'] | default(true) | bool
+
+- import_tasks: 255/RHEL-09-255175.yml
+  tags: [RHEL-09-255175, remediate]
+  when: stig_rules['RHEL-09-255175'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271010.yml
+  tags: [RHEL-09-271010, remediate]
+  when: stig_rules['RHEL-09-271010'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271015.yml
+  tags: [RHEL-09-271015, remediate]
+  when: stig_rules['RHEL-09-271015'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271020.yml
+  tags: [RHEL-09-271020, remediate]
+  when: stig_rules['RHEL-09-271020'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271025.yml
+  tags: [RHEL-09-271025, remediate]
+  when: stig_rules['RHEL-09-271025'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271030.yml
+  tags: [RHEL-09-271030, remediate]
+  when: stig_rules['RHEL-09-271030'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271035.yml
+  tags: [RHEL-09-271035, remediate]
+  when: stig_rules['RHEL-09-271035'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271040.yml
+  tags: [RHEL-09-271040, remediate]
+  when: stig_rules['RHEL-09-271040'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271045.yml
+  tags: [RHEL-09-271045, remediate]
+  when: stig_rules['RHEL-09-271045'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271050.yml
+  tags: [RHEL-09-271050, remediate]
+  when: stig_rules['RHEL-09-271050'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271055.yml
+  tags: [RHEL-09-271055, remediate]
+  when: stig_rules['RHEL-09-271055'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271060.yml
+  tags: [RHEL-09-271060, remediate]
+  when: stig_rules['RHEL-09-271060'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271065.yml
+  tags: [RHEL-09-271065, remediate]
+  when: stig_rules['RHEL-09-271065'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271070.yml
+  tags: [RHEL-09-271070, remediate]
+  when: stig_rules['RHEL-09-271070'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271075.yml
+  tags: [RHEL-09-271075, remediate]
+  when: stig_rules['RHEL-09-271075'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271080.yml
+  tags: [RHEL-09-271080, remediate]
+  when: stig_rules['RHEL-09-271080'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271085.yml
+  tags: [RHEL-09-271085, remediate]
+  when: stig_rules['RHEL-09-271085'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271090.yml
+  tags: [RHEL-09-271090, remediate]
+  when: stig_rules['RHEL-09-271090'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271095.yml
+  tags: [RHEL-09-271095, remediate]
+  when: stig_rules['RHEL-09-271095'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271100.yml
+  tags: [RHEL-09-271100, remediate]
+  when: stig_rules['RHEL-09-271100'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271105.yml
+  tags: [RHEL-09-271105, remediate]
+  when: stig_rules['RHEL-09-271105'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271110.yml
+  tags: [RHEL-09-271110, remediate]
+  when: stig_rules['RHEL-09-271110'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-271115.yml
+  tags: [RHEL-09-271115, remediate]
+  when: stig_rules['RHEL-09-271115'] | default(true) | bool
+
+- import_tasks: 271/RHEL-09-171011.yml
+  tags: [RHEL-09-171011, remediate]
+  when: stig_rules['RHEL-09-171011'] | default(true) | bool
+
+- import_tasks: 291/RHEL-09-291010.yml
+  tags: [RHEL-09-291010, remediate]
+  when: stig_rules['RHEL-09-291010'] | default(true) | bool
+
+- import_tasks: 291/RHEL-09-291015.yml
+  tags: [RHEL-09-291015, remediate]
+  when: stig_rules['RHEL-09-291015'] | default(true) | bool
+
+- import_tasks: 291/RHEL-09-291020.yml
+  tags: [RHEL-09-291020, remediate]
+  when: stig_rules['RHEL-09-291020'] | default(true) | bool
+
+- import_tasks: 291/RHEL-09-291025.yml
+  tags: [RHEL-09-291025, remediate]
+  when: stig_rules['RHEL-09-291025'] | default(true) | bool
+
+- import_tasks: 291/RHEL-09-291030.yml
+  tags: [RHEL-09-291030, remediate]
+  when: stig_rules['RHEL-09-291030'] | default(true) | bool
+
+- import_tasks: 291/RHEL-09-291035.yml
+  tags: [RHEL-09-291035, remediate]
+  when: stig_rules['RHEL-09-291035'] | default(true) | bool
+
+- import_tasks: 291/RHEL-09-291040.yml
+  tags: [RHEL-09-291040, remediate]
+  when: stig_rules['RHEL-09-291040'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411010.yml
+  tags: [RHEL-09-411010, remediate]
+  when: stig_rules['RHEL-09-411010'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411015.yml
+  tags: [RHEL-09-411015, remediate]
+  when: stig_rules['RHEL-09-411015'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411020.yml
+  tags: [RHEL-09-411020, remediate]
+  when: stig_rules['RHEL-09-411020'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411025.yml
+  tags: [RHEL-09-411025, remediate]
+  when: stig_rules['RHEL-09-411025'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411030.yml
+  tags: [RHEL-09-411030, remediate]
+  when: stig_rules['RHEL-09-411030'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411035.yml
+  tags: [RHEL-09-411035, remediate]
+  when: stig_rules['RHEL-09-411035'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411040.yml
+  tags: [RHEL-09-411040, remediate]
+  when: stig_rules['RHEL-09-411040'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411045.yml
+  tags: [RHEL-09-411045, remediate]
+  when: stig_rules['RHEL-09-411045'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411050.yml
+  tags: [RHEL-09-411050, remediate]
+  when: stig_rules['RHEL-09-411050'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411055.yml
+  tags: [RHEL-09-411055, remediate]
+  when: stig_rules['RHEL-09-411055'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411060.yml
+  tags: [RHEL-09-411060, remediate]
+  when: stig_rules['RHEL-09-411060'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411065.yml
+  tags: [RHEL-09-411065, remediate]
+  when: stig_rules['RHEL-09-411065'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411070.yml
+  tags: [RHEL-09-411070, remediate]
+  when: stig_rules['RHEL-09-411070'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411075.yml
+  tags: [RHEL-09-411075, remediate]
+  when: stig_rules['RHEL-09-411075'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411080.yml
+  tags: [RHEL-09-411080, remediate]
+  when: stig_rules['RHEL-09-411080'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411085.yml
+  tags: [RHEL-09-411085, remediate]
+  when: stig_rules['RHEL-09-411085'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411090.yml
+  tags: [RHEL-09-411090, remediate]
+  when: stig_rules['RHEL-09-411090'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411095.yml
+  tags: [RHEL-09-411095, remediate]
+  when: stig_rules['RHEL-09-411095'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411100.yml
+  tags: [RHEL-09-411100, remediate]
+  when: stig_rules['RHEL-09-411100'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411105.yml
+  tags: [RHEL-09-411105, remediate]
+  when: stig_rules['RHEL-09-411105'] | default(true) | bool
+
+- import_tasks: 411/RHEL-09-411110.yml
+  tags: [RHEL-09-411110, remediate]
+  when: stig_rules['RHEL-09-411110'] | default(true) | bool
+
+- import_tasks: 412/RHEL-09-412035.yml
+  tags: [RHEL-09-412035, remediate]
+  when: stig_rules['RHEL-09-412035'] | default(true) | bool
+
+- import_tasks: 412/RHEL-09-412040.yml
+  tags: [RHEL-09-412040, remediate]
+  when: stig_rules['RHEL-09-412040'] | default(true) | bool
+
+- import_tasks: 412/RHEL-09-412045.yml
+  tags: [RHEL-09-412045, remediate]
+  when: stig_rules['RHEL-09-412045'] | default(true) | bool
+
+- import_tasks: 412/RHEL-09-412050.yml
+  tags: [RHEL-09-412050, remediate]
+  when: stig_rules['RHEL-09-412050'] | default(true) | bool
+
+- import_tasks: 412/RHEL-09-412055.yml
+  tags: [RHEL-09-412055, remediate]
+  when: stig_rules['RHEL-09-412055'] | default(true) | bool
+
+- import_tasks: 412/RHEL-09-412060.yml
+  tags: [RHEL-09-412060, remediate]
+  when: stig_rules['RHEL-09-412060'] | default(true) | bool
+
+- import_tasks: 412/RHEL-09-412065.yml
+  tags: [RHEL-09-412065, remediate]
+  when: stig_rules['RHEL-09-412065'] | default(true) | bool
+
+- import_tasks: 412/RHEL-09-412070.yml
+  tags: [RHEL-09-412070, remediate]
+  when: stig_rules['RHEL-09-412070'] | default(true) | bool
+
+- import_tasks: 412/RHEL-09-412080.yml
+  tags: [RHEL-09-412080, remediate]
+  when: stig_rules['RHEL-09-412080'] | default(true) | bool
+
+- import_tasks: 431/RHEL-09-431010.yml
+  tags: [RHEL-09-431010, remediate]
+  when: stig_rules['RHEL-09-431010'] | default(true) | bool
+
+- import_tasks: 431/RHEL-09-431015.yml
+  tags: [RHEL-09-431015, remediate]
+  when: stig_rules['RHEL-09-431015'] | default(true) | bool
+
+- import_tasks: 431/RHEL-09-431016.yml
+  tags: [RHEL-09-431016, remediate]
+  when: stig_rules['RHEL-09-431016'] | default(true) | bool
+
+- import_tasks: 431/RHEL-09-431020.yml
+  tags: [RHEL-09-431020, remediate]
+  when: stig_rules['RHEL-09-431020'] | default(true) | bool
+
+- import_tasks: 431/RHEL-09-431025.yml
+  tags: [RHEL-09-431025, remediate]
+  when: stig_rules['RHEL-09-431025'] | default(true) | bool
+
+- import_tasks: 431/RHEL-09-431030.yml
+  tags: [RHEL-09-431030, remediate]
+  when: stig_rules['RHEL-09-431030'] | default(true) | bool
+
+- import_tasks: 432/RHEL-09-432010.yml
+  tags: [RHEL-09-432010, remediate]
+  when: stig_rules['RHEL-09-432010'] | default(true) | bool
+
+- import_tasks: 432/RHEL-09-432015.yml
+  tags: [RHEL-09-432015, remediate]
+  when: stig_rules['RHEL-09-432015'] | default(true) | bool
+
+- import_tasks: 432/RHEL-09-432020.yml
+  tags: [RHEL-09-432020, remediate]
+  when: stig_rules['RHEL-09-432020'] | default(true) | bool
+
+- import_tasks: 432/RHEL-09-432025.yml
+  tags: [RHEL-09-432025, remediate]
+  when: stig_rules['RHEL-09-432025'] | default(true) | bool
+
+- import_tasks: 432/RHEL-09-432030.yml
+  tags: [RHEL-09-432030, remediate]
+  when: stig_rules['RHEL-09-432030'] | default(true) | bool
+
+- import_tasks: 432/RHEL-09-432035.yml
+  tags: [RHEL-09-432035, remediate]
+  when: stig_rules['RHEL-09-432035'] | default(true) | bool
+
+- import_tasks: 433/RHEL-09-433010.yml
+  tags: [RHEL-09-433010, remediate]
+  when: stig_rules['RHEL-09-433010'] | default(true) | bool
+
+- import_tasks: 433/RHEL-09-433015.yml
+  tags: [RHEL-09-433015, remediate]
+  when: stig_rules['RHEL-09-433015'] | default(true) | bool
+
+- import_tasks: 433/RHEL-09-433016.yml
+  tags: [RHEL-09-433016, remediate]
+  when: stig_rules['RHEL-09-433016'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611010.yml
+  tags: [RHEL-09-611010, remediate]
+  when: stig_rules['RHEL-09-611010'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611025.yml
+  tags: [RHEL-09-611025, remediate]
+  when: stig_rules['RHEL-09-611025'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611030.yml
+  tags: [RHEL-09-611030, remediate]
+  when: stig_rules['RHEL-09-611030'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611035.yml
+  tags: [RHEL-09-611035, remediate]
+  when: stig_rules['RHEL-09-611035'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611040.yml
+  tags: [RHEL-09-611040, remediate]
+  when: stig_rules['RHEL-09-611040'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611045.yml
+  tags: [RHEL-09-611045, remediate]
+  when: stig_rules['RHEL-09-611045'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611050.yml
+  tags: [RHEL-09-611050, remediate]
+  when: stig_rules['RHEL-09-611050'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611055.yml
+  tags: [RHEL-09-611055, remediate]
+  when: stig_rules['RHEL-09-611055'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611060.yml
+  tags: [RHEL-09-611060, remediate]
+  when: stig_rules['RHEL-09-611060'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611065.yml
+  tags: [RHEL-09-611065, remediate]
+  when: stig_rules['RHEL-09-611065'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611070.yml
+  tags: [RHEL-09-611070, remediate]
+  when: stig_rules['RHEL-09-611070'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611075.yml
+  tags: [RHEL-09-611075, remediate]
+  when: stig_rules['RHEL-09-611075'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611080.yml
+  tags: [RHEL-09-611080, remediate]
+  when: stig_rules['RHEL-09-611080'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611085.yml
+  tags: [RHEL-09-611085, remediate]
+  when: stig_rules['RHEL-09-611085'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611090.yml
+  tags: [RHEL-09-611090, remediate]
+  when: stig_rules['RHEL-09-611090'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611100.yml
+  tags: [RHEL-09-611100, remediate]
+  when: stig_rules['RHEL-09-611100'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611105.yml
+  tags: [RHEL-09-611105, remediate]
+  when: stig_rules['RHEL-09-611105'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611110.yml
+  tags: [RHEL-09-611110, remediate]
+  when: stig_rules['RHEL-09-611110'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611115.yml
+  tags: [RHEL-09-611115, remediate]
+  when: stig_rules['RHEL-09-611115'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611120.yml
+  tags: [RHEL-09-611120, remediate]
+  when: stig_rules['RHEL-09-611120'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611125.yml
+  tags: [RHEL-09-611125, remediate]
+  when: stig_rules['RHEL-09-611125'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611130.yml
+  tags: [RHEL-09-611130, remediate]
+  when: stig_rules['RHEL-09-611130'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611135.yml
+  tags: [RHEL-09-611135, remediate]
+  when: stig_rules['RHEL-09-611135'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611140.yml
+  tags: [RHEL-09-611140, remediate]
+  when: stig_rules['RHEL-09-611140'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611145.yml
+  tags: [RHEL-09-611145, remediate]
+  when: stig_rules['RHEL-09-611145'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611155.yml
+  tags: [RHEL-09-611155, remediate]
+  when: stig_rules['RHEL-09-611155'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611160.yml
+  tags: [RHEL-09-611160, remediate]
+  when: stig_rules['RHEL-09-611160'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611165.yml
+  tags: [RHEL-09-611165, remediate]
+  when: stig_rules['RHEL-09-611165'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611170.yml
+  tags: [RHEL-09-611170, remediate]
+  when: stig_rules['RHEL-09-611170'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611175.yml
+  tags: [RHEL-09-611175, remediate]
+  when: stig_rules['RHEL-09-611175'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611180.yml
+  tags: [RHEL-09-611180, remediate]
+  when: stig_rules['RHEL-09-611180'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611185.yml
+  tags: [RHEL-09-611185, remediate]
+  when: stig_rules['RHEL-09-611185'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611190.yml
+  tags: [RHEL-09-611190, remediate]
+  when: stig_rules['RHEL-09-611190'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611195.yml
+  tags: [RHEL-09-611195, remediate]
+  when: stig_rules['RHEL-09-611195'] | default(true) | bool
+
+- import_tasks: 611/RHEL-09-611200.yml
+  tags: [RHEL-09-611200, remediate]
+  when: stig_rules['RHEL-09-611200'] | default(true) | bool
+
+- import_tasks: 631/RHEL-09-631010.yml
+  tags: [RHEL-09-631010, remediate]
+  when: stig_rules['RHEL-09-631010'] | default(true) | bool
+
+- import_tasks: 631/RHEL-09-631015.yml
+  tags: [RHEL-09-631015, remediate]
+  when: stig_rules['RHEL-09-631015'] | default(true) | bool
+
+- import_tasks: 631/RHEL-09-631020.yml
+  tags: [RHEL-09-631020, remediate]
+  when: stig_rules['RHEL-09-631020'] | default(true) | bool
+
+- import_tasks: 651/RHEL-09-651010.yml
+  tags: [RHEL-09-651010, remediate]
+  when: stig_rules['RHEL-09-651010'] | default(true) | bool
+
+- import_tasks: 651/RHEL-09-651015.yml
+  tags: [RHEL-09-651015, remediate]
+  when: stig_rules['RHEL-09-651015'] | default(true) | bool
+
+- import_tasks: 651/RHEL-09-651020.yml
+  tags: [RHEL-09-651020, remediate]
+  when: stig_rules['RHEL-09-651020'] | default(true) | bool
+
+- import_tasks: 651/RHEL-09-651025.yml
+  tags: [RHEL-09-651025, remediate]
+  when: stig_rules['RHEL-09-651025'] | default(true) | bool
+
+- import_tasks: 651/RHEL-09-651030.yml
+  tags: [RHEL-09-651030, remediate]
+  when: stig_rules['RHEL-09-651030'] | default(true) | bool
+
+- import_tasks: 651/RHEL-09-651035.yml
+  tags: [RHEL-09-651035, remediate]
+  when: stig_rules['RHEL-09-651035'] | default(true) | bool
+
+- import_tasks: 652/RHEL-09-652010.yml
+  tags: [RHEL-09-652010, remediate]
+  when: stig_rules['RHEL-09-652010'] | default(true) | bool
+
+- import_tasks: 652/RHEL-09-652015.yml
+  tags: [RHEL-09-652015, remediate]
+  when: stig_rules['RHEL-09-652015'] | default(true) | bool
+
+- import_tasks: 652/RHEL-09-652020.yml
+  tags: [RHEL-09-652020, remediate]
+  when: stig_rules['RHEL-09-652020'] | default(true) | bool
+
+- import_tasks: 652/RHEL-09-652025.yml
+  tags: [RHEL-09-652025, remediate]
+  when: stig_rules['RHEL-09-652025'] | default(true) | bool
+
+- import_tasks: 652/RHEL-09-652030.yml
+  tags: [RHEL-09-652030, remediate]
+  when: stig_rules['RHEL-09-652030'] | default(true) | bool
+
+- import_tasks: 652/RHEL-09-652040.yml
+  tags: [RHEL-09-652040, remediate]
+  when: stig_rules['RHEL-09-652040'] | default(true) | bool
+
+- import_tasks: 652/RHEL-09-652045.yml
+  tags: [RHEL-09-652045, remediate]
+  when: stig_rules['RHEL-09-652045'] | default(true) | bool
+
+- import_tasks: 652/RHEL-09-652050.yml
+  tags: [RHEL-09-652050, remediate]
+  when: stig_rules['RHEL-09-652050'] | default(true) | bool
+
+- import_tasks: 652/RHEL-09-652055.yml
+  tags: [RHEL-09-652055, remediate]
+  when: stig_rules['RHEL-09-652055'] | default(true) | bool
+
+- import_tasks: 652/RHEL-09-652060.yml
+  tags: [RHEL-09-652060, remediate]
+  when: stig_rules['RHEL-09-652060'] | default(true) | bool
+
+- import_tasks: 653/RHEL-09-653010.yml
+  tags: [RHEL-09-653010, remediate]
+  when: stig_rules['RHEL-09-653010'] | default(true) | bool
+
+- import_tasks: 653/RHEL-09-653015.yml
+  tags: [RHEL-09-653015, remediate]
+  when: stig_rules['RHEL-09-653015'] | default(true) | bool
+
+- import_tasks: 653/RHEL-09-653020.yml
+  tags: [RHEL-09-653020, remediate]
+  when: stig_rules['RHEL-09-653020'] | default(true) | bool
+
+- import_tasks: 653/RHEL-09-653025.yml
+  tags: [RHEL-09-653025, remediate]
+  when: stig_rules['RHEL-09-653025'] | default(true) | bool
+
+- import_tasks: 653/RHEL-09-653030.yml
+  tags: [RHEL-09-653030, remediate]
+  when: stig_rules['RHEL-09-653030'] | default(true) | bool
+
+- import_tasks: 653/RHEL-09-653035.yml
+  tags: [RHEL-09-653035, remediate]
+  when: stig_rules['RHEL-09-653035'] | default(true) | bool
+
+- import_tasks: 653/RHEL-09-653040.yml
+  tags: [RHEL-09-653040, remediate]
+  when: stig_rules['RHEL-09-653040'] | default(true) | bool
+
+- import_tasks: 653/RHEL-09-653045.yml
+  tags: [RHEL-09-653045, remediate]
+  when: stig_rules['RHEL-09-653045'] | default(true) | bool
+
+- import_tasks: 653/RHEL-09-653050.yml
+  tags: [RHEL-09-653050, remediate]
+  when: stig_rules['RHEL-09-653050'] | default(true) | bool
+
+- import_tasks: 653/RHEL-09-653055.yml
+  tags: [RHEL-09-653055, remediate]
+  when: stig_rules['RHEL-09-653055'] | default(true) | bool
+
+- import_tasks: 653/RHEL-09-653060.yml
+  tags: [RHEL-09-653060, remediate]
+  when: stig_rules['RHEL-09-653060'] | default(true) | bool
+
+- import_tasks: 653/RHEL-09-653065.yml
+  tags: [RHEL-09-653065, remediate]
+  when: stig_rules['RHEL-09-653065'] | default(true) | bool
+
+- import_tasks: 653/RHEL-09-653070.yml
+  tags: [RHEL-09-653070, remediate]
+  when: stig_rules['RHEL-09-653070'] | default(true) | bool
+
+- import_tasks: 653/RHEL-09-653075.yml
+  tags: [RHEL-09-653075, remediate]
+  when: stig_rules['RHEL-09-653075'] | default(true) | bool
+
+- import_tasks: 653/RHEL-09-653080.yml
+  tags: [RHEL-09-653080, remediate]
+  when: stig_rules['RHEL-09-653080'] | default(true) | bool
+
+- import_tasks: 653/RHEL-09-653085.yml
+  tags: [RHEL-09-653085, remediate]
+  when: stig_rules['RHEL-09-653085'] | default(true) | bool
+
+- import_tasks: 653/RHEL-09-653090.yml
+  tags: [RHEL-09-653090, remediate]
+  when: stig_rules['RHEL-09-653090'] | default(true) | bool
+
+- import_tasks: 653/RHEL-09-653095.yml
+  tags: [RHEL-09-653095, remediate]
+  when: stig_rules['RHEL-09-653095'] | default(true) | bool
+
+- import_tasks: 653/RHEL-09-653100.yml
+  tags: [RHEL-09-653100, remediate]
+  when: stig_rules['RHEL-09-653100'] | default(true) | bool
+
+- import_tasks: 653/RHEL-09-653105.yml
+  tags: [RHEL-09-653105, remediate]
+  when: stig_rules['RHEL-09-653105'] | default(true) | bool
+
+- import_tasks: 653/RHEL-09-653110.yml
+  tags: [RHEL-09-653110, remediate]
+  when: stig_rules['RHEL-09-653110'] | default(true) | bool
+
+- import_tasks: 653/RHEL-09-653120.yml
+  tags: [RHEL-09-653120, remediate]
+  when: stig_rules['RHEL-09-653120'] | default(true) | bool
+
+- import_tasks: 653/RHEL-09-653125.yml
+  tags: [RHEL-09-653125, remediate]
+  when: stig_rules['RHEL-09-653125'] | default(true) | bool
+
+- import_tasks: 653/RHEL-09-653130.yml
+  tags: [RHEL-09-653130, remediate]
+  when: stig_rules['RHEL-09-653130'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654010.yml
+  tags: [RHEL-09-654010, remediate]
+  when: stig_rules['RHEL-09-654010'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654015.yml
+  tags: [RHEL-09-654015, remediate]
+  when: stig_rules['RHEL-09-654015'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654020.yml
+  tags: [RHEL-09-654020, remediate]
+  when: stig_rules['RHEL-09-654020'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654025.yml
+  tags: [RHEL-09-654025, remediate]
+  when: stig_rules['RHEL-09-654025'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654030.yml
+  tags: [RHEL-09-654030, remediate]
+  when: stig_rules['RHEL-09-654030'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654035.yml
+  tags: [RHEL-09-654035, remediate]
+  when: stig_rules['RHEL-09-654035'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654040.yml
+  tags: [RHEL-09-654040, remediate]
+  when: stig_rules['RHEL-09-654040'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654045.yml
+  tags: [RHEL-09-654045, remediate]
+  when: stig_rules['RHEL-09-654045'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654050.yml
+  tags: [RHEL-09-654050, remediate]
+  when: stig_rules['RHEL-09-654050'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654055.yml
+  tags: [RHEL-09-654055, remediate]
+  when: stig_rules['RHEL-09-654055'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654060.yml
+  tags: [RHEL-09-654060, remediate]
+  when: stig_rules['RHEL-09-654060'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654065.yml
+  tags: [RHEL-09-654065, remediate]
+  when: stig_rules['RHEL-09-654065'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654070.yml
+  tags: [RHEL-09-654070, remediate]
+  when: stig_rules['RHEL-09-654070'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654075.yml
+  tags: [RHEL-09-654075, remediate]
+  when: stig_rules['RHEL-09-654075'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654080.yml
+  tags: [RHEL-09-654080, remediate]
+  when: stig_rules['RHEL-09-654080'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654085.yml
+  tags: [RHEL-09-654085, remediate]
+  when: stig_rules['RHEL-09-654085'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654090.yml
+  tags: [RHEL-09-654090, remediate]
+  when: stig_rules['RHEL-09-654090'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654095.yml
+  tags: [RHEL-09-654095, remediate]
+  when: stig_rules['RHEL-09-654095'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654097.yml
+  tags: [RHEL-09-654097, remediate]
+  when: stig_rules['RHEL-09-654097'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654100.yml
+  tags: [RHEL-09-654100, remediate]
+  when: stig_rules['RHEL-09-654100'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654105.yml
+  tags: [RHEL-09-654105, remediate]
+  when: stig_rules['RHEL-09-654105'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654110.yml
+  tags: [RHEL-09-654110, remediate]
+  when: stig_rules['RHEL-09-654110'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654115.yml
+  tags: [RHEL-09-654115, remediate]
+  when: stig_rules['RHEL-09-654115'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654120.yml
+  tags: [RHEL-09-654120, remediate]
+  when: stig_rules['RHEL-09-654120'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654125.yml
+  tags: [RHEL-09-654125, remediate]
+  when: stig_rules['RHEL-09-654125'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654130.yml
+  tags: [RHEL-09-654130, remediate]
+  when: stig_rules['RHEL-09-654130'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654135.yml
+  tags: [RHEL-09-654135, remediate]
+  when: stig_rules['RHEL-09-654135'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654140.yml
+  tags: [RHEL-09-654140, remediate]
+  when: stig_rules['RHEL-09-654140'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654145.yml
+  tags: [RHEL-09-654145, remediate]
+  when: stig_rules['RHEL-09-654145'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654150.yml
+  tags: [RHEL-09-654150, remediate]
+  when: stig_rules['RHEL-09-654150'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654155.yml
+  tags: [RHEL-09-654155, remediate]
+  when: stig_rules['RHEL-09-654155'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654160.yml
+  tags: [RHEL-09-654160, remediate]
+  when: stig_rules['RHEL-09-654160'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654165.yml
+  tags: [RHEL-09-654165, remediate]
+  when: stig_rules['RHEL-09-654165'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654170.yml
+  tags: [RHEL-09-654170, remediate]
+  when: stig_rules['RHEL-09-654170'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654175.yml
+  tags: [RHEL-09-654175, remediate]
+  when: stig_rules['RHEL-09-654175'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654180.yml
+  tags: [RHEL-09-654180, remediate]
+  when: stig_rules['RHEL-09-654180'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654185.yml
+  tags: [RHEL-09-654185, remediate]
+  when: stig_rules['RHEL-09-654185'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654190.yml
+  tags: [RHEL-09-654190, remediate]
+  when: stig_rules['RHEL-09-654190'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654195.yml
+  tags: [RHEL-09-654195, remediate]
+  when: stig_rules['RHEL-09-654195'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654200.yml
+  tags: [RHEL-09-654200, remediate]
+  when: stig_rules['RHEL-09-654200'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654205.yml
+  tags: [RHEL-09-654205, remediate]
+  when: stig_rules['RHEL-09-654205'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654210.yml
+  tags: [RHEL-09-654210, remediate]
+  when: stig_rules['RHEL-09-654210'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654215.yml
+  tags: [RHEL-09-654215, remediate]
+  when: stig_rules['RHEL-09-654215'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654220.yml
+  tags: [RHEL-09-654220, remediate]
+  when: stig_rules['RHEL-09-654220'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654225.yml
+  tags: [RHEL-09-654225, remediate]
+  when: stig_rules['RHEL-09-654225'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654230.yml
+  tags: [RHEL-09-654230, remediate]
+  when: stig_rules['RHEL-09-654230'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654235.yml
+  tags: [RHEL-09-654235, remediate]
+  when: stig_rules['RHEL-09-654235'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654240.yml
+  tags: [RHEL-09-654240, remediate]
+  when: stig_rules['RHEL-09-654240'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654245.yml
+  tags: [RHEL-09-654245, remediate]
+  when: stig_rules['RHEL-09-654245'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654250.yml
+  tags: [RHEL-09-654250, remediate]
+  when: stig_rules['RHEL-09-654250'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654255.yml
+  tags: [RHEL-09-654255, remediate]
+  when: stig_rules['RHEL-09-654255'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654265.yml
+  tags: [RHEL-09-654265, remediate]
+  when: stig_rules['RHEL-09-654265'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654270.yml
+  tags: [RHEL-09-654270, remediate]
+  when: stig_rules['RHEL-09-654270'] | default(true) | bool
+
+- import_tasks: 654/RHEL-09-654275.yml
+  tags: [RHEL-09-654275, remediate]
+  when: stig_rules['RHEL-09-654275'] | default(true) | bool
+
+- import_tasks: 671/RHEL-09-671010.yml
+  tags: [RHEL-09-671010, remediate]
+  when: stig_rules['RHEL-09-671010'] | default(true) | bool
+
+- import_tasks: 671/RHEL-09-671015.yml
+  tags: [RHEL-09-671015, remediate]
+  when: stig_rules['RHEL-09-671015'] | default(true) | bool
+
+- import_tasks: 671/RHEL-09-671020.yml
+  tags: [RHEL-09-671020, remediate]
+  when: stig_rules['RHEL-09-671020'] | default(true) | bool
+
+- import_tasks: 671/RHEL-09-671025.yml
+  tags: [RHEL-09-671025, remediate]
+  when: stig_rules['RHEL-09-671025'] | default(true) | bool
+
+- import_tasks: 672/RHEL-09-672020.yml
+  tags: [RHEL-09-672020, remediate]
+  when: stig_rules['RHEL-09-672020'] | default(true) | bool
+
+- import_tasks: 672/RHEL-09-672050.yml
+  tags: [RHEL-09-672050, remediate]
+  when: stig_rules['RHEL-09-672050'] | default(true) | bool
+
+# Remediation runs after every check, and only when the remediate tag was
+# selected: a run tagged only with a STIG ID checks that rule without fixing
+# it, even though the fix tasks are tagged remediate.
+- name: fix open rules, then re-check the ones that changed
+  include_tasks:
+    file: remediate.yml
+    apply:
+      tags: [remediate]
+  when: "'remediate' in ansible_run_tags"
+  tags: always
+
+# Write the final results (after any remediation and re-check). Skipped when
+# empty, e.g. a run whose tags selected no rule, and on a remediate run without
+# validate, whose pre-fix verdicts are stale by the time they would be written.
+- name: write results to disk
+  copy:
+    content: "{{ stig_facts | to_nice_json(indent=2) }}"
+    dest: "{{ stig_facts_dir }}/{{ stig_run_ts }}-{{ inventory_hostname }}.json"
+  delegate_to: localhost
+  become: false
+  when:
+    - stig_facts | length > 0
+    - "'remediate' not in ansible_run_tags or 'validate' in ansible_run_tags"
+  tags: always
+
+- name: render the checklist
+  import_tasks: render.yml

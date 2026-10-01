@@ -1,0 +1,27 @@
+---
+# RHEL-09-652015 | V-258141 | fix
+# RHEL 9 must have the packages required for encrypting offloaded audit logs
+# installed.
+# CAT II (Medium)
+#
+# Installs rsyslog-gnutls.
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-652015 | fix
+  block:
+    - name: RHEL-09-652015 | install rsyslog-gnutls
+      ansible.builtin.dnf:
+        name: rsyslog-gnutls
+        state: present
+      register: _652015_fix
+
+    - name: RHEL-09-652015 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-652015'] }}"
+      when: (_652015_fix is changed)
+  rescue:
+    - name: RHEL-09-652015 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-652015': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-652015'] }}"

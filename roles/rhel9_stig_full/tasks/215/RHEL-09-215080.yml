@@ -1,0 +1,38 @@
+---
+# RHEL-09-215080 | V-257839
+# RHEL 9 must have the gnutls-utils package installed.
+# CAT II (Medium) | CCI-000366
+
+# Checked directly, as the STIG command does. (The DISA Ansible role's check
+# mode only says whether one of its tasks would change something.)
+
+- name: RHEL-09-215080 | check gnutls-utils is installed
+  shell: |
+    if rpm -q --quiet gnutls-utils; then state=installed; else state="not installed"; fi
+    echo "gnutls-utils: $state ($(rpm -q gnutls-utils 2>&1 | head -1))"
+    if [ "$state" = "installed" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: gnutls-utils must be installed"
+    fi
+  register: _215080_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-215080 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-215080': {
+        'status':
+          'not_a_finding' if _215080_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _215080_result.stdout | trim,
+        'comments':
+          'Install the package: sudo dnf install gnutls-utils'
+      }
+    }) }}"
+  tags: [validate]

@@ -1,0 +1,41 @@
+---
+# RHEL-09-412060 | V-258073
+# RHEL 9 must define default permissions for the c shell.
+# CAT II (Medium) | CCI-000366
+
+# The DISA Ansible role checks for its own line in one specific file, so a host
+# configured equivalently elsewhere (a drop-in, other spacing or case) was
+# reported open while compliant.
+# Every uncommented umask statement must set 077, with at least one.
+
+- name: RHEL-09-412060 | check umask in /etc/csh.cshrc
+  shell: |
+    vals=$(grep -vE '^[[:space:]]*#' /etc/csh.cshrc 2>/dev/null | grep -oE '(^|[^[:alnum:]_])umask[[:space:]]+[0-7]{3,4}' | awk '{print $NF}')
+    echo "umask values set in /etc/csh.cshrc: $(echo $vals)"
+    bad=$(echo "$vals" | grep -vE '^0?077$' | grep .)
+    if [ -n "$vals" ] && [ -z "$bad" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: every umask statement must set 077"
+    fi
+  register: _412060_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-412060 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-412060': {
+        'status':
+          'not_a_finding' if _412060_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _412060_result.stdout | trim,
+        'comments':
+          'Set every umask statement in /etc/csh.cshrc to 077.'
+      }
+    }) }}"
+  tags: [validate]

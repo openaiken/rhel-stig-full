@@ -1,0 +1,55 @@
+---
+# RHEL-09-212035 | V-257792 | fix
+# RHEL 9 must disable virtual system calls.
+# CAT II (Medium)
+#
+# Sets vsyscall=none on every installed kernel (grubby --update-kernel=ALL)
+# and in GRUB_CMDLINE_LINUX in /etc/default/grub, so it survives the next
+# kernel install: an existing vsyscall= value is corrected, otherwise
+# vsyscall=none is appended. The checks read both. The running kernel uses it
+# from the next boot.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-212035 | fix
+  block:
+    - name: RHEL-09-212035 | read the installed kernels' arguments
+      ansible.builtin.command: grubby --info=ALL
+      register: _212035_info
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-212035 | add vsyscall=none to every installed kernel
+      ansible.builtin.command: grubby --update-kernel=ALL --args=vsyscall=none
+      register: _212035_kern
+      when: >-
+        (_212035_info.stdout_lines | select('match', '^args=') | list | length == 0)
+        or (_212035_info.stdout_lines | select('match', '^args=')
+            | reject('search', '(^args="|[ ])vsyscall=none([ ]|"$)') | list | length > 0)
+
+    - name: RHEL-09-212035 | correct an existing vsyscall= in GRUB_CMDLINE_LINUX
+      ansible.builtin.replace:
+        path: /etc/default/grub
+        regexp: '^([ \t]*GRUB_CMDLINE_LINUX="(?:[^"]*[ ])?)vsyscall=[^" ]*'
+        replace: '\g<1>vsyscall=none'
+      register: _212035_fix
+
+    - name: RHEL-09-212035 | add vsyscall=none to GRUB_CMDLINE_LINUX where it has no vsyscall=
+      ansible.builtin.lineinfile:
+        path: /etc/default/grub
+        regexp: '^([ \t]*GRUB_CMDLINE_LINUX=")(?!(?:[^"]*[ ])?vsyscall=)([^"]*)"(.*)$'
+        line: '\1\2 vsyscall=none"\3'
+        backrefs: true
+      register: _212035_add
+
+    - name: RHEL-09-212035 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-212035'] }}"
+      when: (_212035_kern is changed) or (_212035_fix is changed) or (_212035_add is changed)
+  rescue:
+    - name: RHEL-09-212035 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-212035': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-212035'] }}"

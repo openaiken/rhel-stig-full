@@ -1,0 +1,52 @@
+---
+# RHEL-09-211050 | V-257785 | fix
+# The x86 Ctrl-Alt-Delete key sequence must be disabled on RHEL 9.
+# CAT I (High)
+#
+# Masks ctrl-alt-del.target (a target is never running, so it is only masked).
+# An existing /etc/systemd/system/ctrl-alt-del.target that is not a link to
+# /dev/null (an admin override, which makes systemctl mask refuse) is removed
+# first; the fix then confirms LoadState=masked, since the systemd module has
+# reported success when the mask was refused.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-211050 | fix
+  block:
+    - name: RHEL-09-211050 | look for an override of ctrl-alt-del.target in /etc/systemd/system
+      ansible.builtin.stat:
+        path: /etc/systemd/system/ctrl-alt-del.target
+      register: _211050_ovr
+
+    - name: RHEL-09-211050 | remove the override, which blocks masking
+      ansible.builtin.file:
+        path: /etc/systemd/system/ctrl-alt-del.target
+        state: absent
+      register: _211050_rm
+      when: _211050_ovr.stat.exists and (_211050_ovr.stat.lnk_source | default('')) != '/dev/null'
+
+    - name: RHEL-09-211050 | mask ctrl-alt-del.target
+      ansible.builtin.systemd_service:
+        name: ctrl-alt-del.target
+        masked: true
+        daemon_reload: true
+      register: _211050_fix
+
+    - name: RHEL-09-211050 | confirm ctrl-alt-del.target is masked
+      ansible.builtin.command: systemctl show -p LoadState --value ctrl-alt-del.target
+      register: _211050_state
+      changed_when: false
+      failed_when: _211050_state.stdout | trim != 'masked'
+      check_mode: false
+      when: not ansible_check_mode
+
+    - name: RHEL-09-211050 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-211050'] }}"
+      when: (_211050_rm is changed) or (_211050_fix is changed)
+  rescue:
+    - name: RHEL-09-211050 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-211050': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-211050'] }}"

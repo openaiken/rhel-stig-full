@@ -1,0 +1,27 @@
+---
+# RHEL-09-291040 | V-258040 | fix
+# RHEL 9 wireless network adapters must be disabled.
+# CAT II (Medium)
+#
+# Turns off all wireless radios with NetworkManager (nmcli radio all off),
+# which NetworkManager keeps across reboots. Not run when
+# rhel9_attest_wifi_approved documents the wireless use.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-291040 | fix
+  block:
+    - name: RHEL-09-291040 | turn off the wireless radios
+      ansible.builtin.command: nmcli radio all off
+      register: _291040_fix
+
+    - name: RHEL-09-291040 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-291040'] }}"
+      when: (_291040_fix is changed)
+  rescue:
+    - name: RHEL-09-291040 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-291040': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-291040'] }}"

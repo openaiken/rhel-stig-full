@@ -1,0 +1,30 @@
+---
+# RHEL-09-411020 | V-258043 | fix
+# All RHEL 9 local interactive user accounts must be assigned a home directory
+# upon creation.
+# CAT II (Medium)
+#
+# Sets CREATE_HOME yes in /etc/login.defs, replacing the last uncommented
+# CREATE_HOME line (the one in effect) or appending one.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-411020 | fix
+  block:
+    - name: RHEL-09-411020 | set CREATE_HOME in /etc/login.defs
+      ansible.builtin.lineinfile:
+        path: /etc/login.defs
+        regexp: '^[ \t]*CREATE_HOME[ \t]'
+        line: 'CREATE_HOME yes'
+      register: _411020_fix
+
+    - name: RHEL-09-411020 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-411020'] }}"
+      when: (_411020_fix is changed)
+  rescue:
+    - name: RHEL-09-411020 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-411020': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-411020'] }}"

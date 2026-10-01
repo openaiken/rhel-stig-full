@@ -1,0 +1,46 @@
+---
+# RHEL-09-432025 | V-258086
+# RHEL 9 must require users to reauthenticate for privilege escalation.
+# CAT II (Medium) | CCI-002038
+
+# Any occurrence of !authenticate in sudoers (local or drop-in) is a finding.
+# No exceptions — NOPASSWD is the correct mechanism if passwordless sudo is
+# approved, but !authenticate bypasses PAM entirely and is never acceptable.
+
+# NOTE: grep -n prefixes every output line with "file:lineno:", so a comment
+# filter must anchor past that prefix. A bare '^\s*#' never matches and lets
+# commented-out lines through as findings.
+- name: RHEL-09-432025 | check sudoers for !authenticate
+  shell: |
+    # The files sudo actually reads (visudo -c lists each one it parses):
+    # sudo skips sudoers.d names containing a dot or ending in ~, and reads
+    # sudoers.d at all only through an includedir line. Grepping the whole
+    # directory counted settings sudo never sees.
+    sudo_files=$(visudo -c 2>/dev/null | sed -n 's/: parsed OK$//p')
+    [ -n "$sudo_files" ] || sudo_files=/etc/sudoers
+    hits=$(grep -iHn '!authenticate' $sudo_files 2>/dev/null \
+           | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' || true)
+    if [ -z "$hits" ]; then
+      echo "STATUS: PASS"
+      echo "RAW: No occurrences of !authenticate found"
+    else
+      echo "STATUS: FAIL"
+      echo "RAW: !authenticate found:"
+      echo "$hits"
+    fi
+  register: _432025_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-432025 | record !authenticate check status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-432025': {
+        'status': 'not_a_finding' if _432025_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
+        'finding_details': _432025_result.stdout | trim,
+        'comments': 'Remove all !authenticate entries from sudoers files. Use NOPASSWD if passwordless sudo is required.'
+      }
+    }) }}"
+  tags: [validate]

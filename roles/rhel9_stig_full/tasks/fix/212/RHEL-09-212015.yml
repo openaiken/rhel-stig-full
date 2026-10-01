@@ -1,0 +1,34 @@
+---
+# RHEL-09-212015 | V-257788 | fix
+# RHEL 9 must disable the ability of systemd to spawn an interactive boot
+# process.
+# CAT II (Medium)
+#
+# Removes systemd.confirm_spawn from every installed kernel (grubby --remove-
+# args) and from GRUB_CMDLINE_LINUX in /etc/default/grub.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-212015 | fix
+  block:
+    - name: RHEL-09-212015 | remove systemd.confirm_spawn from every installed kernel
+      ansible.builtin.command: grubby --update-kernel=ALL --remove-args=systemd.confirm_spawn
+      register: _212015_kern
+
+    - name: RHEL-09-212015 | remove it from GRUB_CMDLINE_LINUX
+      ansible.builtin.replace:
+        path: /etc/default/grub
+        regexp: '^([ \t]*GRUB_CMDLINE_LINUX="[^"]*?)[ ]?systemd\.confirm_spawn(=[^" ]*)?'
+        replace: '\g<1>'
+      register: _212015_fix
+
+    - name: RHEL-09-212015 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-212015'] }}"
+      when: (_212015_kern is changed) or (_212015_fix is changed)
+  rescue:
+    - name: RHEL-09-212015 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-212015': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-212015'] }}"

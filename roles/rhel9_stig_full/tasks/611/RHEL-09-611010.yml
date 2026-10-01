@@ -1,0 +1,71 @@
+---
+# RHEL-09-611010 | V-258091
+# RHEL 9 must ensure the password complexity module in the system-auth file
+# is configured for three retries or less.
+# CAT II (Medium) | CCI-004066, CCI-000192
+
+# The retry value controls how many failed complexity attempts pam_pwquality
+# allows before returning an error. 0 means unlimited (finding); >3 is also
+# a finding. Check both pwquality.conf and any drop-in conf.d file.
+# REMEDIATION NOTE: set it in /etc/security/pwquality.conf, which is read last
+# rather than editing the base file, so upgrades don't clobber the setting.
+
+- name: RHEL-09-611010 | check pwquality retry setting
+  shell: |
+    # Collect retry values from base config and all drop-in files.
+    # libpwquality reads pwquality.conf.d/*.conf first (sorted) and
+    # pwquality.conf last, later values overriding earlier ones, so the main
+    # file wins (man pwquality.conf; confirmed with pwscore). Reading them the
+    # other way round passed a drop-in minlen = 15 under a main-file minlen = 8.
+    # Last matching line wins. Take the
+    # last line before trimming: xargs used to join several values into one
+    # string such as "3 5", the numeric tests then errored, and it passed.
+    val=$(grep -h '^\s*retry\s*=' \
+            /etc/security/pwquality.conf.d/*.conf \
+            /etc/security/pwquality.conf \
+            2>/dev/null \
+          | tail -1 | cut -d= -f2 | tr -d '[:space:]')
+
+    # pam_pwquality.so arguments override the configuration files
+    # (man pam_pwquality): a retry= on the PAM line is the value in effect.
+    # Two different values (system-auth vs password-auth) fail.
+    pamv=$(grep -hE '^[[:space:]]*password[[:space:]]+[^[:space:]]+[[:space:]]+pam_pwquality[.]so' /etc/pam.d/system-auth /etc/pam.d/password-auth 2>/dev/null \
+           | grep -oE '(^|[[:space:]])retry=[^[:space:]]+' | cut -d= -f2 | sort -u)
+    if [ -n "$pamv" ]; then
+      echo "pam_pwquality.so argument overrides the configuration: retry=$(echo $pamv)"
+      [ "$(echo "$pamv" | wc -l)" -eq 1 ] && val=$pamv || val=conflicting
+    fi
+
+    if [ -z "$val" ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: retry not set in pwquality.conf or pwquality.conf.d/ (must be 1-3)"
+      exit 0
+    fi
+
+    if ! [[ "$val" =~ ^[0-9]+$ ]]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: retry=$val is not a number"
+    elif [ "$val" -eq 0 ] || [ "$val" -gt 3 ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: retry=$val (must be 1-3; 0 means unlimited)"
+    else
+      echo "STATUS: PASS"
+      echo "PASS: retry=$val"
+    fi
+  register: _611010_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-611010 | record pwquality retry status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-611010': {
+        'status': 'not_a_finding' if _611010_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
+        'finding_details': _611010_result.stdout | trim,
+        'comments':
+          'Set retry = 3 in /etc/security/pwquality.conf (read last, so it overrides conf.d).'
+      }
+    }) }}"
+  tags: [validate]

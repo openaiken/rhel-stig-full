@@ -1,0 +1,45 @@
+---
+# RHEL-09-412070 | V-258075 | fix
+# RHEL 9 must define default permissions for the system default profile.
+# CAT II (Medium)
+#
+# Changes every uncommented umask statement in /etc/profile to umask 077, and
+# appends umask 077 if the file has none (the STIG treats a missing statement
+# as a finding; stock RHEL 9 /etc/profile has none).
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-412070 | fix
+  block:
+    - name: RHEL-09-412070 | set every umask in /etc/profile to 077
+      ansible.builtin.replace:
+        path: /etc/profile
+        regexp: '^(?![ \t]*#)(.*(?:^|[^A-Za-z0-9_])umask[ \t]+)[0-7][0-7][0-7][0-7]?\b'
+        replace: '\g<1>077'
+      register: _412070_fix
+
+    - name: RHEL-09-412070 | look for any umask statement in /etc/profile
+      ansible.builtin.command: grep -cE '^[^#]*(^|[^[:alnum:]_])umask[[:space:]]+[0-7][0-7][0-7]' /etc/profile
+      register: _412070_count
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-412070 | append umask 077 to /etc/profile, which has none
+      ansible.builtin.lineinfile:
+        path: /etc/profile
+        line: 'umask 077'
+        insertafter: EOF
+      register: _412070_add
+      when: (_412070_count.stdout | int) == 0
+
+    - name: RHEL-09-412070 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-412070'] }}"
+      when: (_412070_fix is changed) or (_412070_add is changed)
+  rescue:
+    - name: RHEL-09-412070 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-412070': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-412070'] }}"

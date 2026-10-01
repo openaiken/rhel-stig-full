@@ -1,0 +1,40 @@
+---
+# RHEL-09-611160 | V-258121
+# RHEL 9 must use the common access card (CAC) smart card driver.
+# CAT II (Medium) | CCI-000764, CCI-000766, CCI-000765, CCI-004045, CCI-001941, CCI-000767, CCI-000768, CCI-000770, CCI-001942
+
+# The DISA Ansible role checks for its own line in one specific file, so a host
+# configured equivalently elsewhere (a drop-in, other spacing or case) was
+# reported open while compliant.
+# Uses opensc-tool, as the STIG does; missing opensc is a finding.
+
+- name: RHEL-09-611160 | check opensc card drivers include cac
+  shell: |
+    val=$(opensc-tool --get-conf-entry app:default:card_drivers 2>&1)
+    echo "card_drivers: ${val:-(none)}"
+    if echo "$val" | grep -qwi cac; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: cac is not a configured card driver"
+    fi
+  register: _611160_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-611160 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-611160': {
+        'status':
+          'not_a_finding' if _611160_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _611160_result.stdout | trim,
+        'comments':
+          'Set card_drivers = cac; in the app default section of /etc/opensc.conf.'
+      }
+    }) }}"
+  tags: [validate]

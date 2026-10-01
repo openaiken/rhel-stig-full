@@ -1,0 +1,38 @@
+---
+# RHEL-09-215100 | V-258234
+# RHEL 9 must have the crypto-policies package installed.
+# CAT I (High) | CCI-002450, CCI-002890, CCI-003123
+
+# Checked directly, as the STIG command does. (The DISA Ansible role's check
+# mode only says whether one of its tasks would change something.)
+
+- name: RHEL-09-215100 | check crypto-policies is installed
+  shell: |
+    if rpm -q --quiet crypto-policies; then state=installed; else state="not installed"; fi
+    echo "crypto-policies: $state ($(rpm -q crypto-policies 2>&1 | head -1))"
+    if [ "$state" = "installed" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: crypto-policies must be installed"
+    fi
+  register: _215100_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-215100 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-215100': {
+        'status':
+          'not_a_finding' if _215100_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _215100_result.stdout | trim,
+        'comments':
+          'Install the package: sudo dnf install crypto-policies'
+      }
+    }) }}"
+  tags: [validate]

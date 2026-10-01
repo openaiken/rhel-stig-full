@@ -1,0 +1,61 @@
+---
+# RHEL-09-231100 | V-257861 | fix
+# RHEL 9 must prevent files with the setuid and setgid bit set from being
+# executed on the /boot directory.
+# CAT II (Medium)
+#
+# Adds nosuid to the /etc/fstab entry for /boot (keeping its other options)
+# and remounts it with nosuid; the check reads the live mount table. A host
+# where /boot is not a separate file system, or is mounted by a systemd unit
+# rather than fstab, gets a recorded failure: that needs a person.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-231100 | fix
+  block:
+    - name: RHEL-09-231100 | read how /boot is mounted
+      ansible.builtin.command: findmnt -rn -o OPTIONS --mountpoint /boot
+      register: _231100_mnt
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-231100 | stop if /boot is not a separate file system
+      ansible.builtin.fail:
+        msg: "/boot is not a separate file system; that needs repartitioning, not a mount option"
+      when: _231100_mnt.rc != 0
+
+    - name: RHEL-09-231100 | read the /etc/fstab entry for /boot
+      ansible.builtin.command: awk '$1 !~ /^#/ && $2 == "/boot"' /etc/fstab
+      register: _231100_fstab
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-231100 | stop if /boot has no /etc/fstab entry
+      ansible.builtin.fail:
+        msg: "/boot has no /etc/fstab entry (mounted by a systemd unit?); add nosuid to the Options= of that unit"
+      when: _231100_fstab.stdout | trim == ''
+
+    - name: RHEL-09-231100 | add nosuid to the /etc/fstab entry for /boot
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '^([ \t]*[^#\s]\S*\s+/boot\s+\S+\s+)(?!(?:\S*,)?nosuid(?:,|\s))(\S+)'
+        replace: '\g<1>\g<2>,nosuid'
+      register: _231100_fix
+
+    - name: RHEL-09-231100 | remount /boot with nosuid
+      ansible.builtin.command: mount -o remount,nosuid /boot
+      register: _231100_remount
+      when: _231100_mnt.stdout is not search('(^|,)nosuid(,|$)')
+
+    - name: RHEL-09-231100 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-231100'] }}"
+      when: (_231100_fix is changed) or (_231100_remount is changed)
+  rescue:
+    - name: RHEL-09-231100 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-231100': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-231100'] }}"

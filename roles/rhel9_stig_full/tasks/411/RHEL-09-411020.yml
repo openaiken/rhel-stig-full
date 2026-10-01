@@ -1,0 +1,40 @@
+---
+# RHEL-09-411020 | V-258043
+# All RHEL 9 local interactive user accounts must be assigned a home directory
+# upon creation.
+# CAT II (Medium) | CCI-000366
+
+# The DISA Ansible role checks for its own line in one specific file, so a host
+# configured equivalently elsewhere (a drop-in, other spacing or case) was
+# reported open while compliant.
+
+- name: RHEL-09-411020 | check CREATE_HOME in login.defs
+  shell: |
+    val=$(awk 'toupper($1) == "CREATE_HOME" { v = $2 } END { print v }' /etc/login.defs 2>/dev/null)
+    echo "CREATE_HOME (login.defs, last uncommented): ${val:-(not set)}"
+    if [ "${val,,}" = "yes" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: CREATE_HOME must be yes"
+    fi
+  register: _411020_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-411020 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-411020': {
+        'status':
+          'not_a_finding' if _411020_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _411020_result.stdout | trim,
+        'comments':
+          'Set CREATE_HOME yes in /etc/login.defs.'
+      }
+    }) }}"
+  tags: [validate]

@@ -1,0 +1,46 @@
+---
+# RHEL-09-271065 | V-258023
+# RHEL 9 must automatically lock graphical user sessions after 10 minutes of
+# inactivity.
+# CAT II (Medium) | CCI-000057
+
+# Not Applicable if GDM is not installed.
+# Queries the effective setting the way the STIG check does (gsettings),
+# through the user dconf profile, rather than grepping keyfiles. A keyfile grep
+# cannot see GNOME defaults, which of several keyfiles wins, whether dconf
+# update has compiled them, or whether a lock line is commented out.
+# XDG_CONFIG_HOME points at nothing so the root user db cannot mask a value.
+# An empty or error result is a finding: an unverifiable control is open.
+
+- name: RHEL-09-271065 | check idle-delay (effective value)
+  shell: |
+    rpm -q gdm &>/dev/null || { echo "NA: gdm not installed"; exit 0; }
+    raw=$(XDG_CONFIG_HOME=/nonexistent DCONF_PROFILE=user gsettings get org.gnome.desktop.session idle-delay 2>&1)
+    # gsettings prints a uint32 as: uint32 N
+    n=$(echo "$raw" | sed -nE 's/^uint32 ([0-9]+)$/\1/p')
+    if [ -z "$n" ]; then echo "FAIL: idle-delay unreadable (raw: ${raw:-no output})"
+    elif [ "$n" -ge 1 ] && [ "$n" -le 600 ]; then echo "PASS: idle-delay=$n seconds"
+    else echo "FAIL: idle-delay=$n seconds (required: 1 to 600 seconds (0 disables the lock))"
+    fi
+  register: _271065_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-271065 | record idle-delay status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-271065': {
+        'status':
+          'not_applicable' if _271065_result.stdout is search('^NA:', multiline=True)
+          else ('not_a_finding' if _271065_result.stdout is search('^PASS:', multiline=True)
+          else 'open'),
+        'finding_details': _271065_result.stdout | trim,
+        'comments':
+          'Set idle-delay=uint32 600 in a dconf keyfile under /etc/dconf/db/local.d/ '
+          ~ 'in the [org/gnome/desktop/session] section. Value must be 1-600 '
+          ~ '(0 disables locking; > 600 exceeds 10-minute maximum). Run dconf update.'
+      }
+    }) }}"
+  tags: [validate]

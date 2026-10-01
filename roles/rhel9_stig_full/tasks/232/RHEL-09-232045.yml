@@ -1,0 +1,31 @@
+---
+# RHEL-09-232045 | V-257889
+# All RHEL 9 local initialization files must have mode 0740 or less permissive.
+# CAT II (Medium) | CCI-000366
+
+# Follows the STIG command: dotfiles under /home and /root, maxdepth 2,
+# -perm /037. Mode 0740 allows no group write/exec and no other bits at all.
+# This used /033 over UID >= 1000 homes only, which missed other-read (the
+# stock 0644 .bashrc) and never looked at /root: a false negative on every
+# unhardened host.
+
+- name: RHEL-09-232045 | find local init files with mode more permissive than 0740
+  shell: find /home /root -maxdepth 2 -type f -name '.*' -perm /037 -printf '%m %p\n' 2>/dev/null || true
+  register: _232045_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-232045 | record local init files mode status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-232045': {
+        'status': 'not_a_finding' if not (_232045_result.stdout | trim) else 'open',
+        'finding_details':
+          'Local init files with mode > 0740:\n'
+          ~ (_232045_result.stdout | trim if _232045_result.stdout | trim else '(none)'),
+        'comments': 'Run chmod 0740 <file> for each listed initialization file.'
+      }
+    }) }}"
+  tags: [validate]

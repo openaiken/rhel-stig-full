@@ -1,0 +1,52 @@
+---
+# RHEL-09-271060 | V-258022 | fix
+# RHEL 9 must prevent a user from overriding the screensaver lock-enabled
+# setting for the graphical user interface.
+# CAT II (Medium)
+#
+# Locks /org/gnome/desktop/screensaver/lock-enabled in
+# /etc/dconf/db/local.d/locks/rhel9-stig-full, so users cannot override it.
+# Applies only where gdm is installed (the check is not applicable otherwise).
+# The local system database is what the check reads through the user profile,
+# which is made to include system-db:local; the databases are then compiled
+# with dconf update. Takes effect at the next login.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-271060 | fix
+  block:
+    - name: RHEL-09-271060 | make sure the user profile reads the local database
+      ansible.builtin.lineinfile:
+        path: /etc/dconf/profile/user
+        line: system-db:local
+        insertafter: '^user-db:user'
+        create: true
+        owner: root
+        group: root
+        mode: '0644'
+      register: _271060_prof
+
+    - name: RHEL-09-271060 | lock /org/gnome/desktop/screensaver/lock-enabled
+      ansible.builtin.lineinfile:
+        path: /etc/dconf/db/local.d/locks/rhel9-stig-full
+        line: /org/gnome/desktop/screensaver/lock-enabled
+        create: true
+        owner: root
+        group: root
+        mode: '0644'
+      register: _271060_lock
+
+    - name: RHEL-09-271060 | compile the dconf databases
+      ansible.builtin.command: dconf update
+      when: (_271060_prof is changed) or (_271060_lock is changed)
+
+    - name: RHEL-09-271060 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-271060'] }}"
+      when: (_271060_prof is changed) or (_271060_lock is changed)
+  rescue:
+    - name: RHEL-09-271060 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-271060': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-271060'] }}"

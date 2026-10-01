@@ -1,0 +1,54 @@
+---
+# RHEL-09-215045 | V-257832 | fix
+# RHEL 9 must not have the gssproxy package installed.
+# CAT II (Medium)
+#
+# Removes gssproxy. In use means: a package requires it (nfs-utils does; the
+# RHEL-09-215025 fix runs first); or its configuration was changed or a local
+# file added to /etc/gssproxy. A running gssproxy is not evidence: nfs-utils
+# starts it.
+#
+# Evidence-gated: the fix acts only when nothing on the host shows the GSS-API
+# proxy (gssproxy) in use. Otherwise it changes nothing and records each
+# reason ("left in place: ...") in finding_details, for a person to remove the
+# use, or to document the exception in rhel9_attest_documented_exceptions
+# where the rule allows one.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-215045 | fix
+  block:
+    - name: RHEL-09-215045 | look for signs that the GSS-API proxy (gssproxy) is in use
+      ansible.builtin.shell: |
+        shopt -s nullglob
+        deps=$(rpm -q --whatrequires gssproxy 2>/dev/null | grep -v '^no package')
+        [ -n "$deps" ] && echo "IN USE: required by $(echo $deps)"
+        rpm -V gssproxy 2>/dev/null | awk '$2 == "c" { print "IN USE: configuration changed from the package: " $NF }'
+        for f in /etc/gssproxy/*.conf; do [ -e "$f" ] || continue; rpm -qf "$f" >/dev/null 2>&1 || echo "IN USE: local configuration file $f"; done
+        true
+      register: _215045_use
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-215045 | leave it in place if it is in use
+      ansible.builtin.fail:
+        msg: "left in place, the GSS-API proxy (gssproxy) appears to be in use: {{ _215045_use.stdout_lines | map('regex_replace', '^IN USE: ', '') | join('; ') }}"
+      when: _215045_use.stdout_lines | select('match', '^IN USE') | list | length > 0
+
+    - name: RHEL-09-215045 | remove gssproxy
+      ansible.builtin.dnf:
+        name: gssproxy
+        state: absent
+      register: _215045_fix
+
+    - name: RHEL-09-215045 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-215045'] }}"
+      when: (_215045_fix is changed)
+  rescue:
+    - name: RHEL-09-215045 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-215045': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-215045'] }}"

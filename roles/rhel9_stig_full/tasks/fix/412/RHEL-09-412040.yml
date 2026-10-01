@@ -1,0 +1,35 @@
+---
+# RHEL-09-412040 | V-258069 | fix
+# RHEL 9 must limit the number of concurrent sessions to ten for all accounts
+# and/or account types.
+# CAT III (Low)
+#
+# Writes * hard maxlogins 10 to /etc/security/limits.d/rhel9-stig-full-
+# maxlogins.conf. A domain given a higher maxlogins elsewhere still fails the
+# re-check and must be fixed by hand.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-412040 | fix
+  block:
+    - name: RHEL-09-412040 | limit concurrent sessions to 10
+      ansible.builtin.copy:
+        dest: /etc/security/limits.d/rhel9-stig-full-maxlogins.conf
+        content: |
+          # Managed by rhel9_stig_full (RHEL-09-412040)
+          *    hard    maxlogins    10
+        owner: root
+        group: root
+        mode: '0644'
+      register: _412040_fix
+
+    - name: RHEL-09-412040 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-412040'] }}"
+      when: (_412040_fix is changed)
+  rescue:
+    - name: RHEL-09-412040 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-412040': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-412040'] }}"

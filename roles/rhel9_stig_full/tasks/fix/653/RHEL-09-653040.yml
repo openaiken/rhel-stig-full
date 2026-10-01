@@ -1,0 +1,36 @@
+---
+# RHEL-09-653040 | V-258157 | fix
+# RHEL 9 must notify the system administrator (SA) and information system
+# security officer (ISSO) (at a minimum) when allocated audit record storage
+# volume reaches 75 percent utilization.
+# CAT II (Medium)
+#
+# Sets space_left_action = email in /etc/audit/auditd.conf (replacing the last
+# space_left_action line, the one in effect) and has auditd reread its
+# configuration. Mail goes to action_mail_acct (root by default; see
+# RHEL-09-653125 for the alias).
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-653040 | fix
+  block:
+    - name: RHEL-09-653040 | set space_left_action
+      ansible.builtin.lineinfile:
+        path: /etc/audit/auditd.conf
+        regexp: '^[ \t]*space_left_action[ \t]*='
+        line: 'space_left_action = email'
+      register: _653040_fix
+    - name: RHEL-09-653040 | have auditd reread its configuration
+      ansible.builtin.command: auditctl --signal reload
+      when: _653040_fix is changed
+
+    - name: RHEL-09-653040 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-653040'] }}"
+      when: (_653040_fix is changed)
+  rescue:
+    - name: RHEL-09-653040 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-653040': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-653040'] }}"

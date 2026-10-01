@@ -1,0 +1,35 @@
+---
+# RHEL-09-251040 | V-257941 | fix
+# RHEL 9 network interfaces must not be in promiscuous mode.
+# CAT II (Medium)
+#
+# Turns promiscuous mode off on every interface that has it (ip link set dev X
+# promisc off). A packet capture tool or bridge that needs it will turn it on
+# again; that use must be documented instead.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-251040 | fix
+  block:
+    - name: RHEL-09-251040 | list interfaces in promiscuous mode
+      ansible.builtin.shell: ip -o link show | awk '/PROMISC/ { sub(/:$/, "", $2); sub(/@.*/, "", $2); print $2 }' || true
+      register: _251040_ifs
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-251040 | turn promiscuous mode off
+      ansible.builtin.command: ip link set dev {{ item }} promisc off
+      loop: "{{ _251040_ifs.stdout_lines }}"
+      register: _251040_fix
+
+    - name: RHEL-09-251040 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-251040'] }}"
+      when: (_251040_fix is changed)
+  rescue:
+    - name: RHEL-09-251040 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-251040': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-251040'] }}"

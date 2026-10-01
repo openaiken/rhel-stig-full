@@ -1,0 +1,76 @@
+---
+# RHEL-09-215035 | V-257830 | fix
+# RHEL 9 must not install packages from the Extra Packages for Enterprise
+# Linux (EPEL) repository.
+# CAT II (Medium)
+#
+# Removes epel-release and sets enabled=0 on any other repository section
+# whose id or name mentions EPEL. In use means: an installed package came from
+# an EPEL repository (dnf records each package origin). Removing the
+# repository does not remove those packages, which is why the fix stops
+# instead.
+#
+# Evidence-gated: the fix acts only when nothing on the host shows the EPEL
+# repository in use. Otherwise it changes nothing and records each reason
+# ("left in place: ...") in finding_details, for a person to remove the use,
+# or to document the exception in rhel9_attest_documented_exceptions where the
+# rule allows one.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-215035 | fix
+  block:
+    - name: RHEL-09-215035 | look for signs that the EPEL repository is in use
+      ansible.builtin.shell: |
+        shopt -s nullglob
+        dnf -q --disablerepo='*' repoquery --installed --qf '%{name} %{from_repo}' 2>/dev/null \
+          | awk 'tolower($2) ~ /epel/ && $1 != "epel-release" { print "IN USE: " $1 " was installed from " $2 }'
+        true
+      register: _215035_use
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-215035 | leave it in place if it is in use
+      ansible.builtin.fail:
+        msg: "left in place, the EPEL repository appears to be in use: {{ _215035_use.stdout_lines | map('regex_replace', '^IN USE: ', '') | join('; ') }}"
+      when: _215035_use.stdout_lines | select('match', '^IN USE') | list | length > 0
+
+    - name: RHEL-09-215035 | remove epel-release
+      ansible.builtin.dnf:
+        name: epel-release
+        state: absent
+      register: _215035_pkg
+
+    - name: RHEL-09-215035 | list EPEL repository sections still enabled
+      ansible.builtin.shell: |
+        shopt -s nullglob
+        awk '
+          /^[[:space:]]*[#;]/ { next }
+          /^[[:space:]]*\[/ { id = $0; gsub(/[][[:space:]]/, "", id); if (tolower(id) ~ /epel/) print FILENAME "|" id; next }
+          /^[[:space:]]*name[[:space:]]*=/ && tolower($0) ~ /epel/ && tolower(id) !~ /epel/ { print FILENAME "|" id }' /etc/yum.repos.d/*.repo | sort -u
+      register: _215035_sections
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-215035 | disable them
+      community.general.ini_file:
+        path: "{{ item.split('|')[0] }}"
+        section: "{{ item.split('|')[1] }}"
+        option: enabled
+        value: '0'
+        no_extra_spaces: true
+      loop: "{{ _215035_sections.stdout_lines }}"
+      register: _215035_fix
+
+    - name: RHEL-09-215035 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-215035'] }}"
+      when: (_215035_pkg is changed) or (_215035_fix is changed)
+  rescue:
+    - name: RHEL-09-215035 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-215035': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-215035'] }}"

@@ -1,0 +1,38 @@
+---
+# RHEL-09-232180 | V-257916
+# RHEL 9 /var/log/messages file must be owned by root.
+# CAT II (Medium) | CCI-001314
+
+# Checked directly, as the STIG command does. (The DISA Ansible role's check
+# mode only says whether one of its tasks would change something.)
+
+- name: RHEL-09-232180 | check /var/log/messages owner
+  shell: |
+    val=$(stat -c '%U' /var/log/messages 2>/dev/null)
+    echo "/var/log/messages owner: ${val:-(file not found)}"
+    if [ "$val" = "root" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: /var/log/messages must exist with owner root"
+    fi
+  register: _232180_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-232180 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-232180': {
+        'status':
+          'not_a_finding' if _232180_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _232180_result.stdout | trim,
+        'comments':
+          'sudo chown root /var/log/messages'
+      }
+    }) }}"
+  tags: [validate]

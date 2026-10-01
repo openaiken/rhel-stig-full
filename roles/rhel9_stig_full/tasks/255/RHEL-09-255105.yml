@@ -1,0 +1,41 @@
+---
+# RHEL-09-255105 | V-257997
+# RHEL 9 SSH server configuration file must be group-owned by root.
+# CAT II (Medium) | CCI-000366
+
+# Checked directly, as the STIG command does. (The DISA Ansible role's check
+# mode only says whether one of its tasks would change something.)
+# Covers sshd_config, the sshd_config.d directory and every file in it, as
+# the STIG command does.
+
+- name: RHEL-09-255105 | check sshd config group owner
+  shell: |
+    listing=$(find /etc/ssh/sshd_config /etc/ssh/sshd_config.d -exec stat -c '%G %n' {} \; 2>/dev/null)
+    echo "group owners:"; echo "${listing:-  (sshd_config not found)}"
+    bad=$(echo "$listing" | awk '$1 != "root"')
+    if [ -n "$listing" ] && [ -z "$bad" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: sshd_config, sshd_config.d and every file in it must have group owner root"
+    fi
+  register: _255105_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-255105 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-255105': {
+        'status':
+          'not_a_finding' if _255105_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _255105_result.stdout | trim,
+        'comments':
+          'sudo chgrp -R root /etc/ssh/sshd_config /etc/ssh/sshd_config.d'
+      }
+    }) }}"
+  tags: [validate]

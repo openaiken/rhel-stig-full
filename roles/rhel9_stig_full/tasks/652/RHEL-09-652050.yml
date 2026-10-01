@@ -1,0 +1,83 @@
+---
+# RHEL-09-652050 | V-258148
+# RHEL 9 must encrypt via the gtls driver the transfer of audit records
+# offloaded onto a different system or media from the system being audited via
+# rsyslog.
+# CAT II (Medium) | CCI-001851
+
+# The DISA Ansible role checks for its own line in one specific file, so a host
+# configured equivalently elsewhere (a drop-in, other spacing or case) was
+# reported open while compliant.
+# Parsed across /etc/rsyslog.conf and /etc/rsyslog.d/*.conf, comments removed.
+# Accepted in the legacy directive or an omfwd action block; the STIG makes
+# the setting in a module block a finding.
+
+- name: RHEL-09-652050 | check rsyslog gtls stream driver
+  shell: |
+    shopt -s nullglob
+    # The configuration rsyslog actually runs: rsyslogd -N1 -o writes it with
+    # every include expanded. rsyslog.d files count only through an include
+    # (stock: rsyslog.d/*.conf), so reading the directory also counted .bak
+    # files, and a removed include line went unnoticed.
+    rs_full=$(mktemp 2>/dev/null)
+    trap 'rm -f "$rs_full"' EXIT
+    if [ -n "$rs_full" ] && rsyslogd -N1 -o "$rs_full" >/dev/null 2>&1 && [ -s "$rs_full" ]; then
+      rs_files=$rs_full
+    else
+      rs_files=$(ls /etc/rsyslog.conf /etc/rsyslog.d/*.conf 2>/dev/null)
+    fi
+    conf=($rs_files)
+    # RainerScript blocks, one per line: ACTION/MODULE/GLOBAL: <parameters>
+    blocks=$(awk '
+      { sub(/#.*/, ""); buf = buf " " $0 }
+      END {
+        s = buf
+        while (match(s, /(action|module|global)[[:space:]]*\(/)) {
+          kind = substr(s, RSTART, RLENGTH); sub(/[[:space:]]*\($/, "", kind)
+          i = RSTART + RLENGTH; start = i; depth = 1
+          while (i <= length(s) && depth > 0) {
+            c = substr(s, i, 1); if (c == "(") depth++; else if (c == ")") depth--; i++
+          }
+          print toupper(kind) ": " substr(s, start, i - start - 1)
+          s = substr(s, i)
+        }
+      }' "${conf[@]}" 2>/dev/null)
+    legacy=$(grep -hiE '^[[:space:]]*\$' "${conf[@]}" 2>/dev/null)
+    fwd=$(echo "$blocks" | grep -iE '^ACTION:.*type[[:space:]]*=[[:space:]]*"omfwd"')
+    legacy_ok=$(echo "$legacy" | grep -iE '^[[:space:]]*\$DefaultNetstreamDriver[[:space:]]+gtls[[:space:]]*$')
+    action_ok=$(echo "$fwd" | grep -iE 'StreamDriver(\.Name)?[[:space:]]*=[[:space:]]*"gtls"')
+    global_ok=$(echo "$blocks" | grep -iE '^GLOBAL:.*DefaultNetstreamDriver[[:space:]]*=[[:space:]]*"gtls"')
+    in_module=$(echo "$blocks" | grep -iE '^MODULE:.*StreamDriver(\.Name)?[[:space:]]*=')
+    echo "legacy directive: ${legacy_ok:-(none)}"
+    echo "omfwd actions: ${fwd:-(none)}"
+    [ -n "$global_ok" ] && echo "global: $global_ok"
+    [ -n "$in_module" ] && echo "MODULE BLOCK: $in_module"
+    if [ -n "$in_module" ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: StreamDriver(\.Name)?[[:space:]]*= is set in a module block, which the STIG makes a finding"
+    elif [ -n "$legacy_ok" ] || [ -n "$action_ok" ] || [ -n "$global_ok" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: the gtls stream driver is not configured"
+    fi
+  register: _652050_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-652050 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-652050': {
+        'status':
+          'not_a_finding' if _652050_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _652050_result.stdout | trim,
+        'comments':
+          'Set $DefaultNetstreamDriver gtls, or StreamDriver=gtls in the omfwd action.'
+      }
+    }) }}"
+  tags: [validate]

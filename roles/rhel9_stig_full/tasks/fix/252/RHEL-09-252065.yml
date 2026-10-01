@@ -1,0 +1,27 @@
+---
+# RHEL-09-252065 | V-257954 | fix
+# RHEL 9 libreswan package must be installed.
+# CAT II (Medium)
+#
+# Installs libreswan. No IPsec connection is configured or started.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-252065 | fix
+  block:
+    - name: RHEL-09-252065 | install libreswan
+      ansible.builtin.dnf:
+        name: libreswan
+        state: present
+      register: _252065_fix
+
+    - name: RHEL-09-252065 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-252065'] }}"
+      when: (_252065_fix is changed)
+  rescue:
+    - name: RHEL-09-252065 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-252065': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-252065'] }}"

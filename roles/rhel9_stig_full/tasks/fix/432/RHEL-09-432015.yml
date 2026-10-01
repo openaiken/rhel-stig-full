@@ -1,0 +1,61 @@
+---
+# RHEL-09-432015 | V-258084 | fix
+# RHEL 9 must require reauthentication when using the "sudo" command.
+# CAT II (Medium)
+#
+# Sets Defaults timestamp_timeout=0 (the STIG fix value) in
+# /etc/sudoers.d/rhel9-stig-full when no sudoers file sets it, or corrects the
+# value in the one file that does. Two or more files setting it is left for a
+# person (the check requires exactly one). Every edit is validated with
+# visudo.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-432015 | fix
+  block:
+    # only the files sudo reads (visudo -c), as the check counts them
+    - name: RHEL-09-432015 | find sudoers files that set timestamp_timeout
+      ansible.builtin.shell: |
+        grep -lisE '^[^#]*timestamp_timeout' $(visudo -c 2>/dev/null | sed -n 's/: parsed OK$//p') /dev/null || true
+      register: _432015_files
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-432015 | stop if several files set it
+      ansible.builtin.fail:
+        msg: "timestamp_timeout is set in several files ({{ _432015_files.stdout_lines | join(', ') }}); keep exactly one"
+      when: _432015_files.stdout_lines | length > 1
+
+    - name: RHEL-09-432015 | correct timestamp_timeout in the one file that sets it
+      ansible.builtin.lineinfile:
+        path: "{{ _432015_files.stdout_lines[0] }}"
+        regexp: '^([^#]*)timestamp_timeout[ \t]*=[ \t]*-?[0-9]+(.*)$'
+        line: '\1timestamp_timeout=0\2'
+        backrefs: true
+        validate: /usr/sbin/visudo -cf %s
+      register: _432015_edit
+      when: _432015_files.stdout_lines | length == 1
+
+    - name: RHEL-09-432015 | set timestamp_timeout=0 where no file sets it
+      ansible.builtin.lineinfile:
+        path: /etc/sudoers.d/rhel9-stig-full
+        line: 'Defaults timestamp_timeout=0'
+        create: true
+        owner: root
+        group: root
+        mode: '0440'
+        validate: /usr/sbin/visudo -cf %s
+      when: _432015_files.stdout_lines | length == 0
+      register: _432015_fix
+
+    - name: RHEL-09-432015 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-432015'] }}"
+      when: (_432015_edit is changed) or (_432015_fix is changed)
+  rescue:
+    - name: RHEL-09-432015 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-432015': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-432015'] }}"

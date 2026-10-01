@@ -1,0 +1,88 @@
+---
+# RHEL-09-654265 | V-258227 | fix
+# RHEL 9 must take appropriate action when a critical audit processing failure
+# occurs.
+# CAT II (Medium)
+#
+# Sets the audit failure flag to rhel9_fix_audit_failure_flag (default 2,
+# panic, the STIG fix; 1 where availability is documented): every -f line in
+# /etc/audit/rules.d/*.rules is changed, or, if there is none,
+# /etc/audit/rules.d/11-rhel9-stig-full-failure.rules is written (sorting
+# before the -e 2 file, after which nothing loads). Then augenrules --load; if
+# the loaded rules are immutable the change loads at the next boot and the fix
+# records that.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-654265 | fix
+  block:
+    - name: RHEL-09-654265 | find the audit rules files
+      ansible.builtin.find:
+        paths: /etc/audit/rules.d
+        patterns: '*.rules'
+        contains: '^[ \t]*-f[ \t]+[0-9]'
+      register: _654265_files
+
+    - name: RHEL-09-654265 | change every -f line
+      ansible.builtin.replace:
+        path: "{{ item.path }}"
+        regexp: '^([ \t]*-f[ \t]+)[0-9]+'
+        replace: '\g<1>{{ rhel9_fix_audit_failure_flag }}'
+      loop: "{{ _654265_files.files }}"
+      loop_control:
+        label: "{{ item.path }}"
+      register: _654265_edit
+
+    - name: RHEL-09-654265 | write -f where no file sets it
+      ansible.builtin.copy:
+        dest: /etc/audit/rules.d/11-rhel9-stig-full-failure.rules
+        content: |
+          ## Managed by rhel9_stig_full (RHEL-09-654265)
+          -f {{ rhel9_fix_audit_failure_flag }}
+        owner: root
+        group: root
+        mode: '0600'
+      when: _654265_files.files | length == 0
+      register: _654265_new
+
+    - name: RHEL-09-654265 | read the audit status
+      ansible.builtin.command: auditctl -s
+      register: _654265_status
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-654265 | stop if the loaded rules are immutable
+      ansible.builtin.fail:
+        msg: "-f {{ rhel9_fix_audit_failure_flag }} is in /etc/audit/rules.d, but the loaded audit rules are immutable (-e 2); it loads at the next boot"
+      when: ((_654265_edit is changed) or (_654265_new is changed)) and not ansible_check_mode and _654265_status.stdout is search('(?m)^enabled 2$')
+
+    - name: RHEL-09-654265 | note the mode of /etc/audit/audit.rules
+      ansible.builtin.stat:
+        path: /etc/audit/audit.rules
+      register: _654265_rmode
+
+    - name: RHEL-09-654265 | load the audit rules
+      ansible.builtin.command: augenrules --load
+      register: _654265_load
+      failed_when: _654265_load.rc != 0 or _654265_load.stderr is search('(?i)error')
+      when: (_654265_edit is changed) or (_654265_new is changed)
+
+    # augenrules always leaves audit.rules at 0640; keep the mode it had
+    # (RHEL-09-653110 requires 0600)
+    - name: RHEL-09-654265 | restore the mode of /etc/audit/audit.rules
+      ansible.builtin.file:
+        path: /etc/audit/audit.rules
+        mode: "{{ _654265_rmode.stat.mode }}"
+      when: _654265_load is not skipped and _654265_rmode.stat.exists | default(false)
+
+    - name: RHEL-09-654265 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-654265'] }}"
+      when: (_654265_edit is changed) or (_654265_new is changed)
+  rescue:
+    - name: RHEL-09-654265 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-654265': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-654265'] }}"

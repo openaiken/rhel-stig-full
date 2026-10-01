@@ -1,0 +1,55 @@
+---
+# RHEL-09-271065 | V-258023 | fix
+# RHEL 9 must automatically lock graphical user sessions after 10 minutes of
+# inactivity.
+# CAT II (Medium)
+#
+# Sets org.gnome.desktop.session idle-delay to uint32 600 in
+# /etc/dconf/db/local.d/00-rhel9-stig-full. Applies only where gdm is
+# installed (the check is not applicable otherwise). The local system database
+# is what the check reads through the user profile, which is made to include
+# system-db:local; the databases are then compiled with dconf update. Takes
+# effect at the next login.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-271065 | fix
+  block:
+    - name: RHEL-09-271065 | make sure the user profile reads the local database
+      ansible.builtin.lineinfile:
+        path: /etc/dconf/profile/user
+        line: system-db:local
+        insertafter: '^user-db:user'
+        create: true
+        owner: root
+        group: root
+        mode: '0644'
+      register: _271065_prof
+
+    - name: RHEL-09-271065 | set idle-delay in /etc/dconf/db/local.d/00-rhel9-stig-full
+      community.general.ini_file:
+        path: /etc/dconf/db/local.d/00-rhel9-stig-full
+        section: org/gnome/desktop/session
+        option: idle-delay
+        value: "uint32 600"
+        no_extra_spaces: true
+        create: true
+        owner: root
+        group: root
+        mode: '0644'
+      register: _271065_set0
+
+    - name: RHEL-09-271065 | compile the dconf databases
+      ansible.builtin.command: dconf update
+      when: (_271065_prof is changed) or (_271065_set0 is changed)
+
+    - name: RHEL-09-271065 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-271065'] }}"
+      when: (_271065_prof is changed) or (_271065_set0 is changed)
+  rescue:
+    - name: RHEL-09-271065 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-271065': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-271065'] }}"

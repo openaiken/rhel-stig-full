@@ -1,0 +1,50 @@
+---
+# RHEL-09-653080 | V-258165 | fix
+# RHEL 9 audit logs must be group-owned by root or by a restricted logging
+# group to prevent unauthorized read access.
+# CAT II (Medium)
+#
+# Sets the group of every file in the audit log directory to the log_group
+# configured in auditd.conf (root when unset), which is what the check
+# compares against.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-653080 | fix
+  block:
+    - name: RHEL-09-653080 | read the audit log location and group from auditd.conf
+      ansible.builtin.shell: |
+        f=$(awk -F= '$1 ~ /^[[:space:]]*log_file[[:space:]]*$/ { v = $2 } END { gsub(/[[:space:]]/, "", v); print v }' /etc/audit/auditd.conf)
+        g=$(awk -F= '$1 ~ /^[[:space:]]*log_group[[:space:]]*$/ { v = $2 } END { gsub(/[[:space:]]/, "", v); print v }' /etc/audit/auditd.conf)
+        echo "${f:-/var/log/audit/audit.log}"
+        echo "${g:-root}"
+      register: _653080_conf
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-653080 | find the audit log files
+      ansible.builtin.find:
+        paths: "{{ _653080_conf.stdout_lines[0] | dirname }}"
+        file_type: file
+      register: _653080_files
+
+    - name: RHEL-09-653080 | group-own the audit log files by log_group
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        group: "{{ _653080_conf.stdout_lines[1] }}"
+      loop: "{{ _653080_files.files }}"
+      loop_control:
+        label: "{{ item.path }}"
+      register: _653080_fix
+
+    - name: RHEL-09-653080 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-653080'] }}"
+      when: (_653080_fix is changed)
+  rescue:
+    - name: RHEL-09-653080 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-653080': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-653080'] }}"

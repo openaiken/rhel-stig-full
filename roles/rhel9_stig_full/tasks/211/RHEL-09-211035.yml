@@ -1,0 +1,46 @@
+---
+# RHEL-09-211035 | V-257782
+# RHEL 9 must enable the hardware random number generator entropy gatherer service.
+# CAT III (Low) | CCI-001552
+#
+# Not applicable when FIPS mode is enabled (per RHEL-09-671010).
+# FIPS status is auto-detected from /proc/sys/crypto/fips_enabled.
+
+- name: RHEL-09-211035 | check FIPS mode
+  command: cat /proc/sys/crypto/fips_enabled
+  register: _211035_fips
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-211035 | check rngd service status
+  command: systemctl is-active rngd
+  register: _211035_rngd
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-211035 | record rngd status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-211035': {
+        'status':
+          'not_applicable' if _211035_fips.stdout | trim == '1'
+          else ('not_a_finding' if _211035_rngd.stdout | trim == 'active' else 'open'),
+        'finding_details':
+          'FIPS mode enabled: ' ~ (_211035_fips.stdout | trim == '1') | string | lower
+          ~ '\nrngd service status: ' ~ _211035_rngd.stdout | trim
+          ~ '\nResult: '
+          ~ ('not_applicable - FIPS mode is enabled (RHEL-09-671010 applies)'
+             if _211035_fips.stdout | trim == '1'
+             else ('not_a_finding - rngd service is active'
+                   if _211035_rngd.stdout | trim == 'active'
+                   else 'OPEN - rngd service is not active')),
+        'comments':
+          'Not applicable when FIPS mode is enabled per RHEL-09-671010. '
+          ~ 'To remediate: sudo dnf install rng-tools && sudo systemctl enable --now rngd'
+      }
+    }) }}"
+  tags: [validate]

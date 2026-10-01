@@ -1,0 +1,63 @@
+---
+# RHEL-09-653110 | V-258171
+# RHEL 9 must allow only the ISSM to select which auditable events are to
+# be audited.
+# CAT II (Medium) | CCI-000171
+
+# Checks that audit configuration files have mode 0600 or less permissive.
+# Covers: /etc/audit/auditd.conf, /etc/audit/audit.rules, and all *.rules
+# files under /etc/audit/rules.d/.
+# 0600 octal = 384 decimal; anything higher (more permissive) fails.
+
+- name: RHEL-09-653110 | check audit configuration file permissions
+  shell: |
+    check_mode() {
+      local f="$1"
+      [ -f "$f" ] || return 0
+      local mode
+      mode=$(stat -c '%a' "$f" 2>/dev/null)
+      # Bitmask of the bits 0600 forbids. This compared the mode as a number
+      # (-le 384, i.e. 0600), so 0006, 0060 and 0444 all passed.
+      if [ -n "$mode" ] && [ $(( 8#$mode & 8#177 )) -eq 0 ]; then
+        findings="${findings}PASS: $f ($mode)\n"
+      else
+        findings="${findings}FAIL: $f ($mode) - must be 0600 or less permissive\n"
+      fi
+    }
+
+    findings=""
+    check_mode /etc/audit/auditd.conf
+    check_mode /etc/audit/audit.rules
+    while IFS= read -r f; do
+      check_mode "$f"
+    done < <(find /etc/audit/rules.d/ -type f 2>/dev/null)
+
+    if [ -z "$findings" ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: no audit configuration files found"
+    elif echo -e "$findings" | grep -q '^FAIL:'; then
+      echo "STATUS: FAIL"
+    else
+      echo "STATUS: PASS"
+    fi
+    echo -e "$findings" | sed '/^$/d'
+  register: _653110_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-653110 | record audit config file permissions status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-653110': {
+        'status':
+          'not_a_finding' if _653110_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details': _653110_result.stdout | trim,
+        'comments':
+          'Run: chmod 0600 /etc/audit/auditd.conf /etc/audit/audit.rules; '
+          ~ 'find /etc/audit/rules.d/ -type f -name *.rules -exec chmod 0600 {} +'
+      }
+    }) }}"
+  tags: [validate]

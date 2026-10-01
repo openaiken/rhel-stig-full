@@ -1,0 +1,45 @@
+---
+# RHEL-09-271075 | V-258025
+# RHEL 9 must initiate a session lock for graphical user interfaces when the
+# screensaver is activated.
+# CAT II (Medium) | CCI-000057
+
+# Not Applicable if GDM is not installed.
+# Queries the effective setting the way the STIG check does (gsettings),
+# through the user dconf profile, rather than grepping keyfiles. A keyfile grep
+# cannot see GNOME defaults, which of several keyfiles wins, whether dconf
+# update has compiled them, or whether a lock line is commented out.
+# XDG_CONFIG_HOME points at nothing so the root user db cannot mask a value.
+# An empty or error result is a finding: an unverifiable control is open.
+
+- name: RHEL-09-271075 | check screensaver lock-delay (effective value)
+  shell: |
+    rpm -q gdm &>/dev/null || { echo "NA: gdm not installed"; exit 0; }
+    raw=$(XDG_CONFIG_HOME=/nonexistent DCONF_PROFILE=user gsettings get org.gnome.desktop.screensaver lock-delay 2>&1)
+    # gsettings prints a uint32 as: uint32 N
+    n=$(echo "$raw" | sed -nE 's/^uint32 ([0-9]+)$/\1/p')
+    if [ -z "$n" ]; then echo "FAIL: lock-delay unreadable (raw: ${raw:-no output})"
+    elif [ "$n" -le 5 ]; then echo "PASS: lock-delay=$n seconds"
+    else echo "FAIL: lock-delay=$n seconds (required: 5 seconds or less)"
+    fi
+  register: _271075_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-271075 | record screensaver lock-delay status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-271075': {
+        'status':
+          'not_applicable' if _271075_result.stdout is search('^NA:', multiline=True)
+          else ('not_a_finding' if _271075_result.stdout is search('^PASS:', multiline=True)
+          else 'open'),
+        'finding_details': _271075_result.stdout | trim,
+        'comments':
+          'Set lock-delay=uint32 5 in a dconf keyfile under /etc/dconf/db/local.d/ '
+          ~ 'in the [org/gnome/desktop/screensaver] section. Run dconf update.'
+      }
+    }) }}"
+  tags: [validate]

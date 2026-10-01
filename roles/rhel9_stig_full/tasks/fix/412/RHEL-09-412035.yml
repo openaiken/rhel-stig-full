@@ -1,0 +1,35 @@
+---
+# RHEL-09-412035 | V-258068 | fix
+# RHEL 9 must automatically exit interactive command shell user sessions after
+# 10 minutes of inactivity.
+# CAT II (Medium)
+#
+# Writes declare -xr TMOUT=600 (the STIG fix) to /etc/profile.d/zz-rhel9-stig-
+# full-tmout.sh, sourced after the other profile.d scripts. A conflicting
+# TMOUT set elsewhere still fails the re-check and must be removed by hand.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-412035 | fix
+  block:
+    - name: RHEL-09-412035 | set a readonly 10 minute shell timeout
+      ansible.builtin.copy:
+        dest: /etc/profile.d/zz-rhel9-stig-full-tmout.sh
+        content: |
+          # Managed by rhel9_stig_full (RHEL-09-412035)
+          declare -xr TMOUT=600
+        owner: root
+        group: root
+        mode: '0644'
+      register: _412035_fix
+
+    - name: RHEL-09-412035 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-412035'] }}"
+      when: (_412035_fix is changed)
+  rescue:
+    - name: RHEL-09-412035 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-412035': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-412035'] }}"

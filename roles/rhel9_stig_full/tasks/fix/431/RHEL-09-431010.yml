@@ -1,0 +1,55 @@
+---
+# RHEL-09-431010 | V-258078 | fix
+# RHEL 9 must use a Linux Security Module configured to enforce limits on
+# system services.
+# CAT I (High)
+#
+# Sets SELinux to enforcing, now and in /etc/selinux/config
+# (ansible.posix.selinux, targeted policy). If SELinux was disabled it cannot
+# be enabled without a reboot: /.autorelabel is created so the file system is
+# relabeled on that boot (booting enforcing on an unlabeled system can fail),
+# and the fix records that a reboot is required.
+#
+# Review: enforcing mode can stop software that runs with an unconfined or
+# wrong label; check the audit log for AVC denials after.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-431010 | fix
+  block:
+    - name: RHEL-09-431010 | read the current SELinux mode
+      ansible.builtin.command: getenforce
+      register: _431010_mode
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-431010 | request a relabel at the next boot, since SELinux was disabled
+      ansible.builtin.file:
+        path: /.autorelabel
+        state: touch
+        modification_time: preserve
+        access_time: preserve
+      when: _431010_mode.stdout | trim == 'Disabled'
+
+    - name: RHEL-09-431010 | set SELinux to enforcing
+      ansible.posix.selinux:
+        policy: targeted
+        state: enforcing
+      register: _431010_fix
+
+    - name: RHEL-09-431010 | report that a reboot is required
+      ansible.builtin.fail:
+        msg: "SELinux is set to enforcing in /etc/selinux/config, but was disabled; it takes effect (with a full relabel) at the next reboot"
+      when: _431010_fix.reboot_required | default(false) and not ansible_check_mode
+
+    - name: RHEL-09-431010 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-431010'] }}"
+      when: (_431010_fix is changed)
+  rescue:
+    - name: RHEL-09-431010 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-431010': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-431010'] }}"

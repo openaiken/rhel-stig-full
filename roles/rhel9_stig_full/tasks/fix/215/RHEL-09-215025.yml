@@ -1,0 +1,59 @@
+---
+# RHEL-09-215025 | V-257828 | fix
+# RHEL 9 must not have the nfs-utils package installed.
+# CAT II (Medium)
+#
+# Removes nfs-utils. In use means: a package requires it; an NFS file system
+# is mounted or listed in /etc/fstab; /etc/exports or exports.d has an entry;
+# autofs is installed; nfs-server is enabled or running; or its configuration
+# was changed from the package.
+#
+# Evidence-gated: the fix acts only when nothing on the host shows the NFS
+# client and server (nfs-utils) in use. Otherwise it changes nothing and
+# records each reason ("left in place: ...") in finding_details, for a person
+# to remove the use, or to document the exception in
+# rhel9_attest_documented_exceptions where the rule allows one.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-215025 | fix
+  block:
+    - name: RHEL-09-215025 | look for signs that the NFS client and server (nfs-utils) is in use
+      ansible.builtin.shell: |
+        shopt -s nullglob
+        deps=$(rpm -q --whatrequires nfs-utils 2>/dev/null | grep -v '^no package')
+        [ -n "$deps" ] && echo "IN USE: required by $(echo $deps)"
+        findmnt -rn -t nfs,nfs4 -o TARGET | grep -q . && echo 'IN USE: NFS file systems are mounted'
+        awk '$1 !~ /^#/ && ($3 == "nfs" || $3 == "nfs4")' /etc/fstab | grep -q . && echo 'IN USE: /etc/fstab has NFS entries'
+        cat /etc/exports /etc/exports.d/*.exports 2>/dev/null | grep -qvE '^[[:space:]]*(#|$)' && echo 'IN USE: NFS exports are configured'
+        rpm -q --quiet autofs && echo 'IN USE: autofs is installed and may mount NFS'
+        [ "$(systemctl is-enabled nfs-server 2>/dev/null)" = enabled ] && echo "IN USE: nfs-server is enabled"
+        systemctl is-active --quiet nfs-server 2>/dev/null && echo "IN USE: nfs-server is running"
+        rpm -V nfs-utils 2>/dev/null | awk '$2 == "c" { print "IN USE: configuration changed from the package: " $NF }'
+        true
+      register: _215025_use
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-215025 | leave it in place if it is in use
+      ansible.builtin.fail:
+        msg: "left in place, the NFS client and server (nfs-utils) appears to be in use: {{ _215025_use.stdout_lines | map('regex_replace', '^IN USE: ', '') | join('; ') }}"
+      when: _215025_use.stdout_lines | select('match', '^IN USE') | list | length > 0
+
+    - name: RHEL-09-215025 | remove nfs-utils
+      ansible.builtin.dnf:
+        name: nfs-utils
+        state: absent
+      register: _215025_fix
+
+    - name: RHEL-09-215025 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-215025'] }}"
+      when: (_215025_fix is changed)
+  rescue:
+    - name: RHEL-09-215025 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-215025': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-215025'] }}"

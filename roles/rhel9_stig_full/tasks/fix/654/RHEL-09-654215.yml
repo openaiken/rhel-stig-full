@@ -1,0 +1,87 @@
+---
+# RHEL-09-654215 | V-258217 | fix
+# RHEL 9 must generate audit records for all account creations, modifications,
+# disabling, and termination events that affect /etc/sudoers.
+# CAT II (Medium)
+#
+# Writes the expected rules (copied from the check task; lint FIX-AUDIT-DRIFT
+# keeps the two in step) that the loaded rules do not already cover, as
+# computed by the same rhel9_audit_coverage filter the check uses, to
+# /etc/audit/rules.d/50-rhel9-stig-full-RHEL-09-654215.rules, then runs
+# augenrules --load. Writing only uncovered lines avoids exact duplicates,
+# which make auditctl stop loading. If the loaded rules are immutable (-e 2,
+# RHEL-09-654275) the file loads at the next boot and the fix records that.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-654215 | fix
+  block:
+    - name: RHEL-09-654215 | read the loaded audit rules
+      ansible.builtin.command: auditctl -l
+      register: _654215_loaded
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-654215 | read the rules this fix wrote before
+      ansible.builtin.slurp:
+        src: /etc/audit/rules.d/50-rhel9-stig-full-RHEL-09-654215.rules
+      register: _654215_prev
+      failed_when: false
+
+    - name: RHEL-09-654215 | write the rules not yet covered, keeping earlier ones
+      vars:
+        _654215_expected:
+          - "-a always,exit -F arch=b32 -F path=/etc/sudoers -F perm=wa -k identity"
+          - "-a always,exit -F arch=b64 -F path=/etc/sudoers -F perm=wa -k identity"
+        _654215_cov: "{{ _654215_loaded.stdout | default('') | rhel9_audit_coverage(_654215_expected) }}"
+        _654215_keep: "{{ (_654215_prev.content | default('') | b64decode).splitlines() | map('trim') | reject('match', '#') | select | list }}"
+      ansible.builtin.copy:
+        dest: /etc/audit/rules.d/50-rhel9-stig-full-RHEL-09-654215.rules
+        content: "## Managed by rhel9_stig_full (RHEL-09-654215)\n{{ (_654215_keep + _654215_cov.missing) | unique | join('\n') }}\n"
+        owner: root
+        group: root
+        mode: '0600'
+      register: _654215_fix
+
+    - name: RHEL-09-654215 | read the audit status
+      ansible.builtin.command: auditctl -s
+      register: _654215_status
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-654215 | stop if the loaded rules are immutable
+      ansible.builtin.fail:
+        msg: "/etc/audit/rules.d/50-rhel9-stig-full-RHEL-09-654215.rules is in place, but the loaded audit rules are immutable (-e 2); it loads at the next boot"
+      when: _654215_fix is changed and not ansible_check_mode and _654215_status.stdout is search('(?m)^enabled 2$')
+
+    - name: RHEL-09-654215 | note the mode of /etc/audit/audit.rules
+      ansible.builtin.stat:
+        path: /etc/audit/audit.rules
+      register: _654215_rmode
+
+    - name: RHEL-09-654215 | load the audit rules
+      ansible.builtin.command: augenrules --load
+      register: _654215_load
+      failed_when: _654215_load.rc != 0 or _654215_load.stderr is search('(?i)error')
+      when: _654215_fix is changed
+
+    # augenrules always leaves audit.rules at 0640; keep the mode it had
+    # (RHEL-09-653110 requires 0600)
+    - name: RHEL-09-654215 | restore the mode of /etc/audit/audit.rules
+      ansible.builtin.file:
+        path: /etc/audit/audit.rules
+        mode: "{{ _654215_rmode.stat.mode }}"
+      when: _654215_load is not skipped and _654215_rmode.stat.exists | default(false)
+
+    - name: RHEL-09-654215 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-654215'] }}"
+      when: (_654215_fix is changed)
+  rescue:
+    - name: RHEL-09-654215 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-654215': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-654215'] }}"

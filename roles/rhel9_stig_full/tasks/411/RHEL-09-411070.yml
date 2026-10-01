@@ -1,0 +1,54 @@
+---
+# RHEL-09-411070 | V-258053
+# All RHEL 9 local interactive user home directories must be group-owned by
+# the home directory owner's primary group.
+# CAT II (Medium) | CCI-000764
+
+# V2R9 changed the check to enumerate with "getent passwd" rather than
+# reading /etc/passwd, so directory-service users (IdM/SSSD) are covered too.
+# Users whose home directory does not exist locally are skipped below.
+
+- name: RHEL-09-411070 | check home directory group ownership
+  shell: |
+    findings=""
+    while IFS=: read -r username _ uid gid _ homedir shell; do
+      [ "$uid" -lt 1000 ] 2>/dev/null && continue
+      [[ "$shell" =~ nologin|/false$ ]] && continue
+      [ -z "$homedir" ] || [ ! -d "$homedir" ] && continue
+      actual_gid=$(stat -c "%g" "$homedir" 2>/dev/null)
+      if [ -z "$actual_gid" ]; then
+        findings="${findings}WARN: ${username}: could not stat ${homedir}\n"
+      elif [ "$actual_gid" != "$gid" ]; then
+        expected_group=$(getent group "$gid" 2>/dev/null | cut -d: -f1)
+        actual_group=$(getent group "$actual_gid" 2>/dev/null | cut -d: -f1)
+        findings="${findings}FAIL: ${username}: ${homedir} group-owned by gid=${actual_gid} (${actual_group}) but primary gid=${gid} (${expected_group})\n"
+      else
+        group_name=$(getent group "$gid" 2>/dev/null | cut -d: -f1)
+        findings="${findings}PASS: ${username}: ${homedir} group-owned by gid=${gid} (${group_name})\n"
+      fi
+    done < <(getent passwd)
+    if [ -z "$findings" ]; then
+      echo "STATUS: PASS (no interactive users found)"
+    elif echo -e "$findings" | grep -q '^FAIL:'; then
+      echo "STATUS: FAIL"
+      echo -e "$findings" | sed '/^$/d'
+    else
+      echo "STATUS: PASS"
+      echo -e "$findings" | sed '/^$/d'
+    fi
+  register: _411070_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-411070 | record home directory group ownership status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-411070': {
+        'status': 'not_a_finding' if _411070_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
+        'finding_details': _411070_result.stdout | trim,
+        'comments': 'Fix with: chgrp $(id -gn <username>) /home/<username>'
+      }
+    }) }}"
+  tags: [validate]

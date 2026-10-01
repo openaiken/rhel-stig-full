@@ -1,0 +1,34 @@
+---
+# RHEL-09-252030 | V-257947 | fix
+# RHEL 9 must disable network management of the chrony daemon.
+# CAT III (Low)
+#
+# Sets cmdport 0 in /etc/chrony.conf (replacing the last cmdport line, the one
+# in effect) and restarts a running chronyd; chronyc can then reach chronyd
+# only through its local Unix socket.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-252030 | fix
+  block:
+    - name: RHEL-09-252030 | set cmdport 0
+      ansible.builtin.lineinfile:
+        path: /etc/chrony.conf
+        regexp: '^[ \t]*cmdport[ \t]'
+        line: 'cmdport 0'
+      register: _252030_fix
+
+    - name: RHEL-09-252030 | restart a running chronyd to apply it
+      ansible.builtin.command: systemctl try-restart chronyd
+      when: _252030_fix is changed
+
+    - name: RHEL-09-252030 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-252030'] }}"
+      when: (_252030_fix is changed)
+  rescue:
+    - name: RHEL-09-252030 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-252030': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-252030'] }}"

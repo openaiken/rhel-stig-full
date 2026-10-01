@@ -1,0 +1,35 @@
+---
+# RHEL-09-653095 | V-258168 | fix
+# RHEL 9 must periodically flush audit records to disk to prevent the loss of
+# audit records.
+# CAT II (Medium)
+#
+# Sets freq = 100 (the STIG fix value) in /etc/audit/auditd.conf, replacing
+# the last freq line (the one in effect), and has auditd reread its
+# configuration.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-653095 | fix
+  block:
+    - name: RHEL-09-653095 | set freq
+      ansible.builtin.lineinfile:
+        path: /etc/audit/auditd.conf
+        regexp: '^[ \t]*freq[ \t]*='
+        line: 'freq = 100'
+      register: _653095_fix
+
+    - name: RHEL-09-653095 | have auditd reread its configuration
+      ansible.builtin.command: auditctl --signal reload
+      when: _653095_fix is changed
+
+    - name: RHEL-09-653095 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-653095'] }}"
+      when: (_653095_fix is changed)
+  rescue:
+    - name: RHEL-09-653095 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-653095': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-653095'] }}"

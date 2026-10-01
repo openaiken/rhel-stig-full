@@ -1,0 +1,62 @@
+---
+# RHEL-09-231120 | V-257865 | fix
+# RHEL 9 must mount /dev/shm with the nosuid option.
+# CAT II (Medium)
+#
+# Adds nosuid to the /etc/fstab entry for /dev/shm (keeping its other options)
+# and remounts it with nosuid; the check reads the live mount table. /dev/shm
+# has no fstab entry on a stock system, so the STIG fix line (tmpfs /dev/shm
+# tmpfs defaults,nodev,nosuid,noexec 0 0) is added.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-231120 | fix
+  block:
+    - name: RHEL-09-231120 | read how /dev/shm is mounted
+      ansible.builtin.command: findmnt -rn -o OPTIONS --mountpoint /dev/shm
+      register: _231120_mnt
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-231120 | stop if /dev/shm is not a separate file system
+      ansible.builtin.fail:
+        msg: "/dev/shm is not a separate file system; that needs repartitioning, not a mount option"
+      when: _231120_mnt.rc != 0
+
+    - name: RHEL-09-231120 | read the /etc/fstab entry for /dev/shm
+      ansible.builtin.command: awk '$1 !~ /^#/ && $2 == "/dev/shm"' /etc/fstab
+      register: _231120_fstab
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-231120 | add the STIG /dev/shm entry to /etc/fstab, which has none
+      ansible.builtin.lineinfile:
+        path: /etc/fstab
+        line: 'tmpfs /dev/shm tmpfs defaults,nodev,nosuid,noexec 0 0'
+      register: _231120_new
+      when: _231120_fstab.stdout | trim == ''
+
+    - name: RHEL-09-231120 | add nosuid to the /etc/fstab entry for /dev/shm
+      ansible.builtin.replace:
+        path: /etc/fstab
+        regexp: '^([ \t]*[^#\s]\S*\s+/dev/shm\s+\S+\s+)(?!(?:\S*,)?nosuid(?:,|\s))(\S+)'
+        replace: '\g<1>\g<2>,nosuid'
+      register: _231120_fix
+
+    - name: RHEL-09-231120 | remount /dev/shm with nosuid
+      ansible.builtin.command: mount -o remount,nosuid /dev/shm
+      register: _231120_remount
+      when: _231120_mnt.stdout is not search('(^|,)nosuid(,|$)')
+
+    - name: RHEL-09-231120 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-231120'] }}"
+      when: (_231120_fix is changed) or (_231120_remount is changed) or (_231120_new is changed)
+  rescue:
+    - name: RHEL-09-231120 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-231120': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-231120'] }}"

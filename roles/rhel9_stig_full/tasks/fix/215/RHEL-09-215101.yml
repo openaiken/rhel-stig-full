@@ -1,0 +1,27 @@
+---
+# RHEL-09-215101 | V-272488 | fix
+# RHEL 9 must have the Postfix package installed.
+# CAT II (Medium)
+#
+# Installs postfix. It is not enabled or configured here.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-215101 | fix
+  block:
+    - name: RHEL-09-215101 | install postfix
+      ansible.builtin.dnf:
+        name: postfix
+        state: present
+      register: _215101_fix
+
+    - name: RHEL-09-215101 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-215101'] }}"
+      when: (_215101_fix is changed)
+  rescue:
+    - name: RHEL-09-215101 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-215101': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-215101'] }}"

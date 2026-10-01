@@ -1,0 +1,30 @@
+---
+# RHEL-09-411050 | V-258049 | fix
+# RHEL 9 must disable account identifiers (individuals, groups, roles, and
+# devices) after 35 days of inactivity.
+# CAT II (Medium)
+#
+# Sets INACTIVE=35 in /etc/default/useradd (as useradd -D -f 35 does). Applies
+# to accounts created from now on.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-411050 | fix
+  block:
+    - name: RHEL-09-411050 | set INACTIVE in /etc/default/useradd
+      ansible.builtin.lineinfile:
+        path: /etc/default/useradd
+        regexp: '^[ \t]*INACTIVE[ \t]*='
+        line: 'INACTIVE=35'
+      register: _411050_fix
+
+    - name: RHEL-09-411050 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-411050'] }}"
+      when: (_411050_fix is changed)
+  rescue:
+    - name: RHEL-09-411050 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-411050': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-411050'] }}"

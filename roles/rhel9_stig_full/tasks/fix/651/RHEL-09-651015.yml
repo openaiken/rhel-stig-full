@@ -1,0 +1,40 @@
+---
+# RHEL-09-651015 | V-258135 | fix
+# RHEL 9 must routinely check the baseline configuration for unauthorized
+# changes and notify the system administrator when anomalies in the operation
+# of any security functions are discovered.
+# CAT II (Medium)
+#
+# Installs /etc/cron.daily/aide, the STIG fix example: run aide --check daily
+# and mail the report to root (route root mail to the SA and ISSO with
+# RHEL-09-653125). Only when no AIDE job is scheduled already (the check
+# looked in cron and systemd timers). Mail is sent with s-nail (installed by
+# the RHEL-09-215095 fix).
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-651015 | fix
+  block:
+    - name: RHEL-09-651015 | schedule a daily AIDE check that mails root
+      ansible.builtin.copy:
+        dest: /etc/cron.daily/aide
+        content: |
+          #!/bin/bash
+          # Managed by rhel9_stig_full (RHEL-09-651015)
+          /usr/sbin/aide --check 2>&1 | /bin/mail -s "$(hostname) - Daily aide integrity check run" root
+        owner: root
+        group: root
+        mode: '0700'
+        force: false
+      register: _651015_fix
+
+    - name: RHEL-09-651015 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-651015'] }}"
+      when: (_651015_fix is changed)
+  rescue:
+    - name: RHEL-09-651015 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-651015': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-651015'] }}"

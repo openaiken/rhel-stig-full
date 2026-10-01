@@ -1,0 +1,48 @@
+---
+# RHEL-09-432015 | V-258084
+# RHEL 9 must require reauthentication when using the "sudo" command.
+# CAT II (Medium) | CCI-004895, CCI-002038
+
+# The DISA Ansible role checks for its own line in one specific file, so a host
+# configured equivalently elsewhere (a drop-in, other spacing or case) was
+# reported open while compliant.
+# Per the STIG: set in exactly one file, not negative.
+
+- name: RHEL-09-432015 | check sudo timestamp_timeout
+  shell: |
+    # The files sudo actually reads (visudo -c lists each one it parses):
+    # sudo skips sudoers.d names containing a dot or ending in ~, and reads
+    # sudoers.d at all only through an includedir line. Grepping the whole
+    # directory counted settings sudo never sees.
+    sudo_files=$(visudo -c 2>/dev/null | sed -n 's/: parsed OK$//p')
+    [ -n "$sudo_files" ] || sudo_files=/etc/sudoers
+    hits=$(grep -iHs 'timestamp_timeout' $sudo_files | grep -vE '^[^:]+:[[:space:]]*#')
+    echo "timestamp_timeout lines: ${hits:-(none)}"
+    nfiles=$(echo "$hits" | awk -F: 'NF {print $1}' | sort -u | grep -c .)
+    val=$(echo "$hits" | grep -oiE 'timestamp_timeout[[:space:]]*=[[:space:]]*-?[0-9]+' | tail -1 | grep -oE -- '-?[0-9]+$')
+    if [ "$nfiles" -eq 1 ] && [[ "$val" =~ ^[0-9]+$ ]]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: timestamp_timeout must be set, not negative, in exactly one file"
+    fi
+  register: _432015_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-432015 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-432015': {
+        'status':
+          'not_a_finding' if _432015_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _432015_result.stdout | trim,
+        'comments':
+          'Set Defaults timestamp_timeout=0 in one sudoers file only.'
+      }
+    }) }}"
+  tags: [validate]

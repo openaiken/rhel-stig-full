@@ -1,0 +1,55 @@
+---
+# RHEL-09-213095 | V-257814
+# RHEL 9 must disable core dumps for all users.
+# CAT II (Medium) | CCI-000366
+
+# The DISA Ansible role checks for its own line in one specific file, so a host
+# configured equivalently elsewhere (a drop-in, other spacing or case) was
+# reported open while compliant.
+# Not applicable when kernel dumps are disabled per RHEL-09-213040
+# (kernel.core_pattern |/bin/false), as the STIG note says; the DISA Ansible role
+# reported open regardless. A documented ISSO exception is accepted
+# (rhel9_attest_documented_exceptions).
+
+- name: RHEL-09-213095 | check core limits for all domains
+  shell: |
+    cp=$(sysctl -n kernel.core_pattern 2>/dev/null)
+    if [ "$cp" = "|/bin/false" ]; then
+      echo "NA: kernel.core_pattern is |/bin/false, so core dumps are disabled per RHEL-09-213040"
+      exit 0
+    fi
+    echo "kernel.core_pattern: ${cp:-(unreadable)}"
+    lines=$(grep -hsE '^[[:space:]]*[^#[:space:]]+[[:space:]]+(hard|soft|-)[[:space:]]+core[[:space:]]+' \
+      /etc/security/limits.conf /etc/security/limits.d/*.conf)
+    echo "core limit entries:"; echo "${lines:-  (none)}"
+    bad=$(echo "$lines" | awk 'NF >= 4 && $4 != "0"')
+    if [ -n "$lines" ] && [ -z "$bad" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: every core limit entry must be 0, with at least one (e.g. * hard core 0)"
+    fi
+  register: _213095_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-213095 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-213095': {
+        'status':
+          'not_applicable' if _213095_result.stdout is search('^NA:', multiline=True)
+          else ('not_a_finding' if _213095_result.stdout is search('^STATUS: PASS', multiline=True)
+          else ('not_a_finding' if (rhel9_attest_documented_exceptions | default({})).get('RHEL-09-213095')
+          else 'open')),
+        'finding_details':
+          _213095_result.stdout | trim
+          ~ '\nDocumented exception (rhel9_attest_documented_exceptions): '
+          ~ ((rhel9_attest_documented_exceptions | default({})).get('RHEL-09-213095') or '(none)'),
+        'comments':
+          'Add * hard core 0 to /etc/security/limits.conf or a file in limits.d.'
+      }
+    }) }}"
+  tags: [validate]

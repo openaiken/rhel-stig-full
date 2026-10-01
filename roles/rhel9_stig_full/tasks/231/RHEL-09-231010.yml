@@ -1,0 +1,31 @@
+---
+# RHEL-09-231010 | V-257843
+# A separate RHEL 9 file system must be used for user home directories (such as /home or an equivalent).
+# CAT II (Medium) | CCI-000366
+
+# Checks that /home is mounted as a separate filesystem.
+
+- name: RHEL-09-231010 | check /home is a separate filesystem
+  shell: awk '$2 == "/home"' /proc/mounts
+  register: _231010_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-231010 | record /home separate filesystem status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-231010': {
+        'status': 'not_a_finding' if (_231010_result.stdout | trim) else 'open',
+        'finding_details':
+          '/proc/mounts entry: '
+          ~ (_231010_result.stdout | trim if _231010_result.stdout | trim else '(not a separate mount - FINDING)')
+          ~ '\nResult: '
+          ~ ('not_a_finding - /home is a separate filesystem'
+             if (_231010_result.stdout | trim)
+             else 'OPEN - /home is not on a separate filesystem'),
+        'comments': 'Requires a dedicated partition or logical volume. Configure in /etc/fstab.'
+      }
+    }) }}"
+  tags: [validate]

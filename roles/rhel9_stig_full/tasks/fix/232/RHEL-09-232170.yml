@@ -1,0 +1,32 @@
+---
+# RHEL-09-232170 | V-257914 | fix
+# RHEL 9 /var/log directory must be owned by root.
+# CAT II (Medium)
+#
+# Sets owner root on /var/log; skipped if the file does not exist.
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-232170 | fix
+  block:
+    - name: RHEL-09-232170 | look for /var/log
+      ansible.builtin.stat:
+        path: /var/log
+      register: _232170_stat
+
+    - name: RHEL-09-232170 | set owner root on /var/log
+      ansible.builtin.file:
+        path: /var/log
+        owner: root
+      when: _232170_stat.stat.exists
+      register: _232170_fix
+
+    - name: RHEL-09-232170 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232170'] }}"
+      when: (_232170_fix is changed)
+  rescue:
+    - name: RHEL-09-232170 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-232170': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232170'] }}"

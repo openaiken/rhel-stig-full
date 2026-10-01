@@ -1,0 +1,51 @@
+---
+# RHEL-09-411105 | V-258060 | fix
+# RHEL 9 must ensure account lockouts persist.
+# CAT II (Medium)
+#
+# Creates /var/log/faillock with the faillog_t SELinux file context (as the
+# STIG fix does; pam_faillock cannot write a mislabeled directory) and sets
+# dir = /var/log/faillock in /etc/security/faillock.conf, so lockouts survive
+# a reboot.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-411105 | fix
+  block:
+    - name: RHEL-09-411105 | label /var/log/faillock faillog_t
+      community.general.sefcontext:
+        target: '/var/log/faillock(/.*)?'
+        setype: faillog_t
+        state: present
+      register: _411105_ctx
+
+    - name: RHEL-09-411105 | create /var/log/faillock
+      ansible.builtin.file:
+        path: /var/log/faillock
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+      register: _411105_dir
+
+    - name: RHEL-09-411105 | apply the file context
+      ansible.builtin.command: restorecon -RF /var/log/faillock
+      when: (_411105_ctx is changed) or (_411105_dir is changed)
+
+    - name: RHEL-09-411105 | set dir in /etc/security/faillock.conf
+      ansible.builtin.lineinfile:
+        path: /etc/security/faillock.conf
+        regexp: '^[ \t]*dir[ \t]*='
+        line: 'dir = /var/log/faillock'
+      register: _411105_fix
+
+    - name: RHEL-09-411105 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-411105'] }}"
+      when: (_411105_ctx is changed) or (_411105_dir is changed) or (_411105_fix is changed)
+  rescue:
+    - name: RHEL-09-411105 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-411105': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-411105'] }}"

@@ -1,0 +1,58 @@
+---
+# RHEL-09-215055 | V-257834 | fix
+# RHEL 9 must not have the tuned package installed.
+# CAT II (Medium)
+#
+# Removes tuned. In use means: a package requires it (tuned-ppd, the GNOME
+# power-profiles backend, does); a custom profile exists in /etc/tuned; a
+# profile other than the recommended one was chosen by hand; or its
+# configuration was changed.
+#
+# Evidence-gated: the fix acts only when nothing on the host shows the tuning
+# daemon (tuned) in use. Otherwise it changes nothing and records each reason
+# ("left in place: ...") in finding_details, for a person to remove the use,
+# or to document the exception in rhel9_attest_documented_exceptions where the
+# rule allows one.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-215055 | fix
+  block:
+    - name: RHEL-09-215055 | look for signs that the tuning daemon (tuned) is in use
+      ansible.builtin.shell: |
+        shopt -s nullglob
+        deps=$(rpm -q --whatrequires tuned 2>/dev/null | grep -v '^no package')
+        [ -n "$deps" ] && echo "IN USE: required by $(echo $deps)"
+        rpm -V tuned 2>/dev/null | awk '$2 == "c" { print "IN USE: configuration changed from the package: " $NF }'
+        for d in /etc/tuned/*/; do [ -f "$d/tuned.conf" ] && echo "IN USE: custom tuned profile $(basename "$d")"; done
+        active=$(tuned-adm active 2>/dev/null | sed -n 's/^Current active profile: //p')
+        rec=$(tuned-adm recommend 2>/dev/null)
+        mode=$(cat /etc/tuned/profile_mode 2>/dev/null)
+        if [ -n "$active" ] && [ "$active" != "$rec" ] && [ "$mode" = manual ]; then echo "IN USE: profile $active was chosen by hand (recommended: $rec)"; fi
+        true
+      register: _215055_use
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-215055 | leave it in place if it is in use
+      ansible.builtin.fail:
+        msg: "left in place, the tuning daemon (tuned) appears to be in use: {{ _215055_use.stdout_lines | map('regex_replace', '^IN USE: ', '') | join('; ') }}"
+      when: _215055_use.stdout_lines | select('match', '^IN USE') | list | length > 0
+
+    - name: RHEL-09-215055 | remove tuned
+      ansible.builtin.dnf:
+        name: tuned
+        state: absent
+      register: _215055_fix
+
+    - name: RHEL-09-215055 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-215055'] }}"
+      when: (_215055_fix is changed)
+  rescue:
+    - name: RHEL-09-215055 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-215055': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-215055'] }}"

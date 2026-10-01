@@ -1,0 +1,43 @@
+---
+# RHEL-09-654025 | V-258179
+# RHEL 9 must audit all uses of the setxattr, fsetxattr, lsetxattr,
+# removexattr, fremovexattr, and lremovexattr system calls.
+# CAT II (Medium) | CCI-000130, CCI-000135, CCI-000169, CCI-000172, CCI-002884
+
+# Loaded rules (auditctl -l), as the STIG check reads them.
+# Each expected rule below (from the STIG check text) must be covered by a
+# rule that records at least the same events; keys, syscall order, merged
+# syscall lists, -w watches and auid!=unset are all accepted. See
+# filter_plugins/audit_rules.py. The DISA Ansible role checked for its own lines in
+# /etc/audit/rules.d/audit.rules, so hosts hardened any other way were open.
+
+- name: RHEL-09-654025 | read audit rules
+  command: auditctl -l
+  register: _654025_rules
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-654025 | record audit rule coverage
+  vars:
+    _654025_expected:
+      - "-a always,exit -F arch=b32 -S setxattr,lsetxattr,fsetxattr,removexattr,lremovexattr,fremovexattr -F auid>=1000 -F auid!=-1 -F key=perm_mod"
+      - "-a always,exit -F arch=b64 -S setxattr,lsetxattr,fsetxattr,removexattr,lremovexattr,fremovexattr -F auid>=1000 -F auid!=-1 -F key=perm_mod"
+      - "-a always,exit -F arch=b32 -S setxattr,lsetxattr,fsetxattr,removexattr,lremovexattr,fremovexattr -F auid=0 -F key=perm_mod"
+      - "-a always,exit -F arch=b64 -S setxattr,lsetxattr,fsetxattr,removexattr,lremovexattr,fremovexattr -F auid=0 -F key=perm_mod"
+    _654025_cov: "{{ _654025_rules.stdout | default('') | rhel9_audit_coverage(_654025_expected) }}"
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-654025': {
+        'status':
+          'not_a_finding'
+          if (_654025_rules.rc | default(1) == 0 and _654025_cov.loaded > 0 and _654025_cov.missing | length == 0)
+          else 'open',
+        'finding_details': _654025_cov.report,
+        'comments':
+          'Add rules covering each MISSING line to a file in /etc/audit/rules.d/, '
+          ~ 'then run augenrules --load. Any key may be used.'
+      }
+    }) }}"
+  tags: [validate]

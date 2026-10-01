@@ -1,0 +1,44 @@
+---
+# RHEL-09-255155 | V-258007 | fix
+# RHEL 9 SSH daemon must disable remote X connections for interactive users.
+# CAT II (Medium)
+#
+# Sets X11Forwarding no. Sets the keyword in
+# /etc/ssh/sshd_config.d/00-rhel9-stig-full.conf. sshd uses the first value it
+# reads, and RHEL 9 sshd_config includes sshd_config.d/*.conf at its top, so
+# this file (sorting first) wins; if sshd_config does not include the
+# directory, the re-check still reports the rule open. The file is validated
+# with sshd -t, then sshd is reloaded (existing sessions are kept). Not run
+# when rhel9_attest_ssh_x11_forwarding_approved clears the rule.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-255155 | fix
+  block:
+    - name: RHEL-09-255155 | set X11Forwarding no
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config.d/00-rhel9-stig-full.conf
+        regexp: '^[ \t]*X11Forwarding([ \t]|=)'
+        line: 'X11Forwarding no'
+        insertbefore: BOF
+        create: true
+        owner: root
+        group: root
+        mode: '0600'
+        validate: /usr/sbin/sshd -t -f %s
+      register: _255155_fix
+
+    - name: RHEL-09-255155 | reload sshd to apply it
+      ansible.builtin.command: systemctl try-reload-or-restart sshd
+      when: _255155_fix is changed
+
+    - name: RHEL-09-255155 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-255155'] }}"
+      when: (_255155_fix is changed)
+  rescue:
+    - name: RHEL-09-255155 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-255155': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-255155'] }}"

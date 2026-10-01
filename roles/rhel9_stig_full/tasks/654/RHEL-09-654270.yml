@@ -1,0 +1,40 @@
+---
+# RHEL-09-654270 | V-258228
+# RHEL 9 audit system must protect logon UIDs from unauthorized change.
+# CAT II (Medium) | CCI-000162, CCI-000163, CCI-000164, CCI-000172
+
+# The STIG reads /etc/audit/audit.rules, the file augenrules generates from
+# rules.d. The DISA Ansible role checks for its own line in rules.d/audit.rules, so a
+# host setting this in another rules.d file was reported open while compliant.
+
+- name: RHEL-09-654270 | check --loginuid-immutable
+  shell: |
+    rules=$(grep -vE '^[[:space:]]*(#|$)' /etc/audit/audit.rules 2>/dev/null)
+    hit=$(echo "$rules" | grep -iE '^[[:space:]]*--loginuid-immutable([[:space:]]|$)')
+    echo "--loginuid-immutable in audit.rules: ${hit:-(not present)}"
+    if [ -n "$hit" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: --loginuid-immutable is not set"
+    fi
+  register: _654270_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-654270 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-654270': {
+        'status':
+          'not_a_finding' if _654270_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _654270_result.stdout | trim,
+        'comments':
+          'Add --loginuid-immutable to a file in /etc/audit/rules.d/ and run augenrules --load.'
+      }
+    }) }}"
+  tags: [validate]

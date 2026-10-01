@@ -1,0 +1,41 @@
+---
+# RHEL-09-611025 | V-258094 | fix
+# RHEL 9 must not allow blank or null passwords.
+# CAT I (High)
+#
+# Enables the authselect without-nullok feature, which removes nullok from
+# pam_unix.so in system-auth and password-auth. Only on a host whose PAM
+# configuration is managed by authselect: elsewhere the fix fails with a
+# message, rather than hand-editing PAM files.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-611025 | fix
+  block:
+    - name: RHEL-09-611025 | read the authselect configuration
+      ansible.builtin.command: authselect current --raw
+      register: _611025_cur
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-611025 | stop if PAM is not managed by authselect
+      ansible.builtin.fail:
+        msg: "PAM is not managed by authselect on this host ({{ (_611025_cur.stdout ~ _611025_cur.stderr) | trim }}); enable the without-nullok feature by hand or put the host under authselect"
+      when: _611025_cur.rc != 0
+
+    - name: RHEL-09-611025 | enable the authselect without-nullok feature
+      ansible.builtin.command: authselect enable-feature without-nullok
+      register: _611025_fix
+      when: "'without-nullok' not in _611025_cur.stdout.split()"
+
+    - name: RHEL-09-611025 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-611025'] }}"
+      when: (_611025_fix is changed)
+  rescue:
+    - name: RHEL-09-611025 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-611025': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-611025'] }}"

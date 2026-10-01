@@ -1,0 +1,49 @@
+---
+# RHEL-09-611135 | V-258116
+# RHEL 9 must be configured so that user and group account administration
+# utilities are configured to store only encrypted representations of
+# passwords.
+# CAT II (Medium) | CCI-004062, CCI-000196
+
+# The DISA Ansible role checks for its own line in one specific file, so a host
+# configured equivalently elsewhere (a drop-in, other spacing or case) was
+# reported open while compliant.
+# The STIG requires the setting in the [defaults] section.
+
+- name: RHEL-09-611135 | check libuser crypt_style
+  shell: |
+    val=$(awk -v want="crypt_style" '
+      /^[[:space:]]*[#;]/ { next }
+      /^[[:space:]]*\[/ { sec = tolower($0); gsub(/[][[:space:]]/, "", sec); next }
+      sec == "defaults" && index($0, "=") {
+        k = $0; sub(/=.*/, "", k); gsub(/[[:space:]]/, "", k)
+        if (tolower(k) == want) { v = $0; sub(/^[^=]*=/, "", v); gsub(/^[[:space:]]+|[[:space:]]+$/, "", v) }
+      }
+      END { print v }' /etc/libuser.conf 2>/dev/null)
+    echo "[defaults] crypt_style in /etc/libuser.conf: ${val:-(not set)}"
+    if [[ "${val,,}" =~ ^(sha512)$ ]]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: crypt_style must be sha512 in [defaults] of /etc/libuser.conf"
+    fi
+  register: _611135_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-611135 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-611135': {
+        'status':
+          'not_a_finding' if _611135_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _611135_result.stdout | trim,
+        'comments':
+          'Set crypt_style = sha512 in the [defaults] section of /etc/libuser.conf.'
+      }
+    }) }}"
+  tags: [validate]

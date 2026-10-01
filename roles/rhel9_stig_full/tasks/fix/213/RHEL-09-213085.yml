@@ -1,0 +1,46 @@
+---
+# RHEL-09-213085 | V-257812 | fix
+# RHEL 9 must disable core dump backtraces.
+# CAT II (Medium)
+#
+# Sets ProcessSizeMax=0 in [Coredump] of
+# /etc/systemd/coredump.conf.d/rhel9-stig-full.conf (a drop-in ending in
+# .conf, read after coredump.conf; the check reads the merged value with
+# systemd-analyze cat-config). Read by systemd-coredump at its next
+# invocation.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-213085 | fix
+  block:
+    - name: RHEL-09-213085 | create the coredump drop-in directory
+      ansible.builtin.file:
+        path: /etc/systemd/coredump.conf.d
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: RHEL-09-213085 | set ProcessSizeMax=0
+      community.general.ini_file:
+        path: /etc/systemd/coredump.conf.d/rhel9-stig-full.conf
+        section: Coredump
+        option: ProcessSizeMax
+        value: '0'
+        no_extra_spaces: true
+        create: true
+        owner: root
+        group: root
+        mode: '0644'
+      register: _213085_fix
+
+    - name: RHEL-09-213085 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-213085'] }}"
+      when: (_213085_fix is changed)
+  rescue:
+    - name: RHEL-09-213085 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-213085': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-213085'] }}"

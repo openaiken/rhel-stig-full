@@ -1,0 +1,59 @@
+---
+# RHEL-09-291030 | V-258038
+# RHEL 9 must block unauthorized peripherals before establishing a connection.
+# CAT II (Medium) | CCI-001544
+
+# Not Applicable if this is a VM with no virtual or physical USB peripherals
+# (set rhel9_attest_usbguard_na: true).
+#
+# Automated check: if usbguard is installed and list-rules returns output,
+# a policy is in place — not_a_finding.
+#
+# If usbguard is not installed or has no rules, the SA must document the
+# alternative blocking mechanism via rhel9_attest_usbguard_compliant and
+# rhel9_attest_usbguard_method.
+
+- name: RHEL-09-291030 | check usbguard policy
+  shell: |
+    if ! rpm -q usbguard &>/dev/null; then
+      echo "USBGUARD_NOT_INSTALLED"
+    else
+      rules=$(usbguard list-rules 2>/dev/null)
+      if [ -n "$rules" ]; then
+        echo "RULES_FOUND"
+        echo "$rules"
+      else
+        echo "NO_RULES"
+      fi
+    fi
+  register: _291030_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-291030 | record USBGuard policy status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-291030': {
+        'status':
+          'not_applicable' if rhel9_attest_usbguard_na | bool
+          else ('not_a_finding' if 'RULES_FOUND' in _291030_result.stdout
+          else ('not_a_finding' if rhel9_attest_usbguard_compliant | bool
+          else 'open')),
+        'finding_details':
+          'usbguard check output:\n' ~ (_291030_result.stdout | trim)
+          ~ '\nAttestation (rhel9_attest_usbguard_na): '
+          ~ (rhel9_attest_usbguard_na | bool | string | lower)
+          ~ '\nAttestation (rhel9_attest_usbguard_compliant): '
+          ~ (rhel9_attest_usbguard_compliant | bool | string | lower)
+          ~ '\nSA documented method: '
+          ~ (rhel9_attest_usbguard_method if rhel9_attest_usbguard_method else '(not provided)'),
+        'comments':
+          'If usbguard is not in use, document the alternative peripheral blocking '
+          ~ 'mechanism in rhel9_attest_usbguard_method and set '
+          ~ 'rhel9_attest_usbguard_compliant: true. '
+          ~ 'For VMs with no USB peripherals, set rhel9_attest_usbguard_na: true.'
+      }
+    }) }}"
+  tags: [validate]

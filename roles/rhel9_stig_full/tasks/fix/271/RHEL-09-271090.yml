@@ -1,0 +1,26 @@
+---
+# RHEL-09-271090 | V-258028 | fix
+# RHEL 9 effective dconf policy must match the policy keyfiles.
+# CAT II (Medium)
+#
+# Compiles every dconf database whose keyfiles are newer than it (dconf
+# update).
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-271090 | fix
+  block:
+    - name: RHEL-09-271090 | compile the dconf databases
+      ansible.builtin.command: dconf update
+      register: _271090_fix
+
+    - name: RHEL-09-271090 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-271090'] }}"
+      when: (_271090_fix is changed)
+  rescue:
+    - name: RHEL-09-271090 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-271090': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-271090'] }}"

@@ -1,0 +1,31 @@
+---
+# RHEL-09-611135 | V-258116 | fix
+# RHEL 9 must be configured so that user and group account administration
+# utilities are configured to store only encrypted representations of
+# passwords.
+# CAT II (Medium)
+#
+# Sets crypt_style = sha512 in [defaults] of /etc/libuser.conf.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-611135 | fix
+  block:
+    - name: RHEL-09-611135 | set crypt_style = sha512
+      community.general.ini_file:
+        path: /etc/libuser.conf
+        section: defaults
+        option: crypt_style
+        value: sha512
+      register: _611135_fix
+
+    - name: RHEL-09-611135 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-611135'] }}"
+      when: (_611135_fix is changed)
+  rescue:
+    - name: RHEL-09-611135 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-611135': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-611135'] }}"

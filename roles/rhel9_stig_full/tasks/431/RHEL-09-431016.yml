@@ -1,0 +1,112 @@
+---
+# RHEL-09-431016 | V-272496
+# RHEL 9 must elevate the SELinux context when an administrator calls the
+# sudo command.
+# CAT II (Medium) | CCI-002233
+
+# The STIG requires the designated sudoers administrator group or accounts to
+# elevate to TYPE=sysadm_t ROLE=sysadm_r. Those principals are named in
+# rhel9_sudo_designated_admins, exactly as written in sudoers (%group or user).
+# Pass when each designated principal has a rule with the context and no rule
+# for that principal lacks it. Other rules (stock root, %wheel, service
+# accounts) are listed for information only: adding sysadm_r to them can lock
+# out admins whose SELinux user is unconfined_u, and break Ansible become.
+#
+# This used to require the context on every rule and let the attestation
+# clear only a result that had not failed, so it could never close on a host
+# with the stock root line. Sudo rules managed in IdM do not appear in local
+# files at all, so the attestation (rhel9_attest_sel_sudo_context_compliant,
+# with _method) now clears the rule on its own.
+
+- name: RHEL-09-431016 | check sudoers for sysadm_r SELinux context elevation
+  environment:
+    DESIGNATED: "{{ rhel9_sudo_designated_admins | default([]) | join(',') }}"
+  shell: |
+    sssd_sudo=$(grep -hi '^\s*sudo_provider\s*=' /etc/sssd/sssd.conf \
+                /etc/sssd/conf.d/*.conf 2>/dev/null \
+                | tail -1 | cut -d= -f2 | tr -d '[:space:]')
+    echo "SSSD_SUDO_PROVIDER: ${sssd_sudo:-not configured}"
+    echo "DESIGNATED ADMINS (rhel9_sudo_designated_admins): ${DESIGNATED:-(none set)}"
+
+    # Privilege rules: non-comment, non-Defaults, non-alias, non-include lines
+    # with an = sign, from the files sudo actually reads (visudo -c lists each
+    # one it parses; sudo skips sudoers.d names containing a dot or ending ~).
+    sudo_files=$(visudo -c 2>/dev/null | sed -n 's/: parsed OK$//p')
+    [ -n "$sudo_files" ] || sudo_files=/etc/sudoers
+    rules=$(grep -h '' $sudo_files 2>/dev/null \
+      | sed 's/^[[:space:]]*//' \
+      | grep -vE '^(#|$|Defaults|User_Alias|Runas_Alias|Cmnd_Alias|Host_Alias|@include)' \
+      | grep '=')
+
+    fail=0
+    if [ -z "$DESIGNATED" ]; then
+      fail=1
+      echo "FAIL: no designated admin group or account set in rhel9_sudo_designated_admins"
+    fi
+    IFS=',' read -ra designated <<< "$DESIGNATED"
+    for p in "${designated[@]}"; do
+      [ -n "$p" ] || continue
+      with=0; without=0
+      while IFS= read -r line; do
+        [ -n "$line" ] || continue
+        # the user spec is the first field; it may be a comma separated list
+        spec=${line%%[[:space:]]*}
+        case ",${spec}," in *",${p},"*) ;; *) continue ;; esac
+        if echo "$line" | grep -q 'TYPE=sysadm_t' && echo "$line" | grep -q 'ROLE=sysadm_r'; then
+          with=$((with + 1)); echo "ELEVATED: $line"
+        else
+          without=$((without + 1)); echo "MISSING_CONTEXT: $line"
+        fi
+      done <<< "$rules"
+      if [ "$with" -eq 0 ] && [ "$without" -eq 0 ]; then
+        fail=1; echo "FAIL: designated $p has no local sudoers rule"
+      elif [ "$without" -gt 0 ]; then
+        fail=1; echo "FAIL: designated $p has a rule without TYPE=sysadm_t ROLE=sysadm_r"
+      elif [ "$with" -eq 0 ]; then
+        fail=1
+      fi
+    done
+
+    echo "OTHER PRIVILEGE RULES (information only):"
+    while IFS= read -r line; do
+      [ -n "$line" ] || continue
+      spec=${line%%[[:space:]]*}
+      mine=0
+      for p in "${designated[@]}"; do
+        case ",${spec}," in *",${p},"*) mine=1 ;; esac
+      done
+      [ "$mine" -eq 0 ] && echo "  $line"
+    done <<< "$rules"
+
+    if [ "$fail" -eq 0 ]; then echo "STATUS: PASS"; else echo "STATUS: FAIL"; fi
+  register: _431016_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-431016 | record sudo SELinux context elevation status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-431016': {
+        'status':
+          'not_a_finding' if (_431016_result.stdout is search('^STATUS: PASS', multiline=True))
+          else ('not_a_finding' if (rhel9_attest_sel_sudo_context_compliant | bool)
+          else 'open'),
+        'finding_details':
+          _431016_result.stdout | trim
+          ~ '\nAttestation (rhel9_attest_sel_sudo_context_compliant): '
+          ~ (rhel9_attest_sel_sudo_context_compliant | bool | string | lower)
+          ~ '\nIdM/centralized method: '
+          ~ (rhel9_attest_sel_sudo_context_method if rhel9_attest_sel_sudo_context_method else '(not provided)'),
+        'comments':
+          'Name the designated sudo admin group or accounts in '
+          ~ 'rhel9_sudo_designated_admins and give each a sudoers rule such as '
+          ~ '%admins ALL=(ALL) TYPE=sysadm_t ROLE=sysadm_r ALL (map those users to '
+          ~ 'staff_u with semanage login first, or sudo will fail for them). If sudo '
+          ~ 'rules are managed in IdM, verify the context there, then set '
+          ~ 'rhel9_attest_sel_sudo_context_compliant: true and name the IdM rule(s) '
+          ~ 'in rhel9_attest_sel_sudo_context_method.'
+      }
+    }) }}"
+  tags: [validate]

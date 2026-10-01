@@ -1,0 +1,50 @@
+---
+# RHEL-09-213040 | V-257803
+# RHEL 9 must disable the kernel.core_pattern.
+# CAT II (Medium) | CCI-000366
+
+# The STIG checks the running value (sysctl). The DISA Ansible role's sysctl task
+# compares against /etc/sysctl.conf, so a host setting this in
+# /etc/sysctl.d/ (as ComplianceAsCode does) was reported open while
+# compliant. The value persisted by the sysctl configuration is shown for
+# context.
+# A documented operational exception (ISSO/ISSM, per the STIG) is accepted:
+# rhel9_attest_documented_exceptions['RHEL-09-213040'] = "<documentation>".
+
+- name: RHEL-09-213040 | check kernel.core_pattern (running value)
+  shell: |
+    want='|/bin/false'
+    got=$(sysctl -n kernel.core_pattern 2>&1)
+    persisted=$(/usr/lib/systemd/systemd-sysctl --cat-config 2>/dev/null \
+      | grep -E '^[[:space:]]*-?kernel[.]core_pattern[[:space:]]*=' | tail -1 | cut -d= -f2- | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    echo "RUNTIME: kernel.core_pattern = $got"
+    echo "PERSISTED (systemd-sysctl --cat-config, last wins): ${persisted:-(not set)}"
+    if [ "$got" = "$want" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: running value must be $want"
+    fi
+  register: _213040_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-213040 | record kernel.core_pattern status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-213040': {
+        'status':
+          'not_a_finding' if _213040_result.stdout is search('^STATUS: PASS', multiline=True)
+          else ('not_a_finding' if (rhel9_attest_documented_exceptions | default({})).get('RHEL-09-213040')
+          else 'open'),
+        'finding_details':
+          _213040_result.stdout | trim
+          ~ '\nDocumented exception (rhel9_attest_documented_exceptions): '
+          ~ ((rhel9_attest_documented_exceptions | default({})).get('RHEL-09-213040') or '(none)'),
+        'comments':
+          'Set kernel.core_pattern = |/bin/false in a file in /etc/sysctl.d/ and apply it: sysctl --system'
+      }
+    }) }}"
+  tags: [validate]

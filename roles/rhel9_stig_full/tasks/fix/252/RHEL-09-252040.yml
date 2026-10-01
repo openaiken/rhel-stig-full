@@ -1,0 +1,40 @@
+---
+# RHEL-09-252040 | V-257949 | fix
+# RHEL 9 must configure a DNS processing mode in Network Manager.
+# CAT II (Medium)
+#
+# Sets dns=default in [main] of /etc/NetworkManager/conf.d/zz-rhel9-stig-full-
+# dns.conf, which sorts last and so overrides any other configured mode. That
+# is the NetworkManager built-in default, so NetworkManager is not reloaded (a
+# reload on a remote host risks the connection); the check reads the
+# configuration with NetworkManager --print-config. A host that sets another
+# mode on purpose (e.g. dnsmasq) should toggle this rule off rather than run
+# the fix.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-252040 | fix
+  block:
+    - name: RHEL-09-252040 | set the DNS processing mode
+      community.general.ini_file:
+        path: /etc/NetworkManager/conf.d/zz-rhel9-stig-full-dns.conf
+        section: main
+        option: dns
+        value: default
+        no_extra_spaces: true
+        create: true
+        owner: root
+        group: root
+        mode: '0644'
+      register: _252040_fix
+
+    - name: RHEL-09-252040 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-252040'] }}"
+      when: (_252040_fix is changed)
+  rescue:
+    - name: RHEL-09-252040 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-252040': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-252040'] }}"

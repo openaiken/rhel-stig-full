@@ -1,0 +1,29 @@
+---
+# RHEL-09-211035 | V-257782 | fix
+# RHEL 9 must enable the hardware random number generator entropy gatherer
+# service.
+# CAT III (Low)
+#
+# Enables and starts rngd (rng-tools is installed by the RHEL-09-215090 fix).
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-211035 | fix
+  block:
+    - name: RHEL-09-211035 | enable and start rngd
+      ansible.builtin.systemd_service:
+        name: rngd
+        enabled: true
+        state: started
+      register: _211035_fix
+
+    - name: RHEL-09-211035 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-211035'] }}"
+      when: (_211035_fix is changed)
+  rescue:
+    - name: RHEL-09-211035 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-211035': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-211035'] }}"

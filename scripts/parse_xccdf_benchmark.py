@@ -2,10 +2,7 @@
 """
 Parse the DISA XCCDF benchmark XML and emit files/rules.json keyed by STIG ID.
 
-Also cross-references the latest XCCDF results file in reports/ to mark which
-rules are actually covered by the formal DISA Ansible role callback
-(formal_role_covered field). This is the ground truth — only rules the callback
-emitted a result for are considered covered.
+The benchmark XML lives in files/.
 
 Usage:
     python3 scripts/parse_xccdf_benchmark.py
@@ -13,7 +10,7 @@ Usage:
 Output:
     files/rules.json — one entry per rule, keyed by STIG ID (RHEL-09-XXXXXX)
 
-Re-run after a new formal role scan or if DISA releases a new benchmark version.
+Re-run when DISA releases a new benchmark version.
 """
 
 import json
@@ -24,10 +21,7 @@ import xml.etree.ElementTree as ET
 XCCDF_NS = "http://checklists.nist.gov/xccdf/1.1"
 
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-XCCDF_PATH = os.path.join(REPO_ROOT, "roles", "rhel9STIG", "files",
-                           "U_RHEL_9_STIG_V2R9_Manual-xccdf.xml")
-REPORTS_DIR = os.path.join(REPO_ROOT, "reports")
-XCCDF_RESULTS_NS = "http://checklists.nist.gov/xccdf/1.2"
+XCCDF_PATH = os.path.join(REPO_ROOT, "files", "U_RHEL_9_STIG_V2R9_Manual-xccdf.xml")
 OUTPUT_PATH = os.path.join(REPO_ROOT, "files", "rules.json")
 
 
@@ -51,27 +45,6 @@ def extract_vuln_discussion(raw):
 def parse_rule_id(raw_id):
     """SV-257777r1155676_rule -> SV-257777r1155676"""
     return raw_id.removesuffix("_rule")
-
-
-def get_formal_role_covered(reports_dir):
-    """Return set of group ID numbers recorded in the latest XCCDF results file."""
-    candidates = [
-        os.path.join(reports_dir, f)
-        for f in os.listdir(reports_dir)
-        if f.endswith("-xccdf-results.xml")
-    ]
-    if not candidates:
-        print("WARNING: no XCCDF results files found in reports/ — formal_role_covered will be False for all rules")
-        return set()
-    latest = max(candidates, key=os.path.basename)
-    print(f"Results:  {latest}")
-    root = ET.parse(latest).getroot()
-    covered = set()
-    for rr in root.findall(f"{{{XCCDF_RESULTS_NS}}}rule-result"):
-        m = re.search(r"SV-(\d+)r\d+", rr.get("idref", ""))
-        if m:
-            covered.add(m.group(1))
-    return covered
 
 
 def parse_benchmark(xccdf_path):
@@ -127,7 +100,6 @@ def parse_benchmark(xccdf_path):
             "check_content": check_content,
             "fix_text":     fix_text,
             "ccis":         ccis,
-            "formal_role_covered": None,  # populated after parsing
         }
 
     return rules
@@ -137,15 +109,6 @@ def main():
     print(f"Parsing:  {XCCDF_PATH}")
     rules = parse_benchmark(XCCDF_PATH)
     print(f"Extracted {len(rules)} rules")
-
-    covered_numbers = get_formal_role_covered(REPORTS_DIR)
-    for rule in rules.values():
-        num = rule["group_id"].lstrip("V-")
-        rule["formal_role_covered"] = num in covered_numbers
-
-    covered = sum(1 for r in rules.values() if r["formal_role_covered"])
-    print(f"Formal role covers {covered}/{len(rules)} rules "
-          f"({len(rules) - covered} need supplement coverage)")
 
     os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
     with open(OUTPUT_PATH, "w") as f:

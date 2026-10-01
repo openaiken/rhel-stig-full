@@ -1,0 +1,38 @@
+---
+# RHEL-09-232105 | V-257901
+# RHEL 9 /etc/group- file must be group-owned by root.
+# CAT II (Medium) | CCI-000366
+
+# Checked directly, as the STIG command does. (The DISA Ansible role's check
+# mode only says whether one of its tasks would change something.)
+
+- name: RHEL-09-232105 | check /etc/group- group owner
+  shell: |
+    val=$(stat -c '%G' /etc/group- 2>/dev/null)
+    echo "/etc/group- group owner: ${val:-(file not found)}"
+    if [ "$val" = "root" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: /etc/group- must exist with group owner root"
+    fi
+  register: _232105_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-232105 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-232105': {
+        'status':
+          'not_a_finding' if _232105_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _232105_result.stdout | trim,
+        'comments':
+          'sudo chgrp root /etc/group-'
+      }
+    }) }}"
+  tags: [validate]

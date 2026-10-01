@@ -1,0 +1,55 @@
+---
+# RHEL-09-212040 | V-257793 | fix
+# RHEL 9 must clear the page allocator to prevent use-after-free attacks.
+# CAT II (Medium)
+#
+# Sets page_poison=1 on every installed kernel (grubby --update-kernel=ALL)
+# and in GRUB_CMDLINE_LINUX in /etc/default/grub, so it survives the next
+# kernel install: an existing page_poison= value is corrected, otherwise
+# page_poison=1 is appended. The checks read both. The running kernel uses it
+# from the next boot.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-212040 | fix
+  block:
+    - name: RHEL-09-212040 | read the installed kernels' arguments
+      ansible.builtin.command: grubby --info=ALL
+      register: _212040_info
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-212040 | add page_poison=1 to every installed kernel
+      ansible.builtin.command: grubby --update-kernel=ALL --args=page_poison=1
+      register: _212040_kern
+      when: >-
+        (_212040_info.stdout_lines | select('match', '^args=') | list | length == 0)
+        or (_212040_info.stdout_lines | select('match', '^args=')
+            | reject('search', '(^args="|[ ])page_poison=1([ ]|"$)') | list | length > 0)
+
+    - name: RHEL-09-212040 | correct an existing page_poison= in GRUB_CMDLINE_LINUX
+      ansible.builtin.replace:
+        path: /etc/default/grub
+        regexp: '^([ \t]*GRUB_CMDLINE_LINUX="(?:[^"]*[ ])?)page_poison=[^" ]*'
+        replace: '\g<1>page_poison=1'
+      register: _212040_fix
+
+    - name: RHEL-09-212040 | add page_poison=1 to GRUB_CMDLINE_LINUX where it has no page_poison=
+      ansible.builtin.lineinfile:
+        path: /etc/default/grub
+        regexp: '^([ \t]*GRUB_CMDLINE_LINUX=")(?!(?:[^"]*[ ])?page_poison=)([^"]*)"(.*)$'
+        line: '\1\2 page_poison=1"\3'
+        backrefs: true
+      register: _212040_add
+
+    - name: RHEL-09-212040 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-212040'] }}"
+      when: (_212040_kern is changed) or (_212040_fix is changed) or (_212040_add is changed)
+  rescue:
+    - name: RHEL-09-212040 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-212040': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-212040'] }}"

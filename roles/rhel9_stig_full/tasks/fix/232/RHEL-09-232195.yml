@@ -1,0 +1,38 @@
+---
+# RHEL-09-232195 | V-257919 | fix
+# RHEL 9 system commands must be group-owned by root or a system account.
+# CAT II (Medium)
+#
+# Sets the group of every system command the check lists (group GID 1000 or
+# more, so not a system account) to root, using the check's own find command.
+# A file a package owns is then changed from its packaged state, which is what
+# the STIG requires.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-232195 | fix
+  block:
+    - name: RHEL-09-232195 | list what the check found
+      ansible.builtin.shell: find -L /bin /sbin /usr/bin /usr/sbin /usr/libexec /usr/local/bin /usr/local/sbin ! -group root -exec stat -L -c '%n %g' {} \; | awk '$2 >= 1000 { print $1 }' 2>/dev/null || true
+      register: _232195_paths
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-232195 | correct them
+      ansible.builtin.file:
+        path: "{{ item }}"
+        group: root
+      loop: "{{ _232195_paths.stdout_lines }}"
+      register: _232195_fix
+
+    - name: RHEL-09-232195 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232195'] }}"
+      when: (_232195_fix is changed)
+  rescue:
+    - name: RHEL-09-232195 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-232195': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232195'] }}"

@@ -1,0 +1,40 @@
+---
+# RHEL-09-432035 | V-258088
+# RHEL 9 must restrict the use of the "su" command.
+# CAT II (Medium) | CCI-002235
+
+# /etc/pam.d/su must have an active (uncommented) line requiring pam_wheel.so
+# with use_uid, so that only members of the wheel group can use su.
+
+- name: RHEL-09-432035 | check pam_wheel.so in /etc/pam.d/su
+  shell: |
+    match=$(grep -P '^\s*auth\s+required\s+pam_wheel\.so' /etc/pam.d/su 2>/dev/null \
+            | grep -v '^\s*#' || true)
+    if [ -z "$match" ]; then
+      echo "STATUS: FAIL"
+      echo "RAW: No active pam_wheel.so auth required line found in /etc/pam.d/su"
+    elif ! echo "$match" | grep -q 'use_uid'; then
+      echo "STATUS: FAIL"
+      echo "RAW: pam_wheel.so found but use_uid option is missing:"
+      echo "$match"
+    else
+      echo "STATUS: PASS"
+      echo "RAW: $match"
+    fi
+  register: _432035_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-432035 | record su pam_wheel restriction status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-432035': {
+        'status': 'not_a_finding' if _432035_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
+        'finding_details': _432035_result.stdout | trim,
+        'comments':
+          'Add to /etc/pam.d/su: auth required pam_wheel.so use_uid'
+      }
+    }) }}"
+  tags: [validate]

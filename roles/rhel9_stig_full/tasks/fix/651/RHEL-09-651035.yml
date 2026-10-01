@@ -1,0 +1,38 @@
+---
+# RHEL-09-651035 | V-258139 | fix
+# RHEL 9 must be configured so that the file integrity tool verifies extended
+# attributes.
+# CAT III (Low)
+#
+# Appends +xattrs to the rule of every uncommented selection line in
+# /etc/aide.conf (lines starting with / or =/) whose rule does not already add
+# xattrs (an earlier -xattrs, as in LOG-xattrs-n, does not count), as the STIG
+# fix says (xattrs on all uncommented selection lists). Appending last means a
+# macro that removes it (e.g. LOG-...) cannot win. Exclusion lines (!/path)
+# carry no rule and are left alone. The AIDE database is not rebuilt here.
+#
+# Review: this widens what AIDE records for every selection, logs included;
+# the STIG suggests excluding frequently changing files, which is a site
+# decision.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-651035 | fix
+  block:
+    - name: RHEL-09-651035 | add xattrs to every selection line that lacks it
+      ansible.builtin.replace:
+        path: /etc/aide.conf
+        regexp: '^([ \t]*=?/[^ \t#\n]*[ \t]+)(?!(?:xattrs\b|[^ \t#\n]*\+xattrs\b)(?![^ \t#\n]*-xattrs\b))([^ \t#\n]+)([ \t]*(?:#[^\n]*)?)$'
+        replace: '\g<1>\g<2>+xattrs\g<3>'
+      register: _651035_fix
+
+    - name: RHEL-09-651035 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-651035'] }}"
+      when: (_651035_fix is changed)
+  rescue:
+    - name: RHEL-09-651035 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-651035': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-651035'] }}"

@@ -1,0 +1,43 @@
+---
+# RHEL-09-652030 | V-258144 | fix
+# All RHEL 9 remote access methods must be monitored.
+# CAT II (Medium)
+#
+# Writes auth.*;authpriv.*;daemon.* /var/log/secure (the STIG fix) to
+# /etc/rsyslog.d/rhel9-stig-full-remote-access.conf, checks the whole
+# configuration with rsyslogd -N1, and restarts a running rsyslog.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-652030 | fix
+  block:
+    - name: RHEL-09-652030 | log auth, authpriv and daemon at all priorities
+      ansible.builtin.copy:
+        dest: /etc/rsyslog.d/rhel9-stig-full-remote-access.conf
+        content: |
+          # Managed by rhel9_stig_full (RHEL-09-652030)
+          auth.*;authpriv.*;daemon.*    /var/log/secure
+        owner: root
+        group: root
+        mode: '0644'
+      register: _652030_fix
+
+    - name: RHEL-09-652030 | validate the rsyslog configuration
+      ansible.builtin.command: rsyslogd -N1
+      changed_when: false
+      when: _652030_fix is changed and not ansible_check_mode
+
+    - name: RHEL-09-652030 | restart a running rsyslog to apply it
+      ansible.builtin.command: systemctl try-restart rsyslog
+      when: _652030_fix is changed
+
+    - name: RHEL-09-652030 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-652030'] }}"
+      when: (_652030_fix is changed)
+  rescue:
+    - name: RHEL-09-652030 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-652030': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-652030'] }}"

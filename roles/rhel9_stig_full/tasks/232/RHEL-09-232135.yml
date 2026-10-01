@@ -1,0 +1,38 @@
+---
+# RHEL-09-232135 | V-257907
+# RHEL 9 /etc/passwd file must be group-owned by root.
+# CAT II (Medium) | CCI-000366
+
+# Checked directly, as the STIG command does. (The DISA Ansible role's check
+# mode only says whether one of its tasks would change something.)
+
+- name: RHEL-09-232135 | check /etc/passwd group owner
+  shell: |
+    val=$(stat -c '%G' /etc/passwd 2>/dev/null)
+    echo "/etc/passwd group owner: ${val:-(file not found)}"
+    if [ "$val" = "root" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: /etc/passwd must exist with group owner root"
+    fi
+  register: _232135_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-232135 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-232135': {
+        'status':
+          'not_a_finding' if _232135_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _232135_result.stdout | trim,
+        'comments':
+          'sudo chgrp root /etc/passwd'
+      }
+    }) }}"
+  tags: [validate]

@@ -1,0 +1,42 @@
+---
+# RHEL-09-271110 | V-258032
+# RHEL 9 must prevent a user from overriding the Ctrl-Alt-Del sequence
+# settings for the graphical user interface.
+# CAT II (Medium) | CCI-000366
+
+# Not Applicable if GDM is not installed.
+# Queries the effective setting the way the STIG check does (gsettings),
+# through the user dconf profile, rather than grepping keyfiles. A keyfile grep
+# cannot see GNOME defaults, which of several keyfiles wins, whether dconf
+# update has compiled them, or whether a lock line is commented out.
+# XDG_CONFIG_HOME points at nothing so the root user db cannot mask a value.
+# An empty or error result is a finding: an unverifiable control is open.
+
+- name: RHEL-09-271110 | check Ctrl-Alt-Del logout key is locked (gsettings writable)
+  shell: |
+    rpm -q gdm &>/dev/null || { echo "NA: gdm not installed"; exit 0; }
+    w=$(XDG_CONFIG_HOME=/nonexistent DCONF_PROFILE=user gsettings writable org.gnome.settings-daemon.plugins.media-keys logout 2>&1)
+    if [ "$w" = "false" ]; then echo "PASS: org.gnome.settings-daemon.plugins.media-keys logout is locked (writable=false)"
+    else echo "FAIL: org.gnome.settings-daemon.plugins.media-keys logout is not locked (writable=${w:-no output})"
+    fi
+  register: _271110_result
+  changed_when: false
+  failed_when: false
+  check_mode: false
+  tags: [validate]
+
+- name: RHEL-09-271110 | record Ctrl-Alt-Del logout key lock status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-271110': {
+        'status':
+          'not_applicable' if _271110_result.stdout is search('^NA:', multiline=True)
+          else ('not_a_finding' if _271110_result.stdout is search('^PASS:', multiline=True)
+          else 'open'),
+        'finding_details': _271110_result.stdout | trim,
+        'comments':
+          'Add /org/gnome/settings-daemon/plugins/media-keys/logout to a lock '
+          ~ 'file under /etc/dconf/db/local.d/locks/. Run dconf update.'
+      }
+    }) }}"
+  tags: [validate]

@@ -1,0 +1,30 @@
+---
+# RHEL-09-412065 | V-258074 | fix
+# RHEL 9 must define default permissions for all authenticated users in such a
+# way that the user can only read and modify their own files.
+# CAT II (Medium)
+#
+# Sets UMASK 077 in /etc/login.defs, replacing the last uncommented UMASK line
+# (the one in effect) or appending one.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-412065 | fix
+  block:
+    - name: RHEL-09-412065 | set UMASK in /etc/login.defs
+      ansible.builtin.lineinfile:
+        path: /etc/login.defs
+        regexp: '^[ \t]*UMASK[ \t]'
+        line: 'UMASK 077'
+      register: _412065_fix
+
+    - name: RHEL-09-412065 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-412065'] }}"
+      when: (_412065_fix is changed)
+  rescue:
+    - name: RHEL-09-412065 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-412065': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-412065'] }}"

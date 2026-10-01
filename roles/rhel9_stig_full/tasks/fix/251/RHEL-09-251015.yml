@@ -1,0 +1,31 @@
+---
+# RHEL-09-251015 | V-257936 | fix
+# The firewalld service on RHEL 9 must be active.
+# CAT II (Medium)
+#
+# Enables and starts firewalld (installed by the RHEL-09-251010 fix). Its
+# default zone allows SSH, so the connection survives, but any other service
+# the host offers is blocked until a rule allows it: review the zone before
+# running this on a server.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-251015 | fix
+  block:
+    - name: RHEL-09-251015 | enable and start firewalld
+      ansible.builtin.systemd_service:
+        name: firewalld
+        enabled: true
+        state: started
+      register: _251015_fix
+
+    - name: RHEL-09-251015 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-251015'] }}"
+      when: (_251015_fix is changed)
+  rescue:
+    - name: RHEL-09-251015 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-251015': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-251015'] }}"
