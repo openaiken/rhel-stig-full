@@ -8,18 +8,18 @@ Current revision: **RHEL 9 STIG V2R9** (445 rules, Release: 9, 01 Jul 2026).
 
 ## The one thing to understand first
 
-**`roles/rhel9_stig_full` assesses every rule; the DISA formal role
-(`roles/rhel9STIG`) only remediates.** One playbook, `stig.yml`, selected by
-tag: `disa_remediate` runs the DISA role; `remediate` runs every check, then
-our own fixes (`tasks/fix/`) for rules that came back `open` only; `validate`
-assesses and renders (with `remediate`: re-checks what a fix changed first);
+**`roles/rhel9_stig_full` assesses every rule and remediates the ones it can
+fix safely; there is no other role** (the DISA Ansible role was removed on
+2026-10-01). One playbook, `stig.yml`, selected by tag: `remediate` runs
+every check, then fixes (`tasks/fix/`) for rules that came back `open` only;
+`validate` assesses and renders (with `remediate`: re-checks first);
 `render` re-renders from earlier results. `remediate` alone writes no results
 file: its pre-fix verdicts would be newest and a render would show fixed
 rules open. Every rule in
 `rules.json` and the CKLB template has exactly one task (`audit_coverage.py`
 enforces it).
 
-Why the formal role cannot assess: in check mode a rule "fails" when a task
+Why the DISA Ansible role could not assess: in check mode a rule "fails" when a task
 *would change something*, and its tasks write one exact line into one exact
 file or set one exact value. A host configured correctly any other way was
 reported open: drop-ins (`sysctl.d`, `sshd_config.d`, `rules.d`,
@@ -57,10 +57,9 @@ exception; each such task says so, and the var's comment lists them.
 **STIG ID (`RHEL-09-XXXXXX`) is the key everywhere** — `rules.json` keys, task
 filenames, tags, `stig_rules`, `stig_facts`, and the CKLB join on `rule_version`.
 
-V-numbers churn between revisions and must not be used as identity. Assessment
-uses none. The one V-number dependency is DISA's, and remediation only:
-`rhel9STIG_stigrule_<Vnum>_Manage` toggles in `group_vars/all/stig_formal_role.yml`.
-R8→R9 renamed none, but a future revision could. Check on every bump.
+V-numbers churn between revisions and must not be used as identity. Nothing
+in the project uses them. Remediation is skipped per rule by STIG ID
+(`stig_fix_skip` in `group_vars/all/stig_fixes.yml`).
 
 ## Status contract
 
@@ -151,16 +150,18 @@ report 0. Re-run it after touching any task.
   `DCONF_PROFILE=user XDG_CONFIG_HOME=/nonexistent`), as the STIG does. Keyfile
   greps miss defaults, override order, uncompiled databases, and commented locks.
 
-## Writing fix tasks (phase 4: own remediation, replacing the DISA role)
+## Writing fix tasks
 
 - `tasks/fix/<cat>/RHEL-09-XXXXXX.yml`, same `<cat>` as the check; wired in
-  `tasks/fix_imports.yml` gated on toggle **and** `status == 'open'`
+  `tasks/fix_imports.yml` gated on toggle, `stig_fix_skip`, **and**
+  `status == 'open'`
 - Modules, not shell. One `block:`; a changed task appends the ID to
   `stig_fixed`; `rescue:` records `stig_fix_errors[id]` **and** appends to
   `stig_fixed` (a failed fix may still have changed state, so re-check it)
-- Only fixes with one reasonable implementation. Never: 213105 (userns,
-  breaks podman), 253075/254025 (forwarding), removals with exception
-  clauses (nfs-utils, postfix, tuned, ...)
+- Only fixes with one reasonable implementation, and only org-agnostic ones
+  (site baseline items stay with the operator). Never: 213105 (userns,
+  breaks podman), 253075/254025 (forwarding). "Unless required" removals
+  only evidence-gated (below).
 - A check that reads only runtime state passes as soon as the fix applies it,
   so the fix must prove persistence itself (sysctl fixes verify the last value
   in `systemd-sysctl --cat-config`, writing `zz-rhel9-stig-full.conf`)
@@ -224,9 +225,9 @@ changed=0). Both demoserver hosts are dedicated test VMs, safe to break
    omits pure `rule_id` revision bumps.
 4. Rework tasks whose check text changed; add tasks for new rules (every rule
    needs one); retire tasks, toggles and attestation vars for removed rules.
-5. Remediation: replace `roles/rhel9STIG/` (delete any `callback_plugins/` it
-   ships) and regenerate the comment block in `stig_formal_role.yml` from the
-   role's own defaults.
+5. Remediation: review fixes of rules whose check or fix text changed; delete
+   fixes (and their `fix_imports.yml` lines) for removed rules. Lint
+   FIX-AUDIT-DRIFT flags audit fixes whose expected rules left the check.
 
 **Budget time to sweep for latent shell-logic bugs, not just to diff rule text.**
 In the V2R9 bump, three of four commits fixed pre-existing R8 defects that the

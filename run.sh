@@ -9,7 +9,6 @@ export XML_PATH="$HOME/oss/rhel-stig-full/reports"
 # ── defaults ──────────────────────────────────────────────────────────────────
 TAG=""
 HOST="default_host_group"
-SKIP_FORMAL=false
 SKIP_SUPPLEMENT=false
 SKIP_CKLB=false
 AND_VALIDATE=false
@@ -33,8 +32,7 @@ Usage: run.sh <validate|remediate> [OPTIONS] [-- ANSIBLE_ARGS]
 Modes (required):
   validate    Assess: every rule is checked (read-only) by the rhel9_stig_full
               role and the CKLB checklist is generated.
-  remediate   Apply: the DISA formal role (roles/rhel9STIG) enforces STIG
-              settings; then every rule is checked and the open rules that
+  remediate   Apply: every rule is checked and the open rules that
               rhel9_stig_full can fix are fixed. Compliant, not-applicable and
               attested rules are never changed. No checklist unless
               --validate is given.
@@ -52,13 +50,11 @@ Auth (mutually exclusive — choose one):
                             file for the duration of the run); become
                             credentials are read from the vault
 
-Skip plays:
+Stages:
   --skip-supplement         validate: skip the checks (re-render from earlier
                             results only)
   --skip-cklb               validate, or remediate --validate: write results
                             without rendering a checklist
-  --skip-formal             remediate: skip the DISA role; only the
-                            rhel9_stig_full fixes run
   --validate                remediate: then re-check the rules a fix changed
                             and render the checklist (check, fix, re-check,
                             render, in one run)
@@ -85,7 +81,7 @@ Examples:
   ./run.sh validate
   ./run.sh validate --host stigging-sandbox2
   ./run.sh remediate --host prod-servers --vault-pass-file ~/.vault_pass
-  ./run.sh remediate --skip-formal --validate --host stigging-sandbox2
+  ./run.sh remediate --validate --host stigging-sandbox2
   ./run.sh validate --skip-supplement     # re-render from earlier results
   ./run.sh validate --vault -- -e "extra_var=foo"
 EOF
@@ -105,7 +101,9 @@ while [[ $# -gt 0 ]]; do
     --host=*)
       HOST="${1#*=}"; shift ;;
     --skip-formal)
-      SKIP_FORMAL=true; shift ;;
+      # the DISA role it skipped has been removed; accepted so old
+      # invocations keep working
+      warn "--skip-formal is obsolete (the DISA role was removed) and is ignored"; shift ;;
     --skip-supplement)
       SKIP_SUPPLEMENT=true; shift ;;
     --skip-cklb)
@@ -208,18 +206,13 @@ run_play() {
   rm -f "$log"
 }
 
-# One playbook, selected by tag: remediate runs the DISA role, then checks,
-# fixes and re-checks (never a checklist); validate assesses every rule, then
-# renders the checklist.
+# One playbook, selected by tag: remediate checks, fixes and (with --validate)
+# re-checks and renders; validate assesses every rule, then renders the
+# checklist.
 PLAY_ARGS=()
 if [[ "$TAG" == "remediate" ]]; then
-  if [[ "$SKIP_FORMAL" == true ]]; then
-    PLAY_ARGS=(--tags remediate)
-    info "Remediate (rhel9_stig_full fixes) → $HOST"
-  else
-    PLAY_ARGS=(--tags disa_remediate,remediate)
-    info "Remediate (DISA role, then rhel9_stig_full fixes) → $HOST"
-  fi
+  PLAY_ARGS=(--tags remediate)
+  info "Remediate → $HOST"
   if [[ "$AND_VALIDATE" == true ]]; then
     PLAY_ARGS[1]+=",validate"
     if [[ "$SKIP_CKLB" == true ]]; then
