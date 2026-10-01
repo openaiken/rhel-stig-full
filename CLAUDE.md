@@ -8,68 +8,39 @@ Current revision: **RHEL 9 STIG V2R9** (445 rules, Release: 9, 01 Jul 2026).
 
 ## The one thing to understand first
 
-`formal_role_covered` in `files/rules.json` is **host-dependent, not a property of
-the role**. 21 formal-role tasks are gated on conditionals like
-`packages['dconf'] is defined`. On a host with dconf those tasks run and the
-callback records a result; on a headless host they are skipped *silently* and the
-rule lands in the checklist as `not_reviewed`. Measured: 278 covered on one host
-vs 259 on another — same role.
+**The supplement assesses every rule; the DISA formal role (`roles/rhel9STIG`)
+only remediates.** `run.sh validate` = supplement + renderer; `run.sh remediate`
+= formal role. Every rule in `rules.json` and the CKLB template has exactly one
+supplement task (`audit_coverage.py` enforces it).
 
-Consequences:
+Why the formal role cannot assess: in check mode a rule "fails" when a task
+*would change something*, and its tasks write one exact line into one exact
+file or set one exact value. A host configured correctly any other way was
+reported open: drop-ins (`sysctl.d`, `sshd_config.d`, `rules.d`,
+`pwquality.conf.d`, `modprobe.d/<other>.conf`), other spellings (`HALT`,
+`key = v`, tabs), **stricter** values than its fixed one (minlen 16 for "15 or
+more"; mode 0600 for "0640 or less"), and N/A clauses it ignores. On
+delta-bindtest (ComplianceAsCode) that was 124 of 156 open findings. So checks
+here test what the STIG check text tests, on the effective value where one
+exists (`sysctl -n`, `sshd -T`, `auditctl -l` via the `rhel9_audit_coverage`
+filter, `gsettings`, `systemctl show`), files read as their consumer reads
+them, thresholds compared as thresholds.
 
-- The supplement deliberately carries far more tasks (378 of 445 rules) than the
-  167 the formal role never covers. **Never delete a supplement task because a
-  scan shows the formal role covering that rule.** The overlap is what makes
-  coverage host-independent, and it is also how results stay correct: see the
-  next section.
-- `cklb.py` gives supplement facts precedence over XCCDF for this reason.
-  It merges each source per rule across all of a host's result files, newest
-  winning, and stamps each rule's comments with the run it came from. Older
-  input is intentional; a tag-limited run (`-t RHEL-09-...`) must not blank
-  the other rules, which taking only the newest file whole did. Results for
-  rules switched off (`supp_rules`, `rhel9STIG_stigrule_<V>_Manage`) are
-  dropped, and files are matched to the exact host name.
-- Result files are named `YYYYMonDD-HH:MM:SS-<host>...` (four-digit year so
-  it is not misread as a day; seconds so a quick single-rule run cannot
-  overwrite a full run; the older `YYMonDD-HH:MM` form still parses). Only
-  files from the last `cklb_max_result_age_days` (default 30, run.sh
-  `--max-result-age`, 0 = no limit) are merged; older results are dropped,
-  not reported. Remediate runs write
-  `-xccdf-remediate-run.xml`, which never enters a checklist: in that mode
-  "changed" means fixed, not a finding.
+Results and rendering:
+
+- `cklb.py` merges a host's result files per rule, newest winning, and stamps
+  each rule's comments with its run. A tag-limited run (`-t RHEL-09-...`) must
+  not blank the other rules. Rules switched off in `supp_rules` are dropped;
+  files are matched to the exact host name (glob suffix collisions).
+- Result files are `reports/supp-facts/YYYYMonDD-HH:MM:SS-<host>.json` (the
+  older `YYMonDD-HH:MM` form still parses). Only the last
+  `cklb_max_result_age_days` (default 30, `run.sh --max-result-age`, 0 = none)
+  are merged; older results are dropped, not reported.
 - `run.sh` exits 2 when some hosts failed or were unreachable but others
-  completed; it stops (exit 1) only when a stage fails outright. Exit code 4
-  from ansible-core means both "unreachable" and "parse/vault error", so
-  run.sh decides from the PLAY RECAP, not the code.
-- In `audit_coverage.py` output, a big gap between `formal role static tasks (# R-)`
-  and `formal_role_covered` means many role tasks are being skipped on that host.
-
-## The formal role's check mode is a text match, not an assessment
-
-In validate mode the DISA role runs in check mode, and a rule "fails" when a
-task *would change something*. Its tasks write one exact line into one exact
-file, or set one exact value. So on any host configured correctly but not by
-that role, it reports compliant settings as findings:
-
-- settings in a drop-in or other file (`sysctl.d`, `sshd_config.d`,
-  `rules.d/*.rules`, `pwquality.conf.d`, `modprobe.d/<other>.conf`);
-- the same value spelled differently (`halt` / `HALT`, `key = v` / `key=v`, a
-  tab, `/etc/issue` line breaks);
-- **stricter** values where the STIG sets a limit (`minlen = 16` against
-  "15 or more"; mode 0600 against "0640 or less": the role sets exactly 0640);
-- N/A conditions the role ignores (core-dump rules when `kernel.core_pattern`
-  is `|/bin/false`).
-
-On delta-bindtest (ComplianceAsCode) that was 124 of 156 open findings. The
-supplement now owns every rule where the role's check is a line or value
-match, and checks what the STIG checks: the running or effective value where
-one exists (`sysctl -n`, `sshd -T`, `auditctl -l` via the
-`rhel9_audit_coverage` filter, `gsettings`, `systemctl show`), files read the
-way their consumer reads them, thresholds compared as thresholds. What remains
-with the formal role are package, service, ownership and `0000`-mode rules,
-where check mode compares real state. When a new revision adds a rule the role
-implements with `lineinfile`, `ini_file`, `sysctl` or an exact `mode`, give it
-a supplement task.
+  completed, 1 when a stage fails outright. ansible-core exits 4 for both
+  "unreachable" and "parse/vault error", so run.sh decides from the PLAY RECAP.
+- Every stage needs the vault password: `group_vars/all/vault.yml` is loaded
+  for every play.
 
 `rhel9_attest_documented_exceptions` (STIG ID -> documentation reference) is
 honoured only by rules whose check text allows an ISSO/ISSM-documented
@@ -80,14 +51,10 @@ exception; each such task says so, and the var's comment lists them.
 **STIG ID (`RHEL-09-XXXXXX`) is the key everywhere** — `rules.json` keys, task
 filenames, tags, `supp_rules`, `supp_facts`, and the CKLB join on `rule_version`.
 
-V-numbers churn between revisions and must not be used as identity. They appear
-functionally in exactly two places, both same-revision joins against the
-callback's XCCDF *results*, which identify rules only by `SV-`/`V-` number:
-`scripts/parse_xccdf_benchmark.py` and `roles/cklb_renderer/filter_plugins/cklb.py`.
-
-One V-number dependency exists by DISA's design: `rhel9STIG_stigrule_<Vnum>_Manage`
-toggles. R8→R9 renamed none of them, but a future revision could, which would
-silently invalidate `group_vars/all/stig_formal_role.yml`. Check on every bump.
+V-numbers churn between revisions and must not be used as identity. Assessment
+uses none. The one V-number dependency is DISA's, and remediation only:
+`rhel9STIG_stigrule_<Vnum>_Manage` toggles in `group_vars/all/stig_formal_role.yml`.
+R8→R9 renamed none, but a future revision could. Check on every bump.
 
 ## Status contract
 
@@ -171,13 +138,16 @@ report 0. Re-run it after touching any task.
 
 ```bash
 python3 scripts/audit_coverage.py     # must print CLEAN
-ansible-playbook supplement.yml -t RHEL-09-XXXXXX -e my_host=stigging-sandbox2 \
-    --vault-password-file vault_pass.txt        # single rule, fast
-./run.sh validate --host stigging-sandbox2 --vault-pass-file vault_pass.txt
+python3 scripts/lint_supplement.py    # must report 0
+python3 scripts/test_audit_rules.py   # audit-rule filter unit tests
+ansible-playbook supplement.yml -t RHEL-09-XXXXXX -e my_host=demoserver \
+    -l stigging-sandbox3,delta-bindtest --vault-password-file vault_pass.txt
+./run.sh validate --host demoserver --vault-pass-file vault_pass.txt
 ```
 
-`audit_coverage.py` cross-checks `rules.json`, task files, `main.yml` wiring, and
-`supp_rules` toggles. It must print CLEAN before any revision work is done.
+`audit_coverage.py` cross-checks `rules.json`, the CKLB template, task files,
+`main.yml` wiring and `supp_rules` toggles. It must print CLEAN before any
+revision work is done.
 Then confirm the rendered CKLB has **0 `not_reviewed`** and 0 empty
 `finding_details`.
 
@@ -185,26 +155,23 @@ Test hosts (`demoserver` group): `stigging-sandbox3` is deliberately unhardened 
 `~/.ansible/stig-sandbox2`). **`ansible_pipelining=true` is mandatory there** —
 fapolicyd plus `noexec` on `/home`, `/tmp`, `/var/tmp` means Ansible cannot drop
 and execute a module file, and every module fails without it. It is set per-host
-in `hosts`. Validate mode is genuinely non-destructive (play-level `check_mode`
-is honored; `changed: true` there is a prediction, not an applied change).
+in `hosts`. Validate is read-only: it runs only the assessment shells. Test
+`remediate` with `-- --check` (the formal role honours check mode).
 
 ## Revision bump procedure
 
-1. Replace `roles/rhel9STIG/`. **Delete `roles/rhel9STIG/callback_plugins/`** —
-   the role ships a stale `stig_xml` callback that reads the same `XML_PATH` env
-   var as ours and breaks XCCDF output. It has shipped in the tarball before.
-2. Confirm the new XCCDF's release label and rule count match the new CKLB
-   template's `release_info` and `size`.
+1. Put the new benchmark XML in `files/`; update `XCCDF_PATH` in
+   `parse_xccdf_benchmark.py` and regenerate `rules.json`.
+2. Replace the CKLB template; update `cklb_template_path`. Its `release_info` and
+   rule count must match the benchmark (`audit_coverage.py` cross-checks rules).
 3. `python3 scripts/diff_benchmarks.py OLD.xml NEW.xml --json out.json`, then
    reconcile against DISA's changelog. The XCCDF is authoritative; the changelog
    omits pure `rule_id` revision bumps.
-4. Update `XCCDF_PATH` in `parse_xccdf_benchmark.py` and `cklb_template_path` in
-   `roles/cklb_renderer/defaults/main.yml`.
-5. Scan a host, regenerate `rules.json`, regenerate the comment blocks in
-   `stig_formal_role.yml` (from the role's own defaults, not from a scan) and
-   `stig_supplement.yml`.
-6. Rework tasks for substantive check/fix changes; retire tasks, toggles, and
-   attestation vars for removed rules.
+4. Rework tasks whose check text changed; add tasks for new rules (every rule
+   needs one); retire tasks, toggles and attestation vars for removed rules.
+5. Remediation: replace `roles/rhel9STIG/` (delete any `callback_plugins/` it
+   ships) and regenerate the comment block in `stig_formal_role.yml` from the
+   role's own defaults.
 
 **Budget time to sweep for latent shell-logic bugs, not just to diff rule text.**
 In the V2R9 bump, three of four commits fixed pre-existing R8 defects that the
