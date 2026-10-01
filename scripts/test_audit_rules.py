@@ -33,6 +33,11 @@ CASES = [
     ("exe rule wrong perm", X, "-a always,exit -S all -F path=/usr/bin/chage -F perm=w -F auid>=1000 -F auid!=-1", False),
     ("syscall rule cannot cover exe", X, "-a always,exit -F arch=b64 -S execve -F auid>=1000 -F auid!=-1", False),
     ("empty rule set", E, "No rules", False),
+    # how the kernel stores the STIG's own path+perm rule (auditctl -l on sandbox3)
+    ("kernel-expanded perm=wa", P, "-a always,exit -F arch=b64 -S open,bind,truncate,ftruncate,rename,mkdir,rmdir,creat,link,unlink,symlink,chmod,fchmod,chown,fchown,lchown,mknod,acct,swapon,quotactl,setxattr,lsetxattr,fsetxattr,removexattr,lremovexattr,fremovexattr,openat,mkdirat,mknodat,fchownat,unlinkat,renameat,linkat,symlinkat,fchmodat,fallocate,renameat2,openat2 -F path=/etc/passwd -F perm=wa -F key=identity", True),
+    ("expanded list, other path", P, "-a always,exit -F arch=b64 -S openat,truncate,ftruncate,unlinkat,renameat,fchmodat,fchownat,setxattr,removexattr -F path=/etc/shadow -F perm=wa", False),
+    ("expanded list lacks attr class", P, "-a always,exit -F arch=b64 -S openat,truncate,ftruncate,unlinkat,renameat -F path=/etc/passwd -F perm=wa", False),
+    ("expanded list, perm w only", P, "-a always,exit -F arch=b64 -S openat,truncate,ftruncate,unlinkat,renameat,fchmodat,fchownat,setxattr,removexattr -F path=/etc/passwd -F perm=w", False),
 ]
 
 failures = 0

@@ -87,6 +87,31 @@ def parse(rule):
     return r
 
 
+# A path rule with -F perm and no -S (as the STIG writes the 654215-654255
+# identity rules) is stored by the kernel as the syscalls of those permission
+# classes, and auditctl -l prints that explicit list. So a loaded path+perm
+# rule with an explicit list covers an all-syscalls expected rule when the list
+# holds the core syscalls of every expected class. Comparing the list against
+# "all" reported a host configured exactly as the STIG says as open.
+_PERM_CORE = {
+    "r": {"openat"},
+    "w": {"openat", "truncate", "ftruncate", "unlinkat", "renameat"},
+    "a": {"fchmodat", "fchownat", "setxattr", "removexattr"},
+    "x": {"execve"},
+}
+
+
+def _syscalls_cover(loaded, expected):
+    if "all" in loaded["syscalls"]:
+        return True
+    if "all" not in expected["syscalls"]:
+        return expected["syscalls"] <= loaded["syscalls"]
+    if expected["path"] is None or not loaded["perm"]:
+        return False
+    need = set().union(*(_PERM_CORE.get(c, set()) for c in expected["perm"]))
+    return bool(need) and need <= loaded["syscalls"]
+
+
 def covers(loaded, expected):
     if loaded["kind"] == "watch":
         return (expected["path"] is not None and loaded["path"] == expected["path"]
@@ -95,7 +120,7 @@ def covers(loaded, expected):
         return False
     if loaded["arch"] not in (None, expected["arch"]):
         return False
-    if "all" not in loaded["syscalls"] and not expected["syscalls"] <= loaded["syscalls"]:
+    if not _syscalls_cover(loaded, expected):
         return False
     if loaded["path"] != expected["path"]:
         return False
