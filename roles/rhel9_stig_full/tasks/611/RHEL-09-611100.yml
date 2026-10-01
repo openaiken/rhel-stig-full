@@ -31,6 +31,15 @@
       m == "ws" { split(line, a, " "); if (tolower(a[1]) == tolower(k)) { v = a[2]; f = 1 } }
       m == "flag" { t = line; gsub(/[[:space:]]/, "", t); if (tolower(t) == tolower(k)) { v = "set"; f = 1 } }
       END { if (f) print v }' "${files[@]}" 2>/dev/null)
+    # pam_pwquality.so arguments override the configuration files
+    # (man pam_pwquality): a ocredit= on the PAM line is the value in effect.
+    # Two different values (system-auth vs password-auth) fail.
+    pamv=$(grep -hE '^[[:space:]]*password[[:space:]]+[^[:space:]]+[[:space:]]+pam_pwquality[.]so' /etc/pam.d/system-auth /etc/pam.d/password-auth 2>/dev/null \
+           | grep -oE '(^|[[:space:]])ocredit=[^[:space:]]+' | cut -d= -f2 | sort -u)
+    if [ -n "$pamv" ]; then
+      echo "pam_pwquality.so argument overrides the configuration: ocredit=$(echo $pamv)"
+      [ "$(echo "$pamv" | wc -l)" -eq 1 ] && val=$pamv || val=conflicting
+    fi
     echo "ocredit (effective, last uncommented occurrence): ${val:-(not set)}"
     echo "lines: $(grep -Hi 'ocredit' "${files[@]}" 2>/dev/null | grep -vE ':[[:space:]]*#' | tr '\n' ' ')"
     if isint "$val" && [ "$val" -le 0 ]; then

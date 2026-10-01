@@ -26,6 +26,16 @@
             2>/dev/null \
           | tail -1 | cut -d= -f2 | tr -d '[:space:]')
 
+    # pam_pwquality.so arguments override the configuration files
+    # (man pam_pwquality): a retry= on the PAM line is the value in effect.
+    # Two different values (system-auth vs password-auth) fail.
+    pamv=$(grep -hE '^[[:space:]]*password[[:space:]]+[^[:space:]]+[[:space:]]+pam_pwquality[.]so' /etc/pam.d/system-auth /etc/pam.d/password-auth 2>/dev/null \
+           | grep -oE '(^|[[:space:]])retry=[^[:space:]]+' | cut -d= -f2 | sort -u)
+    if [ -n "$pamv" ]; then
+      echo "pam_pwquality.so argument overrides the configuration: retry=$(echo $pamv)"
+      [ "$(echo "$pamv" | wc -l)" -eq 1 ] && val=$pamv || val=conflicting
+    fi
+
     if [ -z "$val" ]; then
       echo "STATUS: FAIL"
       echo "FAIL: retry not set in pwquality.conf or pwquality.conf.d/ (must be 1-3)"
