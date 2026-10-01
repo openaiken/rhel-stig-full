@@ -120,6 +120,9 @@
 - import_tasks: fix/214/RHEL-09-214035.yml
   when: (stig_rules['RHEL-09-214035'] | default(true) | bool) and ((stig_facts['RHEL-09-214035'] | default({})).status | default('') == 'open')
 
+- import_tasks: fix/215/RHEL-09-215010.yml
+  when: (stig_rules['RHEL-09-215010'] | default(true) | bool) and ((stig_facts['RHEL-09-215010'] | default({})).status | default('') == 'open')
+
 - import_tasks: fix/215/RHEL-09-215015.yml
   when: (stig_rules['RHEL-09-215015'] | default(true) | bool) and ((stig_facts['RHEL-09-215015'] | default({})).status | default('') == 'open')
 
