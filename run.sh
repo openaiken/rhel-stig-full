@@ -30,11 +30,11 @@ usage() {
 Usage: run.sh <validate|remediate> [OPTIONS] [-- ANSIBLE_ARGS]
 
 Modes (required):
-  validate    Dry-run: formal role runs in check mode, supplement runs
-              validation checks, CKLB checklist is generated.
-  remediate   Apply: formal role enforces STIG settings, supplement runs
-              remediation then validation. CKLB is NOT generated
-              (use validate after to produce a deliverable).
+  validate    Assess: the supplement checks every rule (read-only) and the
+              CKLB checklist is generated. The formal role is not used.
+  remediate   Apply: the DISA formal role (roles/rhel9STIG) enforces STIG
+              settings. Nothing is assessed; run validate afterwards to
+              produce a checklist.
 
 Target:
   -H HOST_OR_GROUP, --host HOST_OR_GROUP
@@ -50,9 +50,11 @@ Auth (mutually exclusive — choose one):
                             credentials are read from the vault
 
 Skip plays:
-  --skip-formal             Skip the rhel9STIG formal role play
-  --skip-supplement         Skip the supplement checks/remediation play
-  --skip-cklb               Skip the CKLB renderer (validate mode only)
+  --skip-supplement         validate: skip the checks (render from earlier
+                            results only)
+  --skip-cklb               validate: skip the CKLB renderer
+  --skip-formal             accepted for compatibility; remediate with it does
+                            nothing
 
 Checklist:
   --max-result-age DAYS     Merge only result files from the last DAYS days
@@ -76,7 +78,7 @@ Examples:
   ./run.sh validate
   ./run.sh validate --host stigging-sandbox2
   ./run.sh remediate --host prod-servers --vault-pass-file ~/.vault_pass
-  ./run.sh validate --skip-formal -vvv
+  ./run.sh validate --skip-supplement     # re-render from earlier results
   ./run.sh validate --vault -- -e "extra_var=foo"
 EOF
   exit 0
@@ -149,7 +151,9 @@ if [[ "$VAULT_MODE" == "prompt" ]]; then
   VAULT_FILE="$VAULT_TMPFILE"
 elif [[ -z "$VAULT_MODE" ]]; then
   # no vault — prompt for become password and write to a temp file
-  if [[ "$SKIP_FORMAL" == false || "$SKIP_SUPPLEMENT" == false ]]; then
+  # only the stage that touches hosts needs privilege
+  if [[ ( "$TAG" == "remediate" && "$SKIP_FORMAL" == false ) ||
+        ( "$TAG" == "validate" && "$SKIP_SUPPLEMENT" == false ) ]]; then
     read -rsp "BECOME password for $HOST: " _bp; echo
     BECOME_TMPFILE=$(mktemp)
     chmod 600 "$BECOME_TMPFILE"
@@ -195,21 +199,22 @@ run_play() {
   rm -f "$log"
 }
 
-if [[ "$SKIP_FORMAL" == false ]]; then
-  info "Formal role ($TAG) → $HOST"
-  run_play "Formal role" ./formal-role.yml --tags "$TAG" "${COMMON[@]}"
-fi
-
-if [[ "$SKIP_SUPPLEMENT" == false ]]; then
-  info "Supplement ($TAG) → $HOST"
-  run_play "Supplement" ./supplement.yml --tags "$TAG" "${COMMON[@]}"
-fi
-
-if [[ "$SKIP_CKLB" == false && "$TAG" == "validate" ]]; then
-  info "CKLB renderer → $HOST"
-  CKLB_ARGS=()
-  [[ -n "$MAX_RESULT_AGE" ]] && CKLB_ARGS+=(-e "cklb_max_result_age_days=$MAX_RESULT_AGE")
-  run_play "CKLB renderer" ./cklb.yml --tags validate "${COMMON[@]}" "${CKLB_ARGS[@]}"
+if [[ "$TAG" == "remediate" ]]; then
+  if [[ "$SKIP_FORMAL" == false ]]; then
+    info "Formal role (remediate) → $HOST"
+    run_play "Formal role" ./formal-role.yml --tags remediate "${COMMON[@]}"
+  fi
+else
+  if [[ "$SKIP_SUPPLEMENT" == false ]]; then
+    info "Supplement (validate) → $HOST"
+    run_play "Supplement" ./supplement.yml --tags validate "${COMMON[@]}"
+  fi
+  if [[ "$SKIP_CKLB" == false ]]; then
+    info "CKLB renderer → $HOST"
+    CKLB_ARGS=()
+    [[ -n "$MAX_RESULT_AGE" ]] && CKLB_ARGS+=(-e "cklb_max_result_age_days=$MAX_RESULT_AGE")
+    run_play "CKLB renderer" ./cklb.yml --tags validate "${COMMON[@]}" "${CKLB_ARGS[@]}"
+  fi
 fi
 
 if [[ ${#SKIPPED_HOSTS[@]} -gt 0 ]]; then

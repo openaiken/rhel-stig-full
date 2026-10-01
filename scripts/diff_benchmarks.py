@@ -11,8 +11,8 @@ Usage:
 
 Example:
     python3 scripts/diff_benchmarks.py \
-        roles/rhel9STIG/files/U_RHEL_9_STIG_V2R8_Manual-xccdf.xml \
-        roles/rhel9STIG/files/U_RHEL_9_STIG_V2R9_Manual-xccdf.xml
+        files/U_RHEL_9_STIG_V2R8_Manual-xccdf.xml \
+        files/U_RHEL_9_STIG_V2R9_Manual-xccdf.xml
 """
 
 import argparse

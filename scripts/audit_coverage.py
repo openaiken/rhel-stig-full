@@ -2,17 +2,18 @@
 """
 Audit supplement coverage consistency across the project.
 
-Cross-checks four sources that must agree for a revision update to be complete:
+The supplement assesses every rule (the DISA formal role takes no part in
+assessment), so every rule must have exactly one supplement check, wired and
+toggled. Cross-checks five sources that must agree:
 
-  1. files/rules.json                  — the benchmark, with formal_role_covered
-  2. roles/rhel9_stig_supplement/tasks/<cat>/RHEL-09-XXXXXX.yml   — task files
-  3. roles/rhel9_stig_supplement/tasks/main.yml                   — import wiring
-  4. group_vars/all/stig_supplement.yml                           — supp_rules toggles
+  1. files/rules.json                  - the benchmark (parse_xccdf_benchmark.py)
+  2. the CKLB template                 - the rules the checklist will contain
+  3. roles/rhel9_stig_supplement/tasks/<cat>/RHEL-09-XXXXXX.yml   - task files
+  4. roles/rhel9_stig_supplement/tasks/main.yml                   - import wiring
+  5. group_vars/all/stig_supplement.yml                           - supp_rules toggles
 
-Also reports which rules the formal role statically attempts (parsed from the
-"# R-<vnum>" comments in roles/rhel9STIG/tasks/main.yml). That set is a superset
-of formal_role_covered: the callback only records rules whose tasks actually ran,
-so role tasks skipped by a conditional in your environment fall to the supplement.
+A rule present in the template but without a check renders not_reviewed,
+which reviewers reject.
 
 Usage:
     python3 scripts/audit_coverage.py            # exits 1 if any gap found
@@ -27,10 +28,10 @@ import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RULES_JSON = os.path.join(REPO, "files", "rules.json")
+CKLB_DEFAULTS = os.path.join(REPO, "roles", "cklb_renderer", "defaults", "main.yml")
 SUPP_TASKS = os.path.join(REPO, "roles", "rhel9_stig_supplement", "tasks")
 SUPP_MAIN = os.path.join(SUPP_TASKS, "main.yml")
 SUPP_VARS = os.path.join(REPO, "group_vars", "all", "stig_supplement.yml")
-FORMAL_MAIN = os.path.join(REPO, "roles", "rhel9STIG", "tasks", "main.yml")
 
 STIG_ID_RE = re.compile(r"RHEL-09-\d{6}")
 
@@ -38,6 +39,19 @@ STIG_ID_RE = re.compile(r"RHEL-09-\d{6}")
 def load_rules():
     with open(RULES_JSON) as f:
         return json.load(f)
+
+
+def template_rules():
+    """{stig_id} in the CKLB template that cklb_template_path names."""
+    with open(CKLB_DEFAULTS) as f:
+        m = re.search(r'^cklb_template_path:\s*"\{\{\s*playbook_dir\s*\}\}/(\S+?)"',
+                      f.read(), re.M)
+    if not m:
+        return None, "cklb_template_path not found in " + CKLB_DEFAULTS
+    path = os.path.join(REPO, m.group(1))
+    with open(path) as f:
+        cklb = json.load(f)
+    return {r["rule_version"] for s in cklb["stigs"] for r in s["rules"]}, path
 
 
 def task_files():
@@ -87,18 +101,8 @@ def toggles():
     return keys
 
 
-def formal_static(rules):
-    """{stig_id} the formal role has a task for, via '# R-<vnum>' comments."""
-    if not os.path.exists(FORMAL_MAIN):
-        return set()
-    with open(FORMAL_MAIN) as f:
-        vnums = set(re.findall(r"^# R-(\d+)", f.read(), re.M))
-    by_vnum = {v["group_id"].lstrip("V-"): sid for sid, v in rules.items()}
-    return {by_vnum[v] for v in vnums if v in by_vnum}
-
-
-def report(label, items, rules, note=""):
-    print(f"\n  {label}: {len(items)}{note}")
+def report(label, items, rules):
+    print(f"\n  {label}: {len(items)}")
     for sid in sorted(items):
         title = rules.get(sid, {}).get("title", "(not in rules.json)")
         print(f"    {sid}  {title[:78]}")
@@ -110,38 +114,32 @@ def main():
     args = ap.parse_args()
 
     rules = load_rules()
+    template, template_path = template_rules()
     files = task_files()
     wired, mismatched = wired_imports()
     toggled = toggles()
-    static = formal_static(rules)
-
     all_ids = set(rules)
-    covered = {s for s, r in rules.items() if r.get("formal_role_covered")}
-    needs_supp = all_ids - covered
 
     print("=" * 72)
     print("COVERAGE AUDIT")
     print("=" * 72)
     print(f"  benchmark rules (rules.json):     {len(all_ids)}")
-    print(f"  formal_role_covered (from scan):  {len(covered)}")
-    print(f"  need supplement coverage:         {len(needs_supp)}")
+    if template is None:
+        print(f"  CKLB template:                    ERROR - {template_path}")
+        template = set()
+    else:
+        print(f"  CKLB template rules:              {len(template)}")
     print(f"  supplement task files on disk:    {len(files)}")
     print(f"  wired into tasks/main.yml:        {len(wired)}")
     print(f"  supp_rules toggles declared:      {len(toggled)}")
-    print(f"  formal role static tasks (# R-):  {len(static)}"
-          "   (superset of scan coverage)")
-
-    # Supplement tasks that overlap formal-role coverage are NOT a defect.
-    # formal_role_covered is host-dependent: many role tasks are gated on
-    # conditionals such as "packages['dconf'] is defined", so a rule covered on
-    # one host is silently skipped on another, leaving it not_reviewed. The
-    # overlapping supplement task is what makes coverage host-independent, and
-    # cklb.py deliberately gives supplement facts precedence over XCCDF.
-    overlap = set(files) & covered
 
     problems = {
-        "MISSING task file (rule needs supplement, no file)":
-            needs_supp - set(files),
+        "BENCHMARK/TEMPLATE mismatch (in rules.json, not in the template)":
+            all_ids - template,
+        "BENCHMARK/TEMPLATE mismatch (in the template, not in rules.json)":
+            template - all_ids,
+        "MISSING task file (rule has no supplement check: renders not_reviewed)":
+            all_ids - set(files),
         "ORPHAN task file (file exists, rule not in rules.json)":
             set(files) - all_ids,
         "NOT WIRED (task file exists, no import in main.yml)":
@@ -162,14 +160,6 @@ def main():
         for p in mismatched:
             print(f"    {p}")
 
-    if overlap:
-        print(f"\n  note: {len(overlap)} supplement tasks overlap formal-role "
-              f"coverage on this host.")
-        print("        Expected — coverage is host-dependent; these keep the "
-              "checklist complete")
-        print("        on hosts where the role's conditionals skip the rule. "
-              "Not a defect.")
-
     for label, items in problems.items():
         if not items:
             continue
@@ -180,7 +170,7 @@ def main():
 
     print()
     if total == 0:
-        print("CLEAN — all four sources agree.")
+        print("CLEAN - every rule has exactly one wired, toggled check.")
         return 0
     print(f"{total} inconsistenc{'y' if total == 1 else 'ies'} found.")
     return 1
