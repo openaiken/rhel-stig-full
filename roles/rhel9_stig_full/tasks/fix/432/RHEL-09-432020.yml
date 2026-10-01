@@ -14,8 +14,10 @@
 
 - name: RHEL-09-432020 | fix
   block:
+    # only the files sudo reads (visudo -c), as the check counts them
     - name: RHEL-09-432020 | find sudoers files that set each token
-      ansible.builtin.shell: grep -rlisE '^[^#]*Defaults.*{{ item }}' /etc/sudoers /etc/sudoers.d/ || true
+      ansible.builtin.shell: |
+        grep -lisE '^[^#]*Defaults.*{{ item }}' $(visudo -c 2>/dev/null | sed -n 's/: parsed OK$//p') /dev/null || true
       loop: ['!targetpw', '!rootpw', '!runaspw']
       register: _432020_files
       changed_when: false

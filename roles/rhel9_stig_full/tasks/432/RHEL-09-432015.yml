@@ -10,7 +10,13 @@
 
 - name: RHEL-09-432015 | check sudo timestamp_timeout
   shell: |
-    hits=$(grep -irs 'timestamp_timeout' /etc/sudoers /etc/sudoers.d/ | grep -vE '^[^:]+:[[:space:]]*#')
+    # The files sudo actually reads (visudo -c lists each one it parses):
+    # sudo skips sudoers.d names containing a dot or ending in ~, and reads
+    # sudoers.d at all only through an includedir line. Grepping the whole
+    # directory counted settings sudo never sees.
+    sudo_files=$(visudo -c 2>/dev/null | sed -n 's/: parsed OK$//p')
+    [ -n "$sudo_files" ] || sudo_files=/etc/sudoers
+    hits=$(grep -iHs 'timestamp_timeout' $sudo_files | grep -vE '^[^:]+:[[:space:]]*#')
     echo "timestamp_timeout lines: ${hits:-(none)}"
     nfiles=$(echo "$hits" | awk -F: 'NF {print $1}' | sort -u | grep -c .)
     val=$(echo "$hits" | grep -oiE 'timestamp_timeout[[:space:]]*=[[:space:]]*-?[0-9]+' | tail -1 | grep -oE -- '-?[0-9]+$')

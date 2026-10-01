@@ -15,10 +15,16 @@
 # commented-out lines through as findings.
 - name: RHEL-09-432020 | check sudo Defaults for invoking-user password requirement
   shell: |
+    # The files sudo actually reads (visudo -c lists each one it parses):
+    # sudo skips sudoers.d names containing a dot or ending in ~, and reads
+    # sudoers.d at all only through an includedir line. Grepping the whole
+    # directory counted settings sudo never sees.
+    sudo_files=$(visudo -c 2>/dev/null | sed -n 's/: parsed OK$//p')
+    [ -n "$sudo_files" ] || sudo_files=/etc/sudoers
     findings=""
 
     for token in '!targetpw' '!rootpw' '!runaspw'; do
-      matches=$(grep -irn "Defaults.*${token}" /etc/sudoers /etc/sudoers.d/ 2>/dev/null \
+      matches=$(grep -iHn "Defaults.*${token}" $sudo_files 2>/dev/null \
                 | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#')
       count=$(echo "$matches" | grep -c '.' || true)
       files=$(echo "$matches" | awk -F: '{print $1}' | sort -u | tr '\n' ' ')

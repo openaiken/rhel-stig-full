@@ -22,7 +22,13 @@
 # commented-out lines through as findings.
 - name: RHEL-09-611085 | check for NOPASSWD in sudoers
   shell: |
-    findings=$(grep -irn 'NOPASSWD' /etc/sudoers /etc/sudoers.d/ 2>/dev/null \
+    # The files sudo actually reads (visudo -c lists each one it parses):
+    # sudo skips sudoers.d names containing a dot or ending in ~, and reads
+    # sudoers.d at all only through an includedir line. Grepping the whole
+    # directory counted settings sudo never sees.
+    sudo_files=$(visudo -c 2>/dev/null | sed -n 's/: parsed OK$//p')
+    [ -n "$sudo_files" ] || sudo_files=/etc/sudoers
+    findings=$(grep -iHn 'NOPASSWD' $sudo_files 2>/dev/null \
                | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' || true)
     if [ -n "$findings" ]; then
       echo "STATUS: FAIL"

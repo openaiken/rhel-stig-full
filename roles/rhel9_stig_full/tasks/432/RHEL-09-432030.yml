@@ -19,10 +19,16 @@
 # never match, which silently disables both the exclusions and the ALL match.
 - name: RHEL-09-432030 | check sudoers for unrestricted ALL user-spec entries
   shell: |
+    # The files sudo actually reads (visudo -c lists each one it parses):
+    # sudo skips sudoers.d names containing a dot or ending in ~, and reads
+    # sudoers.d at all only through an includedir line. Grepping the whole
+    # directory counted settings sudo never sees.
+    sudo_files=$(visudo -c 2>/dev/null | sed -n 's/: parsed OK$//p')
+    [ -n "$sudo_files" ] || sudo_files=/etc/sudoers
     # Match lines where the first non-whitespace token (user/group spec) is
     # the bare word ALL, followed by a host/runas/command spec.
     # Exclude comment lines and Defaults/alias definitions.
-    hits=$(grep -irhn '' /etc/sudoers /etc/sudoers.d/ 2>/dev/null \
+    hits=$(grep -ihn '' $sudo_files 2>/dev/null \
            | grep -v '^[0-9]*:[[:space:]]*#' \
            | grep -v '^[0-9]*:[[:space:]]*Defaults' \
            | grep -v '^[0-9]*:[[:space:]]*\(User\|Runas\|Cmnd\|Host\)_Alias' \
@@ -44,7 +50,7 @@
     # informational: show all non-comment privilege rules for reviewer
     echo ""
     echo "ALL LOCAL PRIVILEGE RULES (for review):"
-    grep -irhn '' /etc/sudoers /etc/sudoers.d/ 2>/dev/null \
+    grep -ihn '' $sudo_files 2>/dev/null \
       | grep -v '^[0-9]*:[[:space:]]*#' \
       | grep -v '^[0-9]*:[[:space:]]*Defaults' \
       | grep -v '^[0-9]*:[[:space:]]*\(User\|Runas\|Cmnd\|Host\)_Alias' \
