@@ -1,100 +1,45 @@
 # rhel-stig-full
-Modification and Extension of the formal RHEL 9 STIG Ansible code, to fully implement every control and produce a ready-to-report Checklist for STIG Viewer 3.x.
+Automated assessment of every RHEL 9 STIG control, producing a ready-to-report Checklist for STIG Viewer 3.x, plus remediation through the DISA RHEL 9 STIG Ansible role.
 
 ## WIP
 This project is a Work-In-Progress. Furthermore, *this document was largely written by Claude Code, and manually edited for clarity and finer details.*
 
 ## Overview
 
-The DISA Ansible role (`rhel9STIG`) remediates most RHEL 9 STIG controls but emits XCCDF results for only a subset of the 445 rules — 278 of them on a representative host, though the exact number is host-dependent (see [`formal_role_covered`](#filesrulesjson-and-formal_role_covered)). This project wraps that role with:
+- **Assessment** (`./run.sh validate`): the **assessment role** (`rhel9_stig_supplement`) checks all 445 rules of RHEL 9 STIG V2R9, read-only, one task file per STIG ID. The **CKLB renderer** (`cklb_renderer`) turns the results into a populated `.cklb` checklist.
+- **Remediation** (`./run.sh remediate`): the unmodified **DISA formal role** (`rhel9STIG`) enforces settings. It takes no part in assessment.
 
-- A **supplement role** (`rhel9_stig_supplement`) containing 187 shell-based validation tasks, covering every rule the formal role does not report on.
-- A **CKLB renderer** (`cklb_renderer`) that merges XCCDF results and supplement facts into a populated `.cklb` checklist for STIG Viewer 3.x.
-- A **`run.sh`** orchestration script that drives all three playbooks with a single command.
-
-The result is a fully automated pipeline that produces a deliverable checklist covering all 445 rules.
+Why the formal role does not assess: in check mode it reports whether a task *would change something*, and its tasks write one exact line into one exact file. A host configured correctly any other way (a drop-in file, different spelling, a stricter value) was reported open. The assessment role checks what each STIG check text checks, on the effective state wherever there is one.
 
 ## Usage
 
-### Quickstart
-
 ```bash
-# Full validate pass — runs formal role in check mode, runs all supplement
-# checks, writes a populated CKLB to reports/
-./run.sh validate
-
-# Full remediate pass — formal role enforces STIG settings. The supplement is
-# validation-only and does not run here; no CKLB output. Run validate afterward
-# for the deliverable.
-./run.sh remediate
-```
-
-### `run.sh` reference
-
-```
-Usage: run.sh <validate|remediate> [OPTIONS] [-- ANSIBLE_ARGS]
-
-Modes (required):
-  validate    Dry-run: formal role in check mode, supplement validation,
-              CKLB checklist generated.
-  remediate   Apply: formal role enforces settings. The supplement is a
-              validation-only role and assesses nothing in this mode.
-              CKLB is NOT generated (run validate after for deliverable).
-
-Target:
-  -H HOST, --host HOST      Inventory host or group (default: default_host_group)
-
-Auth (mutually exclusive):
-  (default)                 Prompt for become (sudo) password once
-  --vault-pass-file FILE    Path to the ansible-vault password file; become
-                            credentials are read from the decrypted vault
-  --vault                   Prompt for vault password interactively; become
-                            credentials are read from the decrypted vault
-
-Skip plays:
-  --skip-formal             Skip the rhel9STIG formal role play
-  --skip-supplement         Skip supplement checks/remediation
-  --skip-cklb               Skip the CKLB renderer (validate mode only)
-
-Other:
-  -v, -vv, -vvv, -vvvv     Ansible verbosity (default: -v)
-  --                        Pass remaining arguments verbatim to every
-                            ansible-playbook call
+./run.sh validate                      # assess every rule, write a checklist to reports/
+./run.sh remediate                     # DISA role enforces settings; run validate after
+./run.sh --help                        # all options, including exit codes
 ```
 
 **Examples:**
 ```bash
-./run.sh validate --host myserver.example.com
+./run.sh validate --host myserver.example.com --vault-pass-file ~/.vault_pass
 ./run.sh remediate --host prod-servers --vault-pass-file ~/.vault_pass
-./run.sh validate --skip-formal -vvv
+./run.sh validate --skip-supplement            # re-render from earlier results only
+./run.sh validate --max-result-age 7           # merge only the last 7 days of results
 ./run.sh validate --host myserver -- -e "supp_rules={'RHEL-09-671010': false}"
 ```
 
+`run.sh` exits 0 when every stage completed on every host, 2 when some hosts failed or were unreachable but the others were processed, and 1 when a stage failed outright.
+
 ### Running playbooks directly
 
-Each playbook can also be run standalone:
-
 ```bash
-# Formal role only, check mode
-ansible-playbook formal-role.yml -t validate -e my_host=myserver
-
-# Supplement only, single rule by STIG ID tag
-ansible-playbook supplement.yml -t RHEL-09-653030 -e my_host=myserver
-
-# CKLB renderer only (against existing reports/ output)
-ansible-playbook cklb.yml -t validate -e my_host=myserver
+ansible-playbook supplement.yml -t RHEL-09-653030 -e my_host=myserver   # one rule
+ansible-playbook supplement.yml -t validate -e my_host=myserver         # all rules
+ansible-playbook cklb.yml -t validate -e my_host=myserver               # render only
+ansible-playbook formal-role.yml -t remediate -e my_host=myserver       # remediate
 ```
 
-### Tags
-
-| Tag | Formal role | Supplement role | CKLB renderer |
-|---|---|---|---|
-| `validate` | Runs in check mode (no changes) | Runs all check tasks | Renders checklist |
-| `remediate` | Remediates findings | Nothing — every supplement task is tagged `validate` only | Not applicable |
-| `RHEL-09-XXXXXX` | — | Runs that single rule only | — |
-| *(no tag)* | Remediates | Runs all tasks | Renders checklist |
-
-Tags can be combined: `-t validate,RHEL-09-231190` runs the supplement in validate mode for one rule only.
+Every assessment task is tagged `validate` and its STIG ID. A tag-limited run updates only those rules: the renderer merges results per rule across runs.
 
 ## Configuration
 
@@ -102,162 +47,129 @@ All configuration lives in `group_vars/all/`. Per-host overrides go in `host_var
 
 ### `stig_attestation.yml` — operator attestation
 
-These variables require human judgment or organizational context that cannot be determined programmatically. Each is documented inline with verification steps and expected values. All default to `false`; a `false` value produces an open finding in the generated checklist.
+These variables record human judgment or organizational context that cannot be determined programmatically. Each is documented inline. All default to "not attested"; an unattested rule that needs one is an open finding.
 
-Many attestations follow a **bool + method** pattern: the bool clears the finding, the method string is recorded in `finding_details` for the checklist reviewer.
+Many follow a **bool + method** pattern: the bool clears the finding, the method string is recorded in `finding_details` for the reviewer.
 
-```yaml
-rhel9_attest_disk_encryption_na: false
-rhel9_attest_disk_encryption_method: ""   # e.g. "VMware datastore encryption"
-```
-
-**Status semantics** — two distinct values are used and must not be confused:
-- `not_applicable` — the rule does not apply to this system (no GDM, no postfix, no ipsec, etc.)
+**Status semantics** — two distinct values must not be confused:
+- `not_applicable` — the rule does not apply to this system (no GDM, no postfix, a documented N/A clause)
 - `not_a_finding` — the rule applies and the system is compliant
 
 #### Attestation variable reference
 
 | Variable(s) | Rule(s) | Purpose |
 |---|---|---|
+| `rhel9_attest_documented_exceptions` | ~25 rules (listed in the file) | Map of STIG ID to an ISSO/ISSM documentation reference, honoured only by rules whose check text allows a documented exception |
 | `rhel9_attest_patching_current` | 211015 | Patches are current per org policy |
-| `rhel9_gui_approved` | 211030 | Graphical display manager is ISSO-approved |
-| `rhel9_attest_disk_encryption_na[_method]` | 231190 | Encryption provided at hypervisor/storage layer |
+| `rhel9_gui_approved` | 211030, 215070 | Graphical interface is ISSO-approved |
 | `rhel9_grub_superuser` | 212020 | Non-default grub2 superuser account name |
+| `rhel9_attest_disk_encryption_na[_method]` | 231190 | Encryption provided at hypervisor/storage layer |
 | `rhel9_attest_ppsm_compliant` | 251035 | Firewall ports/protocols comply with PPSM CAL |
 | `rhel9_attest_ntp_source_approved` | 252020 | NTP sources are organizationally approved |
 | `rhel9_attest_ipsec_tunnels_approved` | 252045 | IPsec tunnels are documented and ISSO-approved |
-| `rhel9_attest_usbguard_na` | 291030 | VM with no USB peripherals (rule not applicable) |
-| `rhel9_attest_usbguard_compliant[_method]` | 291030 | Alternate USB blocking mechanism in use |
-| `rhel9_attest_wifi_approved[_comment]` | 291040 | Wireless adapter is ISSO-approved operational requirement |
-| `rhel9_attest_audit_notification_compliant[_method]` | 252060, 653125 | Alternate audit failure notification mechanism |
+| `rhel9_attest_no_sshd[_method]` | 255010, 255015 | Documented exception: this host must not run SSH (the sshd rules are N/A without the package) |
+| `rhel9_attest_ssh_x11_forwarding_approved[_method]` | 255155 | X11 forwarding is an ISSO-documented requirement |
+| `rhel9_attest_usbguard_na` | 291015, 291020, 291025, 291030 | VM with no USB peripherals |
+| `rhel9_attest_usbguard_compliant[_method]` | 291015, 291020, 291030 | Alternate USB blocking mechanism in use |
+| `rhel9_attest_wifi_approved[_comment]` | 291040 | Wireless adapter is an ISSO-approved requirement |
+| `rhel9_attest_audit_notification_compliant[_method]` | 215101, 252060, 653125 | Alternate audit failure notification mechanism |
 | `rhel9_authorized_users` | 411095 | Complete list of authorized accounts in /etc/passwd |
-| `rhel9_temporary_accounts` | 411040 | List of temporary accounts (empty list = not_a_finding) |
+| `rhel9_temporary_accounts` | 411040 | Temporary accounts (empty list = not_a_finding) |
+| `rhel9_sudo_designated_admins` | 431016 | Designated sudo admin group(s)/account(s), as written in sudoers |
 | `rhel9_attest_sel_sudo_context_compliant[_method]` | 431016 | IdM-managed sudo rules include sysadm_t/sysadm_r |
 | `rhel9_attest_nopasswd_isso_approved` | 611085 | NOPASSWD sudoers entries have documented ISSO approval |
 | `rhel9_attest_alt_mfa_cert_verification[_method]` | 611170 | Non-SSSD MFA implements certificate revocation checking |
-| `rhel9_attest_no_ssh_key_auth[_method]` | 611190 | Alternate MFA (PIV/CAC, FIDO2) makes SSH key passphrase check NA |
-| `rhel9_attest_alt_mfa_no_pki[_method]` | 631010, 631015 | Non-PKI MFA in use (FIDO2/OTP); both 631 rules become NA |
-| `rhel9_attest_ipa_certmap[_method]` | 631015 | IPA/FreeIPA manages certmap centrally (no local sssd.conf section) |
-| `rhel9_attest_alt_fim_tool[_name]` | 651010–651035 | Alternate FIM tool (Tripwire, Wazuh, etc.); all 651 rules become NA |
-| `rhel9_aide_timer_unit` | 651015 | Systemd timer unit name for AIDE scheduling (preferred over cron) |
-| `rhel9_attest_alt_log_offload[_method]` | 652025, 652055 | Alternate log offload tool (SPLUNK, Filebeat, etc.) |
+| `rhel9_attest_no_ssh_key_auth[_method]` | 611190 | Alternate MFA makes the SSH key passphrase check moot |
+| `rhel9_attest_alt_mfa_no_pki[_method]` | 215075, 255035, 611165, 611175, 631010, 631015 | Approved non-PKI MFA in use; these rules become N/A |
+| `rhel9_attest_ipa_certmap[_method]` | 631015 | IPA manages certmap centrally |
+| `rhel9_attest_alt_fim_tool[_name]` | 651010–651035 | Alternate file integrity tool |
+| `rhel9_aide_timer_unit` | 651015 | Systemd timer unit name for AIDE scheduling |
+| `rhel9_attest_alt_log_offload[_method]` | 652025, 652040, 652055 | Alternate log offload tool |
 | `rhel9_attest_log_aggregation_server` | 652025 | **Set in `host_vars/` only** — host is an authorized syslog collector |
-| `rhel9_audit_min_storage_gb` | 653030 | Minimum available audit partition space in GB (default: 2) |
-| `rhel9_attest_audit_immediate_offload[_method]` | 653030 | Audit records forwarded immediately to remote facility (rule NA) |
-| `rhel9_attest_crypto_subpolicy_approved[_method]` | 672020 | AO-approved crypto subpolicy exception with ISSO documentation |
+| `rhel9_audit_min_storage_gb` | 653030 | Minimum *size* of the audit log partition, as provisioned (default 2) |
+| `rhel9_attest_audit_immediate_offload[_method]` | 653030 | Audit records forwarded immediately to a remote facility (N/A) |
+| `rhel9_attest_crypto_subpolicy_approved[_method]` | 672020 | AO-approved crypto subpolicy exception |
 
 > **`rhel9_attest_log_aggregation_server`** must be set in `host_vars/<hostname>/`, never in `group_vars/all/`. Setting it globally would silently clear a real finding on every non-collector host.
 
-### `stig_formal_role.yml` — formal role remediation toggles
+### `stig_supplement.yml` — rule toggles
 
-Uncomment and set to `false` to prevent the formal role from remediating a specific rule:
+Set a rule to `false` to stop assessing it. Results from earlier runs are dropped too, so it renders `not_reviewed`:
+
+```yaml
+supp_rules:
+  RHEL-09-231190: false
+```
+
+### `stig_formal_role.yml` — remediation toggles
+
+Remediation only. Uncomment and set to `false` to stop the DISA role remediating a rule:
 
 ```yaml
 rhel9STIG_stigrule_257779_Manage: false   # RHEL-09-211020
 ```
 
-### `stig_supplement.yml` — supplement rule toggles
+### Checklist age window
 
-Set any rule to `false` to skip it entirely from supplement checks:
+`cklb_max_result_age_days` (default 30, in `roles/cklb_renderer/defaults/main.yml`, or `run.sh --max-result-age`) limits which results are merged into the checklist. A rule with no result in the window renders `not_reviewed` rather than a stale status. 0 disables the limit.
 
-```yaml
-supp_rules:
-  RHEL-09-231190: false
-  RHEL-09-671010: false
-```
+## How Assessment Works
 
-## How the Supplement Works
+Each task file follows a two-task structure:
 
-Each supplement task file follows a two-task structure:
+1. A `shell: |` block that inspects the system and prints `STATUS: PASS`, `STATUS: FAIL`, or `NA:` at the start of a line. The shell always exits 0 (`failed_when: false`); the exit code is never used.
+2. A `set_fact` task that turns that output into the rule's `status`, `finding_details` and `comments` in the `supp_facts` accumulator.
 
-1. A `shell: |` block that inspects the system and writes `STATUS: PASS`, `STATUS: FAIL`, or `NA:` to stdout. The shell always exits 0 (`failed_when: false`); the exit code is never used for pass/fail determination.
-2. A `set_fact` task that reads `_XXXXXX_result.stdout` and writes the rule's `status`, `finding_details`, and `comments` into the `supp_facts` accumulator dict.
+At the end of the play, `supp_facts` is written to `reports/supp-facts/<YYYYMonDD-HH:MM:SS>-<host>.json`. The renderer merges a host's result files per rule, newest winning, and ends each rule's comments with the run it came from.
 
-At the end of the play, `supp_facts` is written to `reports/supp-facts/` as a JSON file keyed by STIG ID. The CKLB renderer reads this alongside the XCCDF results.
+**Status values:**
+- `not_a_finding` — compliant, or a clearing attestation is set
+- `open` — non-compliant, or the state could not be determined (an unverifiable control is conservatively a finding)
+- `not_applicable` — the rule does not apply, per its STIG text
 
-**Status values written to `supp_facts`:**
-- `not_a_finding` — check passed or compliant condition attested
-- `open` — check failed and no clearing attestation is set
-- `not_applicable` — rule does not apply to this system
+Assessment never writes `not_reviewed`. In a rendered checklist it means the rule was not assessed inside the age window — a gap to fix, not an outcome. Reviewers reject a checklist containing it.
 
-The supplement never writes `not_reviewed`. A rule awaiting an operator decision is `open` until the relevant attestation variable is set, and a check that cannot determine the system's state is also `open`, since an unverifiable control is conservatively a finding. A `not_reviewed` entry in a rendered checklist therefore means the rule was covered by neither the supplement nor the formal role's callback — a coverage gap to fix, not an assessment outcome. Reviewers routinely reject a submitted checklist containing `not_reviewed`.
-
-**Coverage:**
-
-| Category range | Domain |
-|---|---|
-| 171 | Consent banner (graphical) |
-| 211–215 | OS/kernel configuration |
-| 231–232 | File permissions and ownership |
-| 251–252, 255 | Networking (firewall, NTP, SSH) |
-| 271 | GNOME/dconf settings |
-| 291 | Hardware (USB, wifi) |
-| 411–412 | Account and session management |
-| 431–433 | sudo / SELinux |
-| 611–631 | Authentication and PKI |
-| 651–654 | File integrity (AIDE) and audit logging |
-| 671–672 | FIPS and crypto policy |
-
-Every rule the formal role does not report on has a supplement task. Verify with `python3 scripts/audit_coverage.py`, which cross-checks `files/rules.json`, the task files, the `main.yml` wiring, and the `supp_rules` toggles and must print `CLEAN`.
-
-The supplement carries slightly more tasks (187) than any single host strictly needs, because coverage is host-dependent — see [`formal_role_covered`](#filesrulesjson-and-formal_role_covered). The overlap is deliberate; do not delete a task merely because the formal role happens to cover that rule on one host.
+Checks prefer the effective value to configuration text (`sysctl -n`, `sshd -T`, `auditctl -l`, `gsettings`, `systemctl show`, `systemd-analyze cat-config`), read files the way their consumer does (drop-ins, last value wins), and compare thresholds as thresholds. Audit-rule coverage is checked semantically by the `rhel9_audit_coverage` filter plugin (unit tests: `python3 scripts/test_audit_rules.py`).
 
 ## Project Structure
 
 ### Playbooks
-- **`formal-role.yml`** — runs the DISA `rhel9STIG` role. `validate` tag automatically enables check mode. A callback plugin records per-host XCCDF results to `reports/`.
-- **`supplement.yml`** — runs `rhel9_stig_supplement`. Results are written to `reports/supp-facts/` as JSON.
-- **`cklb.yml`** — runs `cklb_renderer`, merging XCCDF results and supplement facts into a populated CKLB file in `reports/`. Can be run independently against existing report files.
-- **`run.sh`** — orchestrates all three playbooks. Handles become/vault credential prompts, skip flags, and argument passthrough.
+- **`supplement.yml`** — the assessment role. Results go to `reports/supp-facts/` as JSON.
+- **`cklb.yml`** — the CKLB renderer; can be run alone against existing results.
+- **`formal-role.yml`** — the DISA role, for remediation.
+- **`run.sh`** — orchestration: credentials, skip flags, per-host failure handling, argument passthrough.
 
 ### Roles
-- **`roles/rhel9STIG/`** — unmodified DISA formal role (RHEL 9 V2R9). Do not edit. When updating to a new version, delete `roles/rhel9STIG/callback_plugins/` if present — the role ships a stale `stig_xml` callback that conflicts with the project callback and will silently break XCCDF output.
-- **`roles/rhel9_stig_supplement/`** — 187 shell-based validation tasks, one file per STIG ID, organized under `tasks/<category>/`. Attestation-aware: each task reads from `group_vars/all/stig_attestation.yml` and folds attestation values into `finding_details`.
-- **`roles/cklb_renderer/`** — Ansible role with a Python filter plugin (`filter_plugins/cklb.py`) that parses XCCDF results and supplement JSON, maps them onto the CKLB template, and writes the rendered checklist. Handles multi-scan history by picking the latest result file per host.
+- **`roles/rhel9_stig_supplement/`** — 445 assessment tasks, one per STIG ID, under `tasks/<category>/`; `filter_plugins/audit_rules.py`.
+- **`roles/cklb_renderer/`** — `filter_plugins/cklb.py` fills the CKLB template from the results.
+- **`roles/rhel9STIG/`** — unmodified DISA formal role (V2R9), remediation only. Do not edit.
 
 ### Supporting Files
-- **`files/rules.json`** — all 445 RHEL 9 V2R9 rules keyed by STIG ID. Includes `formal_role_covered` flag derived from actual XCCDF callback output. Regenerate with `python3 scripts/parse_xccdf_benchmark.py` after a new scan or a new benchmark release.
-- **`files/empty-checklist-rhel9v2r9.cklb`** — CKLB template used by the renderer. Replace with the new template when DISA releases a new revision, and update `cklb_template_path` in `roles/cklb_renderer/defaults/main.yml`.
-- **`callbacks/rhel9_xccdf_results.py`** — callback plugin that writes per-host XCCDF results to `reports/`. A refactor of the DISA-bundled `stig_xml` callback, renamed to avoid collisions on role updates.
-- **`scripts/parse_xccdf_benchmark.py`** — parses the XCCDF benchmark XML and cross-references XCCDF results to produce `files/rules.json`. Update `XCCDF_PATH` when the benchmark filename changes.
-- **`scripts/diff_benchmarks.py`** — diffs two XCCDF benchmarks by STIG ID, reporting added, removed, and changed rules, and flagging substantive check/fix/severity/CCI changes that need task rework. Run this first on a revision bump.
-- **`scripts/audit_coverage.py`** — cross-checks `rules.json`, task files, `main.yml` imports, and `supp_rules` toggles. Must print `CLEAN` before a revision update is considered done.
+- **`files/U_RHEL_9_STIG_V2R9_Manual-xccdf.xml`** — the DISA benchmark, source of `rules.json`.
+- **`files/rules.json`** — all 445 rules keyed by STIG ID (check and fix text, severity, CCIs). Regenerate with `python3 scripts/parse_xccdf_benchmark.py`.
+- **`files/empty-checklist-rhel9v2r9.cklb`** — CKLB template used by the renderer.
+- **`scripts/audit_coverage.py`** — every rule in `rules.json` and the template must have exactly one wired, toggled task. Must print `CLEAN`.
+- **`scripts/lint_supplement.py`** — static checks for the bug classes found in this codebase. Must report 0.
+- **`scripts/diff_benchmarks.py`** — diffs two benchmarks by STIG ID; run first on a revision bump.
+- **`scripts/test_audit_rules.py`** — unit tests for the audit-rule filter.
 
 ### Reports
-The `reports/` directory is gitignored. It contains:
-- `*-<hostname>-xccdf-results.xml` — per-run XCCDF output from the formal role callback
-- `supp-facts/*-<hostname>.json` — per-run supplement facts from the supplement role
-- `*-<hostname>-*.cklb` — rendered CKLB checklists
+`reports/` is gitignored: `supp-facts/*-<host>.json` (results) and `*-<host>.cklb` (checklists).
 
 ## Maintenance
 
 ### Updating to a new STIG revision
-1. Replace `roles/rhel9STIG/` with the new DISA role. Remove `roles/rhel9STIG/callback_plugins/` if present.
-2. Replace the CKLB template in `files/` and point `cklb_template_path` (in `roles/cklb_renderer/defaults/main.yml`) at it. Confirm its `release_info` and rule count match the new XCCDF.
-3. Run a scan against a representative host to generate a fresh XCCDF results file.
-4. Run `python3 scripts/parse_xccdf_benchmark.py` to regenerate `files/rules.json` with updated `formal_role_covered` flags and rule metadata.
-5. Run `python3 scripts/diff_benchmarks.py OLD.xml NEW.xml` and reconcile the result against DISA's published changelog. The XCCDF is authoritative; the changelog omits pure `rule_id` revision bumps.
-6. Rework supplement tasks for rules with substantive check/fix changes, and retire tasks, `supp_rules` toggles, and attestation vars for removed rules.
-7. Update `XCCDF_PATH` in `scripts/parse_xccdf_benchmark.py`, then regenerate the generated blocks in `group_vars/all/stig_formal_role.yml` and `group_vars/all/stig_supplement.yml`.
-8. Run `python3 scripts/audit_coverage.py` — it must print `CLEAN`.
+1. Put the new benchmark XML in `files/`, update `XCCDF_PATH` in `scripts/parse_xccdf_benchmark.py`, and regenerate `files/rules.json`.
+2. Replace the CKLB template in `files/` and `cklb_template_path` in `roles/cklb_renderer/defaults/main.yml`. Confirm its `release_info` and rule count match the benchmark.
+3. Run `python3 scripts/diff_benchmarks.py OLD.xml NEW.xml` and reconcile against DISA's changelog (the XCCDF is authoritative; the changelog omits pure `rule_id` bumps).
+4. Rework tasks for rules whose check text changed; add tasks for new rules; retire tasks, toggles and attestation vars for removed rules.
+5. For remediation, replace `roles/rhel9STIG/` with the new DISA role (delete any `callback_plugins/` it ships) and regenerate the comment block in `group_vars/all/stig_formal_role.yml`.
+6. `python3 scripts/audit_coverage.py` must print `CLEAN` and `python3 scripts/lint_supplement.py` must report 0.
 
-### `files/rules.json` and `formal_role_covered`
-This flag is set by cross-referencing the XCCDF callback output, not by inspecting the role source. It is the ground truth for which rules the formal role actually produces results for in your environment. On a fresh clone with no scan results, all rules show as uncovered; run at least one scan first.
-
-**This flag is host-dependent, and that is the single most important thing to understand about it.** Many formal-role tasks are gated on conditionals such as `packages['dconf'] is defined`. On a host with dconf installed those tasks run and the callback records a result; on a headless host without it they are skipped silently and the rule produces no result at all, landing in the checklist as `not_reviewed`. The V2R9 update measured 278 covered rules on a host with dconf, against 259 on an earlier host without it — the same role, a different machine.
-
-Two consequences:
-
-- The supplement deliberately carries tasks for rules the formal role covers on *some* hosts. `scripts/audit_coverage.py` reports this overlap as an informational note, not a defect. Do not delete a supplement task just because one scan shows the formal role covering that rule.
-- `cklb.py` gives supplement facts precedence over XCCDF results for exactly this reason: the supplement result is host-accurate and always present, so it is the safer of the two when both exist.
-
-The `formal role static tasks (# R-)` line in `audit_coverage.py` shows how many rules the role *attempts*, which is always a superset of what any one scan records. A large gap between those two numbers means many role tasks are being skipped by conditionals on that host.
-
-### Supplement task conventions
+### Task conventions
 - One file per STIG ID: `roles/rhel9_stig_supplement/tasks/<category>/RHEL-09-XXXXXX.yml`
-- Shell blocks use `STATUS: PASS` / `STATUS: FAIL` / `NA:` sentinel output
-- `changed_when: false` and `failed_when: false` on every shell task
-- No apostrophes in shell block comments (Ansible's `parse_kv` sees unbalanced quotes)
-- No literal double quotes in `set_fact` string values (embedded in outer double-quoted YAML)
-- Attestation vars: bool + optional `_method` string; bool clears the finding, method appears in `finding_details`
-- Wire new tasks into `roles/rhel9_stig_supplement/tasks/main.yml` with `import_tasks`, a STIG ID tag, and a `supp_rules` conditional
+- Status markers at the start of a line, matched with `is search('^...', multiline=True)`
+- `changed_when: false` and `failed_when: false` on every shell/command task
+- No apostrophes in shell comments; no double quotes inside the `set_fact` string; no `{#` anywhere
+- Attestation vars: bool + optional `_method` string, and the method must reach `finding_details`
+- Wire into `tasks/main.yml` with `import_tasks`, a STIG ID tag, and a `supp_rules` conditional
