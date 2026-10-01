@@ -1,0 +1,72 @@
+---
+# RHEL-09-654180 | V-258210 | fix
+# RHEL 9 must audit all uses of the mount command.
+# CAT II (Medium)
+#
+# Writes the expected rules (copied from the check task; lint FIX-AUDIT-DRIFT
+# keeps the two in step) that the loaded rules do not already cover, as
+# computed by the same rhel9_audit_coverage filter the check uses, to
+# /etc/audit/rules.d/50-rhel9-stig-full-RHEL-09-654180.rules, then runs
+# augenrules --load. Writing only uncovered lines avoids exact duplicates,
+# which make auditctl stop loading. If the loaded rules are immutable (-e 2,
+# RHEL-09-654275) the file loads at the next boot and the fix records that.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-654180 | fix
+  block:
+    - name: RHEL-09-654180 | read the loaded audit rules
+      ansible.builtin.command: auditctl -l
+      register: _654180_loaded
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-654180 | read the rules this fix wrote before
+      ansible.builtin.slurp:
+        src: /etc/audit/rules.d/50-rhel9-stig-full-RHEL-09-654180.rules
+      register: _654180_prev
+      failed_when: false
+
+    - name: RHEL-09-654180 | write the rules not yet covered, keeping earlier ones
+      vars:
+        _654180_expected:
+          - "-a always,exit -S all -F path=/usr/bin/mount -F perm=x -F auid>=1000 -F auid!=-1 -F key=privileged-mount"
+        _654180_cov: "{{ _654180_loaded.stdout | default('') | rhel9_audit_coverage(_654180_expected) }}"
+        _654180_keep: "{{ (_654180_prev.content | default('') | b64decode).splitlines() | map('trim') | reject('match', '#') | select | list }}"
+      ansible.builtin.copy:
+        dest: /etc/audit/rules.d/50-rhel9-stig-full-RHEL-09-654180.rules
+        content: "## Managed by rhel9_stig_full (RHEL-09-654180)\n{{ (_654180_keep + _654180_cov.missing) | unique | join('\n') }}\n"
+        owner: root
+        group: root
+        mode: '0600'
+      register: _654180_fix
+
+    - name: RHEL-09-654180 | read the audit status
+      ansible.builtin.command: auditctl -s
+      register: _654180_status
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-654180 | stop if the loaded rules are immutable
+      ansible.builtin.fail:
+        msg: "/etc/audit/rules.d/50-rhel9-stig-full-RHEL-09-654180.rules is in place, but the loaded audit rules are immutable (-e 2); it loads at the next boot"
+      when: _654180_fix is changed and not ansible_check_mode and _654180_status.stdout is search('(?m)^enabled 2$')
+
+    - name: RHEL-09-654180 | load the audit rules
+      ansible.builtin.command: augenrules --load
+      register: _654180_load
+      failed_when: _654180_load.rc != 0 or _654180_load.stderr is search('(?i)error')
+      when: _654180_fix is changed
+
+    - name: RHEL-09-654180 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-654180'] }}"
+      when: (_654180_fix is changed)
+  rescue:
+    - name: RHEL-09-654180 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-654180': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-654180'] }}"

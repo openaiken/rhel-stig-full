@@ -1,0 +1,72 @@
+---
+# RHEL-09-654050 | V-258184 | fix
+# RHEL 9 must audit all uses of the semanage command.
+# CAT II (Medium)
+#
+# Writes the expected rules (copied from the check task; lint FIX-AUDIT-DRIFT
+# keeps the two in step) that the loaded rules do not already cover, as
+# computed by the same rhel9_audit_coverage filter the check uses, to
+# /etc/audit/rules.d/50-rhel9-stig-full-RHEL-09-654050.rules, then runs
+# augenrules --load. Writing only uncovered lines avoids exact duplicates,
+# which make auditctl stop loading. If the loaded rules are immutable (-e 2,
+# RHEL-09-654275) the file loads at the next boot and the fix records that.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-654050 | fix
+  block:
+    - name: RHEL-09-654050 | read the loaded audit rules
+      ansible.builtin.command: auditctl -l
+      register: _654050_loaded
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-654050 | read the rules this fix wrote before
+      ansible.builtin.slurp:
+        src: /etc/audit/rules.d/50-rhel9-stig-full-RHEL-09-654050.rules
+      register: _654050_prev
+      failed_when: false
+
+    - name: RHEL-09-654050 | write the rules not yet covered, keeping earlier ones
+      vars:
+        _654050_expected:
+          - "-a always,exit -S all -F path=/usr/sbin/semanage -F perm=x -F auid>=1000 -F auid!=-1 -F key=privileged-unix-update"
+        _654050_cov: "{{ _654050_loaded.stdout | default('') | rhel9_audit_coverage(_654050_expected) }}"
+        _654050_keep: "{{ (_654050_prev.content | default('') | b64decode).splitlines() | map('trim') | reject('match', '#') | select | list }}"
+      ansible.builtin.copy:
+        dest: /etc/audit/rules.d/50-rhel9-stig-full-RHEL-09-654050.rules
+        content: "## Managed by rhel9_stig_full (RHEL-09-654050)\n{{ (_654050_keep + _654050_cov.missing) | unique | join('\n') }}\n"
+        owner: root
+        group: root
+        mode: '0600'
+      register: _654050_fix
+
+    - name: RHEL-09-654050 | read the audit status
+      ansible.builtin.command: auditctl -s
+      register: _654050_status
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-654050 | stop if the loaded rules are immutable
+      ansible.builtin.fail:
+        msg: "/etc/audit/rules.d/50-rhel9-stig-full-RHEL-09-654050.rules is in place, but the loaded audit rules are immutable (-e 2); it loads at the next boot"
+      when: _654050_fix is changed and not ansible_check_mode and _654050_status.stdout is search('(?m)^enabled 2$')
+
+    - name: RHEL-09-654050 | load the audit rules
+      ansible.builtin.command: augenrules --load
+      register: _654050_load
+      failed_when: _654050_load.rc != 0 or _654050_load.stderr is search('(?i)error')
+      when: _654050_fix is changed
+
+    - name: RHEL-09-654050 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-654050'] }}"
+      when: (_654050_fix is changed)
+  rescue:
+    - name: RHEL-09-654050 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-654050': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-654050'] }}"

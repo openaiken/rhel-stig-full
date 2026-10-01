@@ -63,6 +63,8 @@ CHECKS = {
                     "fix file lacks block/rescue, or does not queue its rule for re-check",
     "FIX-NOT-WIRED":
                     "fix file and tasks/fix_imports.yml disagree, or the import is not gated on open",
+    "FIX-AUDIT-DRIFT":
+                    "an audit-rule fix writes different expected rules than its check requires",
     "FILE-NOT-EFFECTIVE":
                     "greps config files for a setting whose effective value can differ "
                     "(systemd drop-in without .conf, sysctl override, sshd Match block)",
@@ -95,6 +97,27 @@ def fix_files():
     return out
 
 
+def _expected(path):
+    """The *_expected list in a task file's vars, or None."""
+    import yaml as _yaml
+
+    def walk(node):
+        if isinstance(node, dict):
+            for k, v in node.items():
+                if isinstance(k, str) and k.endswith("_expected") and isinstance(v, list):
+                    return v
+                r = walk(v)
+                if r is not None:
+                    return r
+        elif isinstance(node, list):
+            for v in node:
+                r = walk(v)
+                if r is not None:
+                    return r
+        return None
+    return walk(_yaml.safe_load(open(path, encoding="utf-8")))
+
+
 def fix_wiring(fixes):
     """Hits for fix files and fix_imports.yml entries that do not match up.
     Every import must be gated on the rule's check having reported open, or
@@ -117,6 +140,12 @@ def fix_wiring(fixes):
         cat = {"171": "271"}.get(sid[8:11], sid[8:11])
         if not os.path.exists(os.path.join(TASKS, cat, sid + ".yml")):
             hits.setdefault(key, []).append(("FIX-NOT-WIRED", 0, f"re-check path {cat}/{sid}.yml does not exist"))
+        # an audit-rule fix carries a copy of its check's expected rules; a
+        # revision bump that changes one must change the other
+        else:
+            ce, fe = _expected(os.path.join(TASKS, cat, sid + ".yml")), _expected(p)
+            if fe is not None and ce != fe:
+                hits.setdefault(key, []).append(("FIX-AUDIT-DRIFT", 0, "expected rules differ from the check's"))
         if f"stig_facts['{sid}']" not in cond or "== 'open'" not in cond or f"stig_rules['{sid}']" not in cond:
             hits.setdefault(key, []).append(("FIX-NOT-WIRED", 0, "import not gated on toggle and open status"))
     for sid in imported:
@@ -178,7 +207,8 @@ def lint(sid, path):
     # C4/C5: register vs reference
     reg = set(re.findall(r"^\s*register:\s*(\w+)", src, re.M))
     # names defined as task-level vars (e.g. the audit rule coverage result)
-    reg |= set(re.findall(r"^\s{4}(_\d{6}\w*):", src, re.M))
+    # (indented 8 inside a fix's block:)
+    reg |= set(re.findall(r"^(?:\s{4}|\s{8})(_\d{6}\w*):", src, re.M))
     refs = set(re.findall(r"(_\d{6}\w*)", src)) - reg
     for r in sorted(reg):
         if len(re.findall(re.escape(r), src)) <= 1:
