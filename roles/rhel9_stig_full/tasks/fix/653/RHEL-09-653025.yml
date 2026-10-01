@@ -1,0 +1,36 @@
+---
+# RHEL-09-653025 | V-258154 | fix
+# RHEL 9 audit system must take appropriate action when the audit storage
+# volume is full.
+# CAT II (Medium)
+#
+# Sets disk_full_action = rhel9_fix_audit_failure_action in
+# /etc/audit/auditd.conf (replacing the last disk_full_action line, the one in
+# effect) and has auditd reread its configuration. The value is
+# rhel9_fix_audit_failure_action (default HALT, the STIG fix default; SYSLOG
+# or SINGLE where availability is documented).
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-653025 | fix
+  block:
+    - name: RHEL-09-653025 | set disk_full_action
+      ansible.builtin.lineinfile:
+        path: /etc/audit/auditd.conf
+        regexp: '^[ \t]*disk_full_action[ \t]*='
+        line: 'disk_full_action = {{ rhel9_fix_audit_failure_action }}'
+      register: _653025_fix
+    - name: RHEL-09-653025 | have auditd reread its configuration
+      ansible.builtin.command: auditctl --signal reload
+      when: _653025_fix is changed
+
+    - name: RHEL-09-653025 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-653025'] }}"
+      when: (_653025_fix is changed)
+  rescue:
+    - name: RHEL-09-653025 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-653025': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-653025'] }}"

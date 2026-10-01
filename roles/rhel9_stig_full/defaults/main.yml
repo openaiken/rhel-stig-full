@@ -35,3 +35,15 @@ rhel9_eol_dates:
   "9.5": "2025-11-30"
   "9.6": "2027-05-20"
   "9.7": "2026-11-30"
+
+# ── Remediation choices (tasks/fix/) ─────────────────────────────────────────
+# Where the STIG allows more than one compliant value, the fix applies the
+# STIG fix text's default. Override per host where the alternative is
+# documented with the ISSO.
+#
+# disk_error_action / disk_full_action (RHEL-09-653020/653025): HALT, or
+# SYSLOG / SINGLE where availability is an overriding concern.
+rhel9_fix_audit_failure_action: HALT
+# Audit failure flag -f (RHEL-09-654265): 2 (panic), or 1 (printk) where
+# availability is documented as an overriding concern.
+rhel9_fix_audit_failure_flag: 2
