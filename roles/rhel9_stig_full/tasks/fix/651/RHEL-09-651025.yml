@@ -1,0 +1,32 @@
+---
+# RHEL-09-651025 | V-258137 | fix
+# RHEL 9 must use cryptographic mechanisms to protect the integrity of audit
+# tools.
+# CAT II (Medium)
+#
+# Sets the selection line for each audit tool in /etc/aide.conf to the STIG
+# fix rule p+i+n+u+g+s+b+acl+xattrs+sha512 (replacing an existing line for
+# that path, or appending one).
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-651025 | fix
+  block:
+    - name: RHEL-09-651025 | protect the audit tools in /etc/aide.conf
+      ansible.builtin.lineinfile:
+        path: /etc/aide.conf
+        regexp: '^[ \t]*/usr/sbin/{{ item }}[ \t]'
+        line: '/usr/sbin/{{ item }} p+i+n+u+g+s+b+acl+xattrs+sha512'
+      loop: ['auditctl', 'auditd', 'ausearch', 'aureport', 'autrace', 'augenrules']
+      register: _651025_fix
+
+    - name: RHEL-09-651025 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-651025'] }}"
+      when: (_651025_fix is changed)
+  rescue:
+    - name: RHEL-09-651025 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-651025': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-651025'] }}"

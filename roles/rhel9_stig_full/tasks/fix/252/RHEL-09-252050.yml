@@ -1,0 +1,38 @@
+---
+# RHEL-09-252050 | V-257951 | fix
+# RHEL 9 must be configured to prevent unrestricted mail relaying.
+# CAT II (Medium)
+#
+# Sets smtpd_client_restrictions = permit_mynetworks,reject (the STIG fix)
+# with postconf -e, and reloads a running postfix.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-252050 | fix
+  block:
+    - name: RHEL-09-252050 | read smtpd_client_restrictions
+      ansible.builtin.command: postconf -h smtpd_client_restrictions
+      register: _252050_cur
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-252050 | restrict relaying to the local network
+      ansible.builtin.command: postconf -e 'smtpd_client_restrictions = permit_mynetworks,reject'
+      register: _252050_fix
+      when: (_252050_cur.stdout | trim | regex_replace('[ ]', '')) != 'permit_mynetworks,reject'
+
+    - name: RHEL-09-252050 | reload a running postfix
+      ansible.builtin.command: systemctl try-reload-or-restart postfix
+      when: _252050_fix is changed
+
+    - name: RHEL-09-252050 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-252050'] }}"
+      when: (_252050_fix is changed)
+  rescue:
+    - name: RHEL-09-252050 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-252050': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-252050'] }}"

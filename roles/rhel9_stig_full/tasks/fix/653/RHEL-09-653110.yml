@@ -1,0 +1,38 @@
+---
+# RHEL-09-653110 | V-258171 | fix
+# RHEL 9 must allow only the information system security manager (ISSM) (or
+# individuals or roles appointed by the ISSM) to select which auditable events
+# are to be audited.
+# CAT II (Medium)
+#
+# Removes all but owner read and write from /etc/audit/auditd.conf,
+# /etc/audit/audit.rules and every file in /etc/audit/rules.d/, leaving each
+# at 0600 or stricter.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-653110 | fix
+  block:
+    - name: RHEL-09-653110 | find the audit rules files
+      ansible.builtin.find:
+        paths: /etc/audit/rules.d
+        file_type: file
+      register: _653110_rules
+
+    - name: RHEL-09-653110 | restrict the audit configuration to 0600 or less
+      ansible.builtin.file:
+        path: "{{ item }}"
+        mode: 'u-xs,g-rwxs,o-rwxt'
+      loop: "{{ ['/etc/audit/auditd.conf', '/etc/audit/audit.rules'] + (_653110_rules.files | map(attribute='path') | list) }}"
+      register: _653110_fix
+
+    - name: RHEL-09-653110 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-653110'] }}"
+      when: (_653110_fix is changed)
+  rescue:
+    - name: RHEL-09-653110 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-653110': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-653110'] }}"
