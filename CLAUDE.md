@@ -118,6 +118,16 @@ report 0. Re-run it after touching any task.
   run on a less-hardened host. The linter used to guess and missed it; it now
   requires the guard on every task. Status must come from stdout markers, and
   empty stdout must land on `open`.
+- **Read configuration the way its consumer reads it** (all shipped as false
+  negatives, fixed 2026-10-01): modprobe reads only `*.conf` (use
+  `modprobe --showconfig`, which prints `-` as `_`); sudo skips sudoers.d
+  names with a dot (use the files `visudo -c` reports); libpwquality reads
+  `pwquality.conf.d/*.conf` first and `pwquality.conf` last, and
+  `pam_pwquality.so`/`pam_faillock.so` arguments override both files;
+  rsyslog loads rsyslog.d only via include (`rsyslogd -N1 -o FILE` gives the
+  merged config); `/etc/default/grub` is sourced, last assignment wins.
+- `xargs -I{}` rewrites every `{}` in its command, including `find -exec`'s
+  (lint XARGS-BRACES).
 - **An undeterminable result is `open`, never a pass.** If a lookup returns
   empty, do not let the status expression fall through to `not_a_finding`.
 - If an attestation var follows the bool+`_method` pattern, the `_method` string
@@ -165,6 +175,10 @@ report 0. Re-run it after touching any task.
   - rootfiles' tmpfiles.d resets /root dotfiles to 0644 on every rpm
     transaction and boot; override in /etc/tmpfiles.d
   - `-e 2` makes audit rules immutable until reboot; check `auditctl -s`
+  - `augenrules` always leaves `/etc/audit/audit.rules` 0640 (STIG: 0600);
+    653110 adds an auditd.service ExecStartPost chmod
+  - a fix can settle another rule as a side effect; remediate.yml re-checks
+    every rule that was open and has a fix, not only those that changed
   - a fix that only needs a value nobody else sets still must win against a
     later file: name drop-ins `zz-` (last wins) or `00-` (sshd: first wins)
 
