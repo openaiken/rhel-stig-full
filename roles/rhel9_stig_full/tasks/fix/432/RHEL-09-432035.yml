@@ -1,0 +1,31 @@
+---
+# RHEL-09-432035 | V-258088 | fix
+# RHEL 9 must restrict the use of the "su" command.
+# CAT II (Medium)
+#
+# Activates auth required pam_wheel.so use_uid in /etc/pam.d/su (uncommenting
+# the stock line, or adding one after pam_rootok.so), so only members of wheel
+# can su.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-432035 | fix
+  block:
+    - name: RHEL-09-432035 | require wheel membership for su
+      ansible.builtin.lineinfile:
+        path: /etc/pam.d/su
+        regexp: '^[ \t]*#?[ \t]*auth[ \t]+required[ \t]+pam_wheel\.so'
+        line: "auth\t\trequired\tpam_wheel.so use_uid"
+        insertafter: '^[ \t]*auth[ \t]+sufficient[ \t]+pam_rootok\.so'
+      register: _432035_fix
+
+    - name: RHEL-09-432035 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-432035'] }}"
+      when: (_432035_fix is changed)
+  rescue:
+    - name: RHEL-09-432035 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-432035': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-432035'] }}"

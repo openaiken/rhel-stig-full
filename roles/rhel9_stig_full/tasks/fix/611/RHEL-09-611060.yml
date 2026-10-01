@@ -1,0 +1,33 @@
+---
+# RHEL-09-611060 | V-258101 | fix
+# RHEL 9 must enforce password complexity rules for the root account.
+# CAT II (Medium)
+#
+# Sets enforce_for_root in /etc/security/pwquality.conf.d/zz-rhel9-stig-
+# full.conf.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-611060 | fix
+  block:
+    - name: RHEL-09-611060 | set enforce_for_root in /etc/security/pwquality.conf.d/zz-rhel9-stig-full.conf
+      ansible.builtin.lineinfile:
+        path: /etc/security/pwquality.conf.d/zz-rhel9-stig-full.conf
+        regexp: '^[ \t]*enforce_for_root[ \t]*$'
+        line: 'enforce_for_root'
+        create: true
+        owner: root
+        group: root
+        mode: '0644'
+      register: _611060_fix
+
+    - name: RHEL-09-611060 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-611060'] }}"
+      when: (_611060_fix is changed)
+  rescue:
+    - name: RHEL-09-611060 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-611060': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-611060'] }}"

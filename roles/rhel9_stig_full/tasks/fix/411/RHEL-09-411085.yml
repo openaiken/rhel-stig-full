@@ -1,0 +1,29 @@
+---
+# RHEL-09-411085 | V-258056 | fix
+# RHEL 9 must automatically lock an account when three unsuccessful logon
+# attempts occur during a 15-minute time period.
+# CAT II (Medium)
+#
+# Sets fail_interval = 900 in /etc/security/faillock.conf.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-411085 | fix
+  block:
+    - name: RHEL-09-411085 | set fail_interval in /etc/security/faillock.conf
+      ansible.builtin.lineinfile:
+        path: /etc/security/faillock.conf
+        regexp: '^[ \t]*fail_interval[ \t]*='
+        line: 'fail_interval = 900'
+      register: _411085_fix
+
+    - name: RHEL-09-411085 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-411085'] }}"
+      when: (_411085_fix is changed)
+  rescue:
+    - name: RHEL-09-411085 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-411085': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-411085'] }}"

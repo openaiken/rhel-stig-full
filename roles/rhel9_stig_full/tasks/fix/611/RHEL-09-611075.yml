@@ -1,0 +1,31 @@
+---
+# RHEL-09-611075 | V-258104 | fix
+# RHEL 9 passwords for new users or password changes must have a 24 hours
+# minimum password lifetime restriction in /etc/login.defs.
+# CAT II (Medium)
+#
+# Sets PASS_MIN_DAYS 1 in /etc/login.defs, replacing the last uncommented
+# PASS_MIN_DAYS line (the one in effect) or appending one. Applies to accounts
+# created from now on; existing accounts keep their aging (RHEL-09-611080).
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-611075 | fix
+  block:
+    - name: RHEL-09-611075 | set PASS_MIN_DAYS in /etc/login.defs
+      ansible.builtin.lineinfile:
+        path: /etc/login.defs
+        regexp: '^[ \t]*PASS_MIN_DAYS[ \t]'
+        line: 'PASS_MIN_DAYS 1'
+      register: _611075_fix
+
+    - name: RHEL-09-611075 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-611075'] }}"
+      when: (_611075_fix is changed)
+  rescue:
+    - name: RHEL-09-611075 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-611075': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-611075'] }}"

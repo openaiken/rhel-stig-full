@@ -1,0 +1,31 @@
+---
+# RHEL-09-411010 | V-258041 | fix
+# RHEL 9 user account passwords for new users or password changes must have a
+# 60-day maximum password lifetime restriction in /etc/login.defs.
+# CAT II (Medium)
+#
+# Sets PASS_MAX_DAYS 60 in /etc/login.defs, replacing the last uncommented
+# PASS_MAX_DAYS line (the one in effect) or appending one. Applies to accounts
+# created from now on; existing accounts keep their aging (RHEL-09-411015).
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-411010 | fix
+  block:
+    - name: RHEL-09-411010 | set PASS_MAX_DAYS in /etc/login.defs
+      ansible.builtin.lineinfile:
+        path: /etc/login.defs
+        regexp: '^[ \t]*PASS_MAX_DAYS[ \t]'
+        line: 'PASS_MAX_DAYS 60'
+      register: _411010_fix
+
+    - name: RHEL-09-411010 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-411010'] }}"
+      when: (_411010_fix is changed)
+  rescue:
+    - name: RHEL-09-411010 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-411010': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-411010'] }}"

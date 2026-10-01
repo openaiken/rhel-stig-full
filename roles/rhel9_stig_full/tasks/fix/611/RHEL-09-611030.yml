@@ -1,0 +1,42 @@
+---
+# RHEL-09-611030 | V-258095 | fix
+# RHEL 9 must configure the use of the pam_faillock.so module in the
+# /etc/pam.d/system-auth file.
+# CAT II (Medium)
+#
+# Enables the authselect with-faillock feature, which puts pam_faillock.so
+# preauth, authfail and account lines into system-auth and password-auth. Only
+# on a host whose PAM configuration is managed by authselect: elsewhere the
+# fix fails with a message, rather than hand-editing PAM files.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-611030 | fix
+  block:
+    - name: RHEL-09-611030 | read the authselect configuration
+      ansible.builtin.command: authselect current --raw
+      register: _611030_cur
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-611030 | stop if PAM is not managed by authselect
+      ansible.builtin.fail:
+        msg: "PAM is not managed by authselect on this host ({{ (_611030_cur.stdout ~ _611030_cur.stderr) | trim }}); enable the with-faillock feature by hand or put the host under authselect"
+      when: _611030_cur.rc != 0
+
+    - name: RHEL-09-611030 | enable the authselect with-faillock feature
+      ansible.builtin.command: authselect enable-feature with-faillock
+      register: _611030_fix
+      when: "'with-faillock' not in _611030_cur.stdout.split()"
+
+    - name: RHEL-09-611030 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-611030'] }}"
+      when: (_611030_fix is changed)
+  rescue:
+    - name: RHEL-09-611030 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-611030': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-611030'] }}"

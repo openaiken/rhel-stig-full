@@ -1,0 +1,35 @@
+---
+# RHEL-09-611120 | V-258113 | fix
+# RHEL 9 must require the maximum number of repeating characters of the same
+# character class be limited to four when passwords are changed.
+# CAT II (Medium)
+#
+# Sets maxclassrepeat = 4 in /etc/security/pwquality.conf.d/zz-rhel9-stig-
+# full.conf, which sorts after pwquality.conf and the other drop-ins, so its
+# value is the one in effect.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-611120 | fix
+  block:
+    - name: RHEL-09-611120 | set maxclassrepeat in /etc/security/pwquality.conf.d/zz-rhel9-stig-full.conf
+      ansible.builtin.lineinfile:
+        path: /etc/security/pwquality.conf.d/zz-rhel9-stig-full.conf
+        regexp: '^[ \t]*maxclassrepeat[ \t]*='
+        line: 'maxclassrepeat = 4'
+        create: true
+        owner: root
+        group: root
+        mode: '0644'
+      register: _611120_fix
+
+    - name: RHEL-09-611120 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-611120'] }}"
+      when: (_611120_fix is changed)
+  rescue:
+    - name: RHEL-09-611120 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-611120': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-611120'] }}"

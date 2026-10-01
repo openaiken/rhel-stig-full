@@ -1,0 +1,35 @@
+---
+# RHEL-09-611070 | V-258103 | fix
+# RHEL 9 must enforce password complexity by requiring that at least one
+# numeric character be used.
+# CAT II (Medium)
+#
+# Sets dcredit = -1 in /etc/security/pwquality.conf.d/zz-rhel9-stig-full.conf,
+# which sorts after pwquality.conf and the other drop-ins, so its value is the
+# one in effect.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-611070 | fix
+  block:
+    - name: RHEL-09-611070 | set dcredit in /etc/security/pwquality.conf.d/zz-rhel9-stig-full.conf
+      ansible.builtin.lineinfile:
+        path: /etc/security/pwquality.conf.d/zz-rhel9-stig-full.conf
+        regexp: '^[ \t]*dcredit[ \t]*='
+        line: 'dcredit = -1'
+        create: true
+        owner: root
+        group: root
+        mode: '0644'
+      register: _611070_fix
+
+    - name: RHEL-09-611070 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-611070'] }}"
+      when: (_611070_fix is changed)
+  rescue:
+    - name: RHEL-09-611070 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-611070': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-611070'] }}"

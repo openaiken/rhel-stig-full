@@ -1,0 +1,30 @@
+---
+# RHEL-09-411080 | V-258055 | fix
+# RHEL 9 must automatically lock the root account until the root account is
+# released by an administrator when three unsuccessful logon attempts occur
+# during a 15-minute time period.
+# CAT II (Medium)
+#
+# Sets even_deny_root in /etc/security/faillock.conf.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-411080 | fix
+  block:
+    - name: RHEL-09-411080 | set even_deny_root in /etc/security/faillock.conf
+      ansible.builtin.lineinfile:
+        path: /etc/security/faillock.conf
+        regexp: '^[ \t]*even_deny_root[ \t]*$'
+        line: 'even_deny_root'
+      register: _411080_fix
+
+    - name: RHEL-09-411080 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-411080'] }}"
+      when: (_411080_fix is changed)
+  rescue:
+    - name: RHEL-09-411080 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-411080': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-411080'] }}"

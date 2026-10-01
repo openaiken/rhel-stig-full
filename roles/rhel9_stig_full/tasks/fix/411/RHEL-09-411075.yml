@@ -1,0 +1,29 @@
+---
+# RHEL-09-411075 | V-258054 | fix
+# RHEL 9 must automatically lock an account when three unsuccessful logon
+# attempts occur.
+# CAT II (Medium)
+#
+# Sets deny = 3 in /etc/security/faillock.conf.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-411075 | fix
+  block:
+    - name: RHEL-09-411075 | set deny in /etc/security/faillock.conf
+      ansible.builtin.lineinfile:
+        path: /etc/security/faillock.conf
+        regexp: '^[ \t]*deny[ \t]*='
+        line: 'deny = 3'
+      register: _411075_fix
+
+    - name: RHEL-09-411075 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-411075'] }}"
+      when: (_411075_fix is changed)
+  rescue:
+    - name: RHEL-09-411075 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-411075': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-411075'] }}"
