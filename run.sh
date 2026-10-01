@@ -55,7 +55,8 @@ Auth (mutually exclusive — choose one):
 Skip plays:
   --skip-supplement         validate: skip the checks (re-render from earlier
                             results only)
-  --skip-cklb               validate: assess without rendering a checklist
+  --skip-cklb               validate, or remediate --validate: write results
+                            without rendering a checklist
   --skip-formal             remediate: skip the DISA role; only the
                             rhel9_stig_full fixes run
   --validate                remediate: then re-check the rules a fix changed
@@ -221,7 +222,12 @@ if [[ "$TAG" == "remediate" ]]; then
   fi
   if [[ "$AND_VALIDATE" == true ]]; then
     PLAY_ARGS[1]+=",validate"
-    info "  then re-check what changed and render the checklist"
+    if [[ "$SKIP_CKLB" == true ]]; then
+      PLAY_ARGS+=(--skip-tags render)
+      info "  then re-check what changed (no checklist: --skip-cklb)"
+    else
+      info "  then re-check what changed and render the checklist"
+    fi
   fi
 else
   if [[ "$SKIP_SUPPLEMENT" == true && "$SKIP_CKLB" == true ]]; then
