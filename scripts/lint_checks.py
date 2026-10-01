@@ -57,6 +57,8 @@ CHECKS = {
     "RPM-Q-ECHO":   "rpm -q X && echo ... prints the package name as well, so the output never equals the echoed word; use rpm -q --quiet",
     "JINJA-SYNTAX": "a templated value does not parse as Jinja; at run time this aborts the whole supplement play",
     "JINJA-COMMENT": "'{#' opens a Jinja comment (e.g. bash ${#arr[@]}); Ansible fails to parse the role",
+    "JINJA-QUANTIFIER":
+                    "'{{' before a digit: a regex quantifier such as {{3,4}} that Jinja renders as a tuple",
     "FIX-STRUCTURE":
                     "fix file lacks block/rescue, or does not queue its rule for re-check",
     "FIX-NOT-WIRED":
@@ -250,6 +252,12 @@ def lint(sid, path):
                 hits.append(("JINJA-SYNTAX", 0, str(e)[:70]))
     except ImportError:
         pass
+
+    # C6f: "{{3,4}}" is a Jinja expression, not a regex quantifier: Ansible
+    # renders it as "(3, 4)" and the pattern silently matches something else.
+    for i, l in enumerate(lines, 1):
+        if re.search(r"\{\{\s*\d", l):
+            hits.append(("JINJA-QUANTIFIER", i, l.strip()[:70]))
 
     # C6b: "{#" anywhere opens a Jinja comment. Bash ${#var} / ${#arr[@]} is the
     # usual culprit. Ansible then cannot split the task's arguments and the
