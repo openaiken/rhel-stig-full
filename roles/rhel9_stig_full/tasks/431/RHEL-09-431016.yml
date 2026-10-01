@@ -29,8 +29,11 @@
     echo "DESIGNATED ADMINS (rhel9_sudo_designated_admins): ${DESIGNATED:-(none set)}"
 
     # Privilege rules: non-comment, non-Defaults, non-alias, non-include lines
-    # with an = sign, from /etc/sudoers and /etc/sudoers.d.
-    rules=$(grep -rh '' /etc/sudoers /etc/sudoers.d/ 2>/dev/null \
+    # with an = sign, from the files sudo actually reads (visudo -c lists each
+    # one it parses; sudo skips sudoers.d names containing a dot or ending ~).
+    sudo_files=$(visudo -c 2>/dev/null | sed -n 's/: parsed OK$//p')
+    [ -n "$sudo_files" ] || sudo_files=/etc/sudoers
+    rules=$(grep -h '' $sudo_files 2>/dev/null \
       | sed 's/^[[:space:]]*//' \
       | grep -vE '^(#|$|Defaults|User_Alias|Runas_Alias|Cmnd_Alias|Host_Alias|@include)' \
       | grep '=')
