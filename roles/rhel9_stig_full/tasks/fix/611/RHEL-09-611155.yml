@@ -1,0 +1,38 @@
+---
+# RHEL-09-611155 | V-258120 | fix
+# RHEL 9 must not have accounts configured with blank or null passwords.
+# CAT II (Medium)
+#
+# Locks the password of every account whose /etc/shadow password field is
+# empty (usermod -L), so it can no longer log in with no password at all.
+# Other ways in that do not use the password (an SSH key, for example) are not
+# affected. Nothing legitimate needs an empty password field, so this needs no
+# evidence gate.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-611155 | fix
+  block:
+    - name: RHEL-09-611155 | list accounts with an empty password field
+      ansible.builtin.shell: |
+        awk -F: '$2 == "" { print $1 }' /etc/shadow
+      register: _611155_users
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-611155 | lock their passwords
+      ansible.builtin.command: usermod -L {{ item }}
+      loop: "{{ _611155_users.stdout_lines }}"
+      register: _611155_fix
+
+    - name: RHEL-09-611155 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-611155'] }}"
+      when: (_611155_fix is changed)
+  rescue:
+    - name: RHEL-09-611155 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-611155': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-611155'] }}"

@@ -1,0 +1,44 @@
+---
+# RHEL-09-252020 | V-257945 | fix
+# RHEL 9 must securely compare internal information system clocks at least
+# every 24 hours.
+# CAT II (Medium)
+#
+# Sets maxpoll 16 (at most every 18 hours, the STIG fix value) on every server
+# and pool line in /etc/chrony.conf that has no maxpoll or a larger one, and
+# restarts a running chronyd. The rule also requires the time source to be an
+# authoritative DOD source, which only rhel9_attest_ntp_source_approved can
+# establish, so the rule can stay open after this.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-252020 | fix
+  block:
+    - name: RHEL-09-252020 | lower a maxpoll above 16
+      ansible.builtin.replace:
+        path: /etc/chrony.conf
+        regexp: '^([ \t]*(?:server|pool)[ \t].*[ \t]maxpoll[ \t]+)(1[7-9]|[2-9][0-9])\b'
+        replace: '\g<1>16'
+      register: _252020_lower
+
+    - name: RHEL-09-252020 | add maxpoll 16 where a line has none
+      ansible.builtin.replace:
+        path: /etc/chrony.conf
+        regexp: '^([ \t]*(?:server|pool)[ \t](?:(?!maxpoll)[^\n#])*?)[ \t]*$'
+        replace: '\g<1> maxpoll 16'
+      register: _252020_add
+
+    - name: RHEL-09-252020 | restart a running chronyd to apply it
+      ansible.builtin.command: systemctl try-restart chronyd
+      when: (_252020_lower is changed) or (_252020_add is changed)
+
+    - name: RHEL-09-252020 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-252020'] }}"
+      when: (_252020_lower is changed) or (_252020_add is changed)
+  rescue:
+    - name: RHEL-09-252020 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-252020': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-252020'] }}"

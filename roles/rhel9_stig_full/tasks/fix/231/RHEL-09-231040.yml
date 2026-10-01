@@ -1,0 +1,55 @@
+---
+# RHEL-09-231040 | V-257849 | fix
+# RHEL 9 file system automount function must be disabled unless required.
+# CAT II (Medium)
+#
+# Stops and disables autofs (the package stays). In use means: its master map
+# or maps were changed from the package or added to (a stock autofs
+# configuration is not a deliberate use), or network file systems are mounted
+# while autofs is active.
+#
+# Evidence-gated: the fix acts only when nothing on the host shows the
+# automounter (autofs) in use. Otherwise it changes nothing and records each
+# reason ("left in place: ...") in finding_details, for a person to remove the
+# use, or to document the exception in rhel9_attest_documented_exceptions
+# where the rule allows one.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-231040 | fix
+  block:
+    - name: RHEL-09-231040 | look for signs that the automounter (autofs) is in use
+      ansible.builtin.shell: |
+        shopt -s nullglob
+        rpm -V autofs 2>/dev/null | awk '$2 == "c" { print "IN USE: configuration changed from the package: " $NF }'
+        for f in /etc/auto.master.d/*; do [ -e "$f" ] || continue; rpm -qf "$f" >/dev/null 2>&1 || echo "IN USE: local configuration file $f"; done
+        for f in /etc/auto.*; do [ -e "$f" ] || continue; rpm -qf "$f" >/dev/null 2>&1 || echo "IN USE: local configuration file $f"; done
+        findmnt -rn -o FSTYPE | grep -qE '^(nfs|nfs4|cifs|smb3)$' && findmnt -rn -t autofs | grep -q . && echo 'IN USE: autofs mount points are active with network file systems mounted'
+        true
+      register: _231040_use
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-231040 | leave it in place if it is in use
+      ansible.builtin.fail:
+        msg: "left in place, the automounter (autofs) appears to be in use: {{ _231040_use.stdout_lines | map('regex_replace', '^IN USE: ', '') | join('; ') }}"
+      when: _231040_use.stdout_lines | select('match', '^IN USE') | list | length > 0
+
+    - name: RHEL-09-231040 | stop and disable autofs
+      ansible.builtin.systemd_service:
+        name: autofs
+        enabled: false
+        state: stopped
+      register: _231040_fix
+
+    - name: RHEL-09-231040 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-231040'] }}"
+      when: (_231040_fix is changed)
+  rescue:
+    - name: RHEL-09-231040 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-231040': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-231040'] }}"
