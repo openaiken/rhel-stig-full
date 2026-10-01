@@ -26,6 +26,11 @@
       m == "ws" { split(line, a, " "); if (tolower(a[1]) == tolower(k)) { v = a[2]; f = 1 } }
       m == "flag" { t = line; gsub(/[[:space:]]/, "", t); if (tolower(t) == tolower(k)) { v = "set"; f = 1 } }
       END { if (f) print v }' "${files[@]}" 2>/dev/null)
+    # pam_faillock.so arguments override faillock.conf (man pam_faillock);
+    # audit given there is in effect too.
+    if grep -hE '^[[:space:]]*(auth|account)[[:space:]]+[^[:space:]]+[[:space:]]+pam_faillock[.]so' /etc/pam.d/system-auth /etc/pam.d/password-auth 2>/dev/null | grep -qE '(^|[[:space:]])audit([[:space:]]|$)'; then
+      echo "pam_faillock.so argument: audit"; val=set
+    fi
     echo "audit (effective, last uncommented occurrence): ${val:-(not set)}"
     echo "lines: $(grep -Hi 'audit' "${files[@]}" 2>/dev/null | grep -vE ':[[:space:]]*#' | tr '\n' ' ')"
     if [ "$val" = "set" ]; then

@@ -26,6 +26,14 @@
       m == "ws" { split(line, a, " "); if (tolower(a[1]) == tolower(k)) { v = a[2]; f = 1 } }
       m == "flag" { t = line; gsub(/[[:space:]]/, "", t); if (tolower(t) == tolower(k)) { v = "set"; f = 1 } }
       END { if (f) print v }' "${files[@]}" 2>/dev/null)
+    # pam_faillock.so arguments override faillock.conf (man pam_faillock): a
+    # dir= on a PAM line is the value in effect. Two different values fail.
+    pamv=$(grep -hE '^[[:space:]]*(auth|account)[[:space:]]+[^[:space:]]+[[:space:]]+pam_faillock[.]so' /etc/pam.d/system-auth /etc/pam.d/password-auth 2>/dev/null \
+           | grep -oE '(^|[[:space:]])dir=[^[:space:]]+' | cut -d= -f2 | sort -u)
+    if [ -n "$pamv" ]; then
+      echo "pam_faillock.so argument overrides faillock.conf: dir=$(echo $pamv)"
+      [ "$(echo "$pamv" | wc -l)" -eq 1 ] && val=$pamv || val=conflicting
+    fi
     echo "dir (effective, last uncommented occurrence): ${val:-(not set)}"
     echo "lines: $(grep -Hi 'dir' "${files[@]}" 2>/dev/null | grep -vE ':[[:space:]]*#' | tr '\n' ' ')"
     if [ -n "$val" ] && [ "${val%/}" != "/var/run/faillock" ] && [ "${val%/}" != "/run/faillock" ]; then

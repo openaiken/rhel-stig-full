@@ -28,6 +28,11 @@
       m == "ws" { split(line, a, " "); if (tolower(a[1]) == tolower(k)) { v = a[2]; f = 1 } }
       m == "flag" { t = line; gsub(/[[:space:]]/, "", t); if (tolower(t) == tolower(k)) { v = "set"; f = 1 } }
       END { if (f) print v }' "${files[@]}" 2>/dev/null)
+    # pam_faillock.so arguments override faillock.conf (man pam_faillock);
+    # even_deny_root given there is in effect too.
+    if grep -hE '^[[:space:]]*(auth|account)[[:space:]]+[^[:space:]]+[[:space:]]+pam_faillock[.]so' /etc/pam.d/system-auth /etc/pam.d/password-auth 2>/dev/null | grep -qE '(^|[[:space:]])even_deny_root([[:space:]]|$)'; then
+      echo "pam_faillock.so argument: even_deny_root"; val=set
+    fi
     echo "even_deny_root (effective, last uncommented occurrence): ${val:-(not set)}"
     echo "lines: $(grep -Hi 'even_deny_root' "${files[@]}" 2>/dev/null | grep -vE ':[[:space:]]*#' | tr '\n' ' ')"
     if [ "$val" = "set" ]; then
