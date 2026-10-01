@@ -1,0 +1,44 @@
+---
+# RHEL-09-213010 | V-257797
+# RHEL 9 must restrict access to the kernel message buffer.
+# CAT II (Medium) | CCI-001082, CCI-001090
+
+# The STIG checks the running value (sysctl). The formal role's sysctl task
+# compares against /etc/sysctl.conf, so a host setting this in
+# /etc/sysctl.d/ (as ComplianceAsCode does) was reported open while
+# compliant. The value persisted by the sysctl configuration is shown for
+# context.
+
+- name: RHEL-09-213010 | check kernel.dmesg_restrict (running value)
+  shell: |
+    want='1'
+    got=$(sysctl -n kernel.dmesg_restrict 2>&1)
+    persisted=$(/usr/lib/systemd/systemd-sysctl --cat-config 2>/dev/null \
+      | grep -E '^[[:space:]]*-?kernel[.]dmesg_restrict[[:space:]]*=' | tail -1 | cut -d= -f2- | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    echo "RUNTIME: kernel.dmesg_restrict = $got"
+    echo "PERSISTED (systemd-sysctl --cat-config, last wins): ${persisted:-(not set)}"
+    if [ "$got" = "$want" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: running value must be $want"
+    fi
+  register: _213010_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-213010 | record kernel.dmesg_restrict status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-213010': {
+        'status':
+          'not_a_finding' if _213010_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _213010_result.stdout | trim,
+        'comments':
+          'Set kernel.dmesg_restrict = 1 in a file in /etc/sysctl.d/ and apply it: sysctl --system'
+      }
+    }) }}"
+  tags: [validate]

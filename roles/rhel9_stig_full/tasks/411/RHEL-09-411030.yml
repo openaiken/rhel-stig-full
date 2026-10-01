@@ -1,0 +1,31 @@
+---
+# RHEL-09-411030 | V-258045
+# RHEL 9 duplicate User IDs (UIDs) must not exist for interactive users.
+# CAT II (Medium) | CCI-000135
+
+- name: RHEL-09-411030 | check for duplicate UIDs
+  shell: |
+    dupes=$(awk -F: 'list[$3]++{print $1, $3}' /etc/passwd 2>/dev/null)
+    if [ -z "$dupes" ]; then
+      echo "STATUS: PASS"
+      echo "RAW: No duplicate UIDs found"
+    else
+      echo "STATUS: FAIL"
+      echo "RAW: Duplicate UIDs detected:"
+      echo "$dupes"
+    fi
+  register: _411030_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-411030 | record duplicate UID status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-411030': {
+        'status': 'not_a_finding' if _411030_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
+        'finding_details': _411030_result.stdout | trim,
+        'comments': 'Each user account must have a unique UID in /etc/passwd'
+      }
+    }) }}"
+  tags: [validate]

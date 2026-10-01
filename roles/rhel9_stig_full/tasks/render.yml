@@ -1,0 +1,44 @@
+---
+# Render the CKLB checklist for this host from its result files. Tagged
+# validate (and render, so run.sh --skip-cklb can skip it with --skip-tags):
+# a run with only the remediate tag never generates a checklist.
+- name: set run timestamp
+  set_fact:
+    cklb_run_ts: "{{ '%Y%b%d-%H:%M:%S' | strftime }}"
+  run_once: true
+  delegate_to: localhost
+  become: false
+  tags: [validate, render]
+
+- name: find result files for host
+  find:
+    paths: "{{ stig_facts_dir }}"
+    patterns: "*-{{ inventory_hostname }}.json"
+  register: result_files
+  delegate_to: localhost
+  become: false
+  tags: [validate, render]
+
+- name: slurp CKLB template
+  slurp:
+    src: "{{ cklb_template_path }}"
+  register: cklb_template_raw
+  delegate_to: localhost
+  become: false
+  run_once: true
+  tags: [validate, render]
+
+- name: render and write CKLB
+  copy:
+    content: "{{ cklb_template_raw.content | b64decode | cklb_render(
+        hostname=inventory_hostname,
+        fqdn=host_fqdn | default(inventory_hostname),
+        ip_address=ansible_host | default(''),
+        result_paths=result_files.files | map(attribute='path') | list,
+        rules=stig_rules | default({}),
+        max_age_days=cklb_max_result_age_days | int
+      ) | to_nice_json(indent=2) }}"
+    dest: "{{ cklb_output_dir }}/{{ cklb_run_ts }}-{{ inventory_hostname }}.cklb"
+  delegate_to: localhost
+  become: false
+  tags: [validate, render]

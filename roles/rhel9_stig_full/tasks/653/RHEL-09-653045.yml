@@ -1,0 +1,70 @@
+---
+# RHEL-09-653045 | V-258158
+# RHEL 9 must take action when allocated audit record storage volume reaches
+# 95 percent of the audit record storage capacity.
+# CAT II (Medium) | CCI-001855
+
+# The formal role checks for its own line in one specific file, so a host
+# configured equivalently elsewhere (a drop-in, other spacing or case) was
+# reported open while compliant.
+# The formal role also enforces one exact value, but the STIG sets a limit
+# ("X or more", "X or less", one of a set); a stricter value was reported open.
+# The files are read as the consuming library reads them (drop-ins where it
+# has them, comments ignored, last value wins) and compared as the STIG says.
+# The check text asks the SA for another mechanism when this is not set, so
+# a documented exception is accepted (rhel9_attest_documented_exceptions).
+# More than 5 percent acts earlier, so it is accepted; megabytes are converted.
+
+- name: RHEL-09-653045 | check auditd admin_space_left
+  shell: |
+    pct() {  # value as percent of the audit log partition; N% or megabytes
+      local v="$1" dir size_mb
+      case "$v" in *%) echo "${v%\%}" ;; *[!0-9]*|"") echo "" ;; *)
+        dir=$(dirname "$(awk -F= '$1 ~ /^[[:space:]]*log_file[[:space:]]*$/ {gsub(/[[:space:]]/, "", $2); print $2}' /etc/audit/auditd.conf 2>/dev/null)")
+        size_mb=$(df -Pm "${dir:-/var/log/audit}" 2>/dev/null | awk 'NR == 2 {print $2}')
+        [ -n "$size_mb" ] && [ "$size_mb" -gt 0 ] && echo $(( v * 100 / size_mb )) ;;
+      esac
+    }
+    shopt -s nullglob
+    files=(/etc/audit/auditd.conf)
+    isint() { [[ "$1" =~ ^-?[0-9]+$ ]]; }
+    val=$(awk -v k="admin_space_left" -v m="eq" '
+      { line = $0; sub(/#.*/, "", line) }
+      line ~ /^[[:space:]]*$/ { next }
+      m == "eq" && index(line, "=") {
+        kk = substr(line, 1, index(line, "=") - 1); gsub(/[[:space:]]/, "", kk)
+        if (tolower(kk) == tolower(k)) { v = substr(line, index(line, "=") + 1); gsub(/^[[:space:]]+|[[:space:]]+$/, "", v); f = 1 }
+      }
+      m == "ws" { split(line, a, " "); if (tolower(a[1]) == tolower(k)) { v = a[2]; f = 1 } }
+      m == "flag" { t = line; gsub(/[[:space:]]/, "", t); if (tolower(t) == tolower(k)) { v = "set"; f = 1 } }
+      END { if (f) print v }' "${files[@]}" 2>/dev/null)
+    echo "admin_space_left (effective, last uncommented occurrence): ${val:-(not set)}"
+    echo "lines: $(grep -Hi 'admin_space_left' "${files[@]}" 2>/dev/null | grep -vE ':[[:space:]]*#' | tr '\n' ' ')"
+    if p=$(pct "$val"); [ -n "$p" ] && [ "$p" -ge 5 ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: admin_space_left must be 5 percent or more of the audit partition"
+    fi
+  register: _653045_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-653045 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-653045': {
+        'status':
+          'not_a_finding' if _653045_result.stdout is search('^STATUS: PASS', multiline=True)
+          else ('not_a_finding' if (rhel9_attest_documented_exceptions | default({})).get('RHEL-09-653045')
+          else 'open'),
+        'finding_details':
+          _653045_result.stdout | trim
+          ~ '\nDocumented exception (rhel9_attest_documented_exceptions): '
+          ~ ((rhel9_attest_documented_exceptions | default({})).get('RHEL-09-653045') or '(none)'),
+        'comments':
+          'Set admin_space_left = 5% in /etc/audit/auditd.conf.'
+      }
+    }) }}"
+  tags: [validate]

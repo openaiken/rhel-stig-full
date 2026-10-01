@@ -1,0 +1,36 @@
+---
+# RHEL-09-231135 | V-257868
+# RHEL 9 must mount /tmp with the nosuid option.
+# CAT II (Medium) | CCI-001764
+
+# Checks that /tmp is mounted with the nosuid option.
+# An empty result means /tmp is not separately mounted, which is also a finding.
+
+- name: RHEL-09-231135 | get /tmp mount options
+  shell: awk '$2 == "/tmp" { print $4 }' /proc/mounts
+  register: _231135_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-231135 | record /tmp nosuid mount option status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-231135': {
+        'status':
+          'not_a_finding'
+          if ('nosuid' in (_231135_result.stdout | default('')))
+          else 'open',
+        'finding_details':
+          '/tmp mount options: '
+          ~ (_231135_result.stdout | default('') | trim
+             if _231135_result.stdout | default('') | trim
+             else '(not separately mounted - FINDING)')
+          ~ '\nResult: '
+          ~ ('not_a_finding - nosuid is set on /tmp'
+             if ('nosuid' in (_231135_result.stdout | default('')))
+             else 'OPEN - nosuid not found in /tmp mount options'),
+        'comments': 'Add nosuid to the /tmp entry in /etc/fstab and remount.'
+      }
+    }) }}"
+  tags: [validate]

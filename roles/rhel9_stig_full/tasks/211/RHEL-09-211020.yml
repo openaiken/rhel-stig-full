@@ -1,0 +1,44 @@
+---
+# RHEL-09-211020 | V-257779
+# RHEL 9 must display the Standard Mandatory DOD Notice and Consent Banner
+# before granting local or remote access to the system via a command line user
+# logon.
+# CAT II (Medium) | CCI-000048, CCI-001384, CCI-001385, CCI-001386, CCI-001387, CCI-001388
+
+# The formal role checks for its own line in one specific file, so a host
+# configured equivalently elsewhere (a drop-in, other spacing or case) was
+# reported open while compliant.
+# The formal role writes the banner with exact line breaks; the STIG requires
+# the text, so it is compared with whitespace runs collapsed.
+
+- name: RHEL-09-211020 | check /etc/issue banner text
+  shell: |
+    required='You are accessing a U.S. Government (USG) Information System (IS) that is provided for USG-authorized use only. By using this IS (which includes any device attached to this IS), you consent to the following conditions: -The USG routinely intercepts and monitors communications on this IS for purposes including, but not limited to, penetration testing, COMSEC monitoring, network operations and defense, personnel misconduct (PM), law enforcement (LE), and counterintelligence (CI) investigations. -At any time, the USG may inspect and seize data stored on this IS. -Communications using, or data stored on, this IS are not private, are subject to routine monitoring, interception, and search, and may be disclosed or used for any USG-authorized purpose. -This IS includes security measures (e.g., authentication and access controls) to protect USG interests--not for your personal benefit or privacy. -Notwithstanding the above, using this IS does not constitute consent to PM, LE or CI investigative searching or monitoring of the content of privileged communications, or work product, related to personal representation or services by attorneys, psychotherapists, or clergy, and their assistants. Such communications and work product are private and confidential. See User Agreement for details.'
+    norm() { tr -s '[:space:]' ' ' | sed 's/^ //; s/ $//'; }
+    if [ -f /etc/issue ] && [ "$(norm < /etc/issue)" = "$(printf '%s' "$required" | norm)" ]; then
+      echo "STATUS: PASS"
+      echo "PASS: /etc/issue matches the required banner"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: /etc/issue does not match the required banner"
+    fi
+    echo "TEXT: $(head -c 300 /etc/issue 2>/dev/null)"
+  register: _211020_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-211020 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-211020': {
+        'status':
+          'not_a_finding' if _211020_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _211020_result.stdout | trim,
+        'comments':
+          'Write the Standard Mandatory DOD Notice and Consent Banner to /etc/issue.'
+      }
+    }) }}"
+  tags: [validate]

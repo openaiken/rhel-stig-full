@@ -1,0 +1,96 @@
+---
+# RHEL-09-631010 | V-258131
+# RHEL 9, for PKI-based authentication, must validate certificates by
+# constructing a certification path (which includes status information) to
+# an accepted trust anchor.
+# CAT II (Medium) | CCI-004046, CCI-001954, CCI-001948
+
+# Checks /etc/sssd/pki/sssd_auth_ca_db.pem for a valid, non-expired DOD
+# root CA. The file may be a PEM bundle containing multiple certs (root + intermediates);
+# we scan the full bundle for DOD issuer/subject strings and report any expired certs.
+#
+# Not applicable if the system uses an approved non-PKI MFA method (e.g. FIDO2,
+# OTP token with no certificate chain) — see rhel9_attest_alt_mfa_no_pki.
+#
+# REMEDIATION NOTE: In IPA/FreeIPA-integrated environments, the CA bundle is
+# typically sourced from the IPA server's CA (/etc/ipa/ca.crt or via certmonger).
+# If the site's IPA CA hierarchy is subordinate to the DOD PKI (a common DoD
+# configuration), ensure the full chain including the DOD root is included in
+# sssd_auth_ca_db.pem — not just the IPA-intermediate CA. Obtain the full
+# DOD PKI CA chain from cyber.mil (DoD_PKE_CA_chain.pem) and append to or
+# replace this file. After updating: systemctl restart sssd
+# Check IPA-managed Kerberos PKINIT trust separately via ipa-getcert / certmonger.
+
+- name: RHEL-09-631010 | check DOD root CA trust anchor in sssd PKI store
+  shell: |
+    pem=/etc/sssd/pki/sssd_auth_ca_db.pem
+
+    if [ ! -f "$pem" ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: $pem not found"
+      exit 0
+    fi
+
+    has_dod=false
+    expired_certs=""
+    cert_count=0
+
+    # Iterate each PEM cert block in the bundle
+    while IFS= read -r block; do
+      [ -z "$(echo "$block" | tr -d '[:space:]')" ] && continue
+      cert_count=$((cert_count + 1))
+      subject=$(echo "$block" | openssl x509 -noout -subject 2>/dev/null | sed 's/^subject=//')
+      issuer=$(echo "$block" | openssl x509 -noout -issuer 2>/dev/null | sed 's/^issuer=//')
+      enddate=$(echo "$block" | openssl x509 -noout -enddate 2>/dev/null | cut -d= -f2-)
+
+      if echo "$subject $issuer" | grep -qiE 'DoD|Department of Defense|U\.S\. Government'; then
+        has_dod=true
+      fi
+
+      if ! echo "$block" | openssl x509 -noout -checkend 0 &>/dev/null; then
+        expired_certs="${expired_certs}EXPIRED: ${subject} (not after: ${enddate})\n"
+      fi
+    done < <(awk 'BEGIN{c=""} /BEGIN CERT/{c=""} {c=c"\n"$0} /END CERT/{print c; c=""}' "$pem")
+
+    echo "INFO: $cert_count cert(s) in $pem"
+
+    if [ -n "$expired_certs" ]; then
+      echo "STATUS: FAIL"
+      echo -e "$expired_certs" | sed '/^$/d'
+      exit 0
+    fi
+
+    if ! $has_dod; then
+      echo "STATUS: FAIL"
+      echo "FAIL: no DOD-issued certificate found in bundle (no DoD/U.S. Government in subject/issuer)"
+    else
+      echo "STATUS: PASS"
+      echo "PASS: DOD-issued cert(s) present and valid"
+    fi
+  register: _631010_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-631010 | record DOD CA trust anchor status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-631010': {
+        'status':
+          'not_applicable' if (rhel9_attest_alt_mfa_no_pki | bool)
+          else ('not_a_finding' if _631010_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open'),
+        'finding_details':
+          _631010_result.stdout | trim
+          ~ '\nAttestation (rhel9_attest_alt_mfa_no_pki): '
+          ~ (rhel9_attest_alt_mfa_no_pki | bool | string | lower)
+          ~ '\nAlternate MFA method: '
+          ~ (rhel9_attest_alt_mfa_no_pki_method
+             if rhel9_attest_alt_mfa_no_pki_method else '(not provided)'),
+        'comments':
+          'Obtain DoD_PKE_CA_chain.pem from cyber.mil and place at '
+          ~ '/etc/sssd/pki/sssd_auth_ca_db.pem; then: systemctl restart sssd. '
+          ~ 'In IPA environments, include full chain to DOD root, not just IPA-issued CA.'
+      }
+    }) }}"
+  tags: [validate]

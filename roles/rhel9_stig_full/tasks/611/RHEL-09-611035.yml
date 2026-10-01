@@ -1,0 +1,74 @@
+---
+# RHEL-09-611035 | V-258096
+# RHEL 9 must configure the use of the pam_faillock.so module in the
+# /etc/pam.d/password-auth file.
+# CAT II (Medium) | CCI-000044
+
+# Identical structure to 611030 (system-auth) but for password-auth.
+# REMEDIATION NOTE: authselect enable-feature with-faillock sets both files.
+# Do not edit password-auth directly under authselect.
+
+- name: RHEL-09-611035 | check pam_faillock in password-auth
+  shell: |
+    file=/etc/pam.d/password-auth
+    if [ ! -f "$file" ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: $file not found"
+      exit 0
+    fi
+
+    active=$(grep -vE '^\s*#|^\s*$' "$file" | nl -ba)
+
+    preauth_pos=$(echo "$active" | grep 'pam_faillock\.so' | grep 'preauth' | awk '{print $1}' | head -1)
+    unix_pos=$(echo "$active" | grep 'pam_unix\.so' | awk '{print $1}' | head -1)
+    # || true, not || echo 0: grep -c already prints 0 when nothing matches and
+    # then exits 1, so || echo 0 produced "0<newline>0". The -eq 0 test on that
+    # errored, and a missing authfail or account line was reported as present.
+    has_authfail=$(echo "$active" | grep -c 'pam_faillock\.so.*authfail' || true)
+    has_account=$(echo "$active" | grep -c 'account.*pam_faillock\.so' || true)
+
+    findings=""
+
+    if [ -z "$preauth_pos" ]; then
+      findings="${findings}FAIL: pam_faillock.so preauth line missing\n"
+    elif [ -n "$unix_pos" ] && [ "$preauth_pos" -gt "$unix_pos" ]; then
+      findings="${findings}FAIL: pam_faillock.so preauth (pos $preauth_pos) comes after pam_unix.so (pos $unix_pos)\n"
+    else
+      findings="${findings}PASS: pam_faillock.so preauth present at position $preauth_pos\n"
+    fi
+
+    if [ "$has_authfail" -eq 0 ]; then
+      findings="${findings}FAIL: pam_faillock.so authfail line missing\n"
+    else
+      findings="${findings}PASS: pam_faillock.so authfail line present\n"
+    fi
+
+    if [ "$has_account" -eq 0 ]; then
+      findings="${findings}FAIL: account required pam_faillock.so line missing\n"
+    else
+      findings="${findings}PASS: account required pam_faillock.so present\n"
+    fi
+
+    if echo -e "$findings" | grep -q '^FAIL:'; then
+      echo "STATUS: FAIL"
+    else
+      echo "STATUS: PASS"
+    fi
+    echo -e "$findings" | sed '/^$/d'
+  register: _611035_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-611035 | record pam_faillock password-auth status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-611035': {
+        'status': 'not_a_finding' if _611035_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
+        'finding_details': _611035_result.stdout | trim,
+        'comments':
+          'Run: authselect enable-feature with-faillock  '
+          ~ '(or add pam_faillock.so lines manually if not using authselect)'
+      }
+    }) }}"
+  tags: [validate]

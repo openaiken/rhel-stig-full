@@ -1,0 +1,71 @@
+---
+# RHEL-09-671025 | V-258233
+# RHEL 9 pam_unix.so module must be configured in the password-auth file to
+# use a FIPS 140-3 approved cryptographic hashing algorithm for system
+# authentication.
+# CAT II (Medium) | CCI-000196
+
+# Checks /etc/pam.d/password-auth for a pam_unix.so sha512 password line.
+# On authselect systems the file is generated and should have the line
+# directly. The STIG also allows the sha512 config to be in a PAM file
+# that is included or substacked from password-auth; this check follows one
+# level of substack/include so authselect or custom stacking layouts pass
+# without requiring manual attestation.
+
+- name: RHEL-09-671025 | check pam_unix.so sha512 in password-auth
+  shell: |
+    pam_file=/etc/pam.d/password-auth
+    if [ ! -f "$pam_file" ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: $pam_file not found"
+      exit 0
+    fi
+
+    grep_sha512() {
+      grep -qE '^password\s+\S+\s+pam_unix\.so.*\bsha512\b' "$1" 2>/dev/null
+    }
+
+    if grep_sha512 "$pam_file"; then
+      echo "STATUS: PASS"
+      echo "PASS: sha512 found in $pam_file"
+      grep -E '^password.*pam_unix\.so' "$pam_file" || true
+      exit 0
+    fi
+
+    # Follow one level of substack/include references
+    while IFS= read -r ref_file; do
+      target="/etc/pam.d/${ref_file}"
+      if [ -f "$target" ] && grep_sha512 "$target"; then
+        echo "STATUS: PASS"
+        echo "PASS: sha512 found in substacked/included $target"
+        grep -E '^password.*pam_unix\.so' "$target" || true
+        exit 0
+      fi
+    done < <(grep -E '^password\s+(substack|include)\s+' "$pam_file" \
+              | awk '{print $3}')
+
+    echo "STATUS: FAIL"
+    echo "FAIL: pam_unix.so sha512 not found in $pam_file or its includes"
+    echo "CURRENT password lines:"
+    grep -E '^password' "$pam_file" || echo "  (none)"
+  register: _671025_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-671025 | record pam_unix sha512 status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-671025': {
+        'status':
+          'not_a_finding' if _671025_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details': _671025_result.stdout | trim,
+        'comments':
+          'Run: authselect select <profile> --force to regenerate PAM files. '
+          ~ 'If managing manually, add sha512 to the pam_unix.so password line '
+          ~ 'in /etc/pam.d/password-auth. '
+          ~ 'Enabling FIPS mode (fips-mode-setup --enable) typically sets this automatically.'
+      }
+    }) }}"
+  tags: [validate]

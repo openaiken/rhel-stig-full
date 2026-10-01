@@ -1,0 +1,39 @@
+---
+# RHEL-09-653065 | V-258162
+# RHEL 9 must take appropriate action when the internal event queue is full.
+# CAT II (Medium) | CCI-001851
+
+# The formal role checks for its own line in one specific file, so a host
+# configured equivalently elsewhere (a drop-in, other spacing or case) was
+# reported open while compliant.
+# The value is compared case-insensitively, as auditd reads it.
+
+- name: RHEL-09-653065 | check overflow_action
+  shell: |
+    val=$(grep -iE '^[[:space:]]*overflow_action[[:space:]]*=' /etc/audit/auditd.conf 2>/dev/null | tail -1 | cut -d= -f2- | tr -d '[:space:]')
+    echo "overflow_action (auditd.conf, last wins): ${val:-(not set)}"
+    if [[ "${val^^}" =~ ^(SYSLOG|SINGLE|HALT)$ ]]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: overflow_action must be one of: SYSLOG, SINGLE, HALT"
+    fi
+  register: _653065_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-653065 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-653065': {
+        'status':
+          'not_a_finding' if _653065_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _653065_result.stdout | trim,
+        'comments':
+          'Set overflow_action = syslog (or single, halt) in /etc/audit/auditd.conf.'
+      }
+    }) }}"
+  tags: [validate]

@@ -1,0 +1,46 @@
+---
+# RHEL-09-251020 | V-257937
+# The RHEL 9 firewall must employ a deny-all, allow-by-exception policy for
+# allowing connections to other systems.
+# CAT II (Medium) | CCI-000382
+
+# Follows the STIG check: firewalld must be running, at least one zone must
+# be active, and the default zone target must be DROP in both the runtime and
+# permanent configuration. This previously passed default and REJECT targets,
+# which the STIG does not allow, and passed when the target query returned
+# nothing at all.
+
+- name: RHEL-09-251020 | check firewalld deny-all policy
+  shell: |
+    state=$(firewall-cmd --state 2>&1)
+    echo "STATE: $state"
+    active=$(firewall-cmd --get-active-zones 2>/dev/null)
+    echo "ACTIVE ZONES: ${active:-(none)}"
+    zone=$(firewall-cmd --get-default-zone 2>/dev/null)
+    # --get-target exists only with --permanent; runtime comes from --list-all
+    rt=$(firewall-cmd --zone="$zone" --list-all 2>/dev/null | awk '$1 == "target:" {print $2}')
+    pm=$(firewall-cmd --permanent --zone="$zone" --get-target 2>/dev/null)
+    echo "DEFAULT ZONE: ${zone:-(unknown)} runtime target: ${rt:-(unknown)} permanent target: ${pm:-(unknown)}"
+    if [ "$state" = "running" ] && [ -n "$active" ] && [ "$rt" = "DROP" ] && [ "$pm" = "DROP" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+    fi
+  register: _251020_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-251020 | record firewall deny-all status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-251020': {
+        'status': 'not_a_finding' if _251020_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
+        'finding_details': _251020_result.stdout | trim,
+        'comments':
+          'Set the default zone target to DROP in the permanent configuration and '
+          ~ 'reload: firewall-cmd --permanent --zone=<zone> --set-target=DROP; '
+          ~ 'firewall-cmd --reload. Allow required services explicitly.'
+      }
+    }) }}"
+  tags: [validate]

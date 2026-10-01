@@ -1,0 +1,40 @@
+---
+# RHEL-09-215070 | V-257837
+# A graphical display manager must not be installed on RHEL 9 unless approved.
+# CAT II (Medium) | CCI-000381
+#
+# Not a finding if xorg-x11-server-common is absent, or if rhel9_gui_approved is true
+# (ISSO has documented the GUI requirement). Shares the rhel9_gui_approved variable
+# with RHEL-09-211030 (graphical.target default check).
+
+- name: RHEL-09-215070 | check if xorg-x11-server-common is installed
+  command: rpm -q xorg-x11-server-common
+  register: _215070_xorg
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-215070 | record graphical display manager status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-215070': {
+        'status':
+          'not_a_finding'
+          if (_215070_xorg.rc != 0 or rhel9_gui_approved | bool)
+          else 'open',
+        'finding_details':
+          'xorg-x11-server-common installed: ' ~ (_215070_xorg.rc == 0) | string | lower
+          ~ '\nGUI approved (rhel9_gui_approved): ' ~ (rhel9_gui_approved | bool | string | lower)
+          ~ '\nResult: '
+          ~ ('not_a_finding - xorg-x11-server-common is not installed'
+             if _215070_xorg.rc != 0
+             else ('not_a_finding - graphical display manager is ISSO-approved'
+                   if rhel9_gui_approved | bool
+                   else 'OPEN - xorg-x11-server-common is installed without ISSO approval')),
+        'comments':
+          'Set rhel9_gui_approved: true in group_vars/all/stig_controls.yml if a '
+          ~ 'graphical display manager is ISSO-approved. '
+          ~ 'To remediate: sudo dnf remove xorg* && sudo systemctl set-default multi-user.target'
+      }
+    }) }}"
+  tags: [validate]

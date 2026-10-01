@@ -30,8 +30,8 @@ usage() {
 Usage: run.sh <validate|remediate> [OPTIONS] [-- ANSIBLE_ARGS]
 
 Modes (required):
-  validate    Assess: the supplement checks every rule (read-only) and the
-              CKLB checklist is generated. The formal role is not used.
+  validate    Assess: every rule is checked (read-only) by the rhel9_stig_full
+              role and the CKLB checklist is generated.
   remediate   Apply: the DISA formal role (roles/rhel9STIG) enforces STIG
               settings. Nothing is assessed; run validate afterwards to
               produce a checklist.
@@ -50,11 +50,10 @@ Auth (mutually exclusive — choose one):
                             credentials are read from the vault
 
 Skip plays:
-  --skip-supplement         validate: skip the checks (render from earlier
+  --skip-supplement         validate: skip the checks (re-render from earlier
                             results only)
-  --skip-cklb               validate: skip the CKLB renderer
-  --skip-formal             accepted for compatibility; remediate with it does
-                            nothing
+  --skip-cklb               validate: assess without rendering a checklist
+  --skip-formal             remediate: do nothing (kept for compatibility)
 
 Checklist:
   --max-result-age DAYS     Merge only result files from the last DAYS days
@@ -199,23 +198,31 @@ run_play() {
   rm -f "$log"
 }
 
+# One playbook, selected by tag: remediate runs the DISA role only (never a
+# checklist); validate assesses every rule, then renders the checklist.
+PLAY_ARGS=()
 if [[ "$TAG" == "remediate" ]]; then
-  if [[ "$SKIP_FORMAL" == false ]]; then
-    info "Formal role (remediate) → $HOST"
-    run_play "Formal role" ./formal-role.yml --tags remediate "${COMMON[@]}"
+  if [[ "$SKIP_FORMAL" == true ]]; then
+    info "Nothing to do: remediate with --skip-formal"
+    exit 0
   fi
+  PLAY_ARGS=(--tags remediate)
+  info "Remediate (DISA role) → $HOST"
 else
-  if [[ "$SKIP_SUPPLEMENT" == false ]]; then
-    info "Supplement (validate) → $HOST"
-    run_play "Supplement" ./supplement.yml --tags validate "${COMMON[@]}"
+  if [[ "$SKIP_SUPPLEMENT" == true && "$SKIP_CKLB" == true ]]; then
+    info "Nothing to do: validate with --skip-supplement and --skip-cklb"
+    exit 0
+  elif [[ "$SKIP_SUPPLEMENT" == true ]]; then
+    PLAY_ARGS=(--tags render)                       # re-render from earlier results
+    info "Render checklist from earlier results → $HOST"
+  else
+    PLAY_ARGS=(--tags validate)
+    [[ "$SKIP_CKLB" == true ]] && PLAY_ARGS+=(--skip-tags render)
+    info "Assess every rule$([[ "$SKIP_CKLB" == true ]] || echo ' and render the checklist') → $HOST"
   fi
-  if [[ "$SKIP_CKLB" == false ]]; then
-    info "CKLB renderer → $HOST"
-    CKLB_ARGS=()
-    [[ -n "$MAX_RESULT_AGE" ]] && CKLB_ARGS+=(-e "cklb_max_result_age_days=$MAX_RESULT_AGE")
-    run_play "CKLB renderer" ./cklb.yml --tags validate "${COMMON[@]}" "${CKLB_ARGS[@]}"
-  fi
+  [[ -n "$MAX_RESULT_AGE" ]] && PLAY_ARGS+=(-e "cklb_max_result_age_days=$MAX_RESULT_AGE")
 fi
+run_play "$TAG" ./stig.yml "${PLAY_ARGS[@]}" "${COMMON[@]}"
 
 if [[ ${#SKIPPED_HOSTS[@]} -gt 0 ]]; then
   warn "not fully processed: $(printf '%s\n' "${SKIPPED_HOSTS[@]}" | sort -u | tr '\n' ' ')"

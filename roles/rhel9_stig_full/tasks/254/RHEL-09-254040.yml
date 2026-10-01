@@ -1,0 +1,44 @@
+---
+# RHEL-09-254040 | V-257977
+# RHEL 9 must not forward IPv6 source-routed packets by default.
+# CAT II (Medium) | CCI-000366
+
+# The STIG checks the running value (sysctl). The formal role's sysctl task
+# compares against /etc/sysctl.conf, so a host setting this in
+# /etc/sysctl.d/ (as ComplianceAsCode does) was reported open while
+# compliant. The value persisted by the sysctl configuration is shown for
+# context.
+
+- name: RHEL-09-254040 | check net.ipv6.conf.default.accept_source_route (running value)
+  shell: |
+    want='0'
+    got=$(sysctl -n net.ipv6.conf.default.accept_source_route 2>&1)
+    persisted=$(/usr/lib/systemd/systemd-sysctl --cat-config 2>/dev/null \
+      | grep -E '^[[:space:]]*-?net[.]ipv6[.]conf[.]default[.]accept_source_route[[:space:]]*=' | tail -1 | cut -d= -f2- | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    echo "RUNTIME: net.ipv6.conf.default.accept_source_route = $got"
+    echo "PERSISTED (systemd-sysctl --cat-config, last wins): ${persisted:-(not set)}"
+    if [ "$got" = "$want" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: running value must be $want"
+    fi
+  register: _254040_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-254040 | record net.ipv6.conf.default.accept_source_route status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-254040': {
+        'status':
+          'not_a_finding' if _254040_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _254040_result.stdout | trim,
+        'comments':
+          'Set net.ipv6.conf.default.accept_source_route = 0 in a file in /etc/sysctl.d/ and apply it: sysctl --system'
+      }
+    }) }}"
+  tags: [validate]

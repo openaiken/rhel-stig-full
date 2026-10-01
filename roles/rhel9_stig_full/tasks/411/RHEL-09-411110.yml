@@ -1,0 +1,33 @@
+---
+# RHEL-09-411110 | V-258061
+# RHEL 9 groups must have unique Group ID (GID).
+# CAT II (Medium) | CCI-000764
+
+- name: RHEL-09-411110 | check for duplicate GIDs in /etc/group
+  shell: |
+    dupes=$(cut -d: -f3 /etc/group 2>/dev/null | sort | uniq -d)
+    if [ -z "$dupes" ]; then
+      echo "STATUS: PASS"
+      echo "RAW: No duplicate GIDs found"
+    else
+      echo "STATUS: FAIL"
+      echo "RAW: Duplicate GIDs:"
+      for gid in $dupes; do
+        echo "  GID $gid: $(awk -F: -v g="$gid" '$3==g{print $1}' /etc/group | tr '\n' ' ')"
+      done
+    fi
+  register: _411110_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-411110 | record duplicate GID status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-411110': {
+        'status': 'not_a_finding' if _411110_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
+        'finding_details': _411110_result.stdout | trim,
+        'comments': 'Each group must have a unique GID in /etc/group'
+      }
+    }) }}"
+  tags: [validate]

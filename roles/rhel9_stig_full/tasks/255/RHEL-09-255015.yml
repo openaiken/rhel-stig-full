@@ -1,0 +1,38 @@
+---
+# RHEL-09-255015 | V-257979
+# All RHEL 9 networked systems must have and implement SSH to protect the
+# confidentiality and integrity of transmitted and received information, as
+# well as information during preparation for transmission.
+# CAT II (Medium) | CCI-002418, CCI-002420, CCI-002421, CCI-002422
+
+# sshd must be active. With the documented no-SSH exception attested
+# (rhel9_attest_no_sshd + _method) and openssh-server absent, not applicable.
+
+- name: RHEL-09-255015 | check sshd service state
+  shell: |
+    rpm -q openssh-server &>/dev/null || echo "openssh-server package not installed"
+    echo "sshd: $(systemctl is-active sshd 2>&1)"
+  register: _255015_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-255015 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-255015': {
+        'status':
+          'not_a_finding' if _255015_result.stdout is search('^sshd: active$', multiline=True)
+          else ('not_applicable' if ((rhel9_attest_no_sshd | bool) and 'openssh-server package not installed' in _255015_result.stdout)
+          else 'open'),
+        'finding_details':
+          _255015_result.stdout | trim
+          ~ '\nAttestation (rhel9_attest_no_sshd): '
+          ~ (rhel9_attest_no_sshd | bool | string | lower)
+          ~ '\nDocumented exception: '
+          ~ (rhel9_attest_no_sshd_method if rhel9_attest_no_sshd_method else '(not provided)'),
+        'comments':
+          'Enable sshd: sudo systemctl enable --now sshd, or document the no-SSH exception (rhel9_attest_no_sshd).'
+      }
+    }) }}"
+  tags: [validate]

@@ -1,0 +1,36 @@
+---
+# RHEL-09-231120 | V-257865
+# RHEL 9 must mount /dev/shm with the nosuid option.
+# CAT II (Medium) | CCI-001764
+
+# Checks that /dev/shm is mounted with the nosuid option.
+# An empty result means /dev/shm is not separately mounted, which is also a finding.
+
+- name: RHEL-09-231120 | get /dev/shm mount options
+  shell: awk '$2 == "/dev/shm" { print $4 }' /proc/mounts
+  register: _231120_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-231120 | record /dev/shm nosuid mount option status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-231120': {
+        'status':
+          'not_a_finding'
+          if ('nosuid' in (_231120_result.stdout | default('')))
+          else 'open',
+        'finding_details':
+          '/dev/shm mount options: '
+          ~ (_231120_result.stdout | default('') | trim
+             if _231120_result.stdout | default('') | trim
+             else '(not separately mounted - FINDING)')
+          ~ '\nResult: '
+          ~ ('not_a_finding - nosuid is set on /dev/shm'
+             if ('nosuid' in (_231120_result.stdout | default('')))
+             else 'OPEN - nosuid not found in /dev/shm mount options'),
+        'comments': 'Add nosuid to the /dev/shm entry in /etc/fstab and remount.'
+      }
+    }) }}"
+  tags: [validate]

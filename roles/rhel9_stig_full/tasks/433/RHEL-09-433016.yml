@@ -1,0 +1,88 @@
+---
+# RHEL-09-433016 | V-270180
+# The RHEL 9 fapolicy module must be configured to employ a deny-all,
+# permit-by-exception policy to allow the execution of authorized software.
+# CAT II (Medium) | CCI-001764
+
+# Two checks per the STIG:
+# 1. permissive = 0 in /etc/fapolicyd/fapolicyd.conf (enforcement mode)
+# 2. compiled.rules ends with a catch-all deny rule (deny perm=any all : all)
+#    preceded by a ld_so deny (deny_audit/deny_log/deny perm=any pattern=ld_so)
+
+- name: RHEL-09-433016 | check fapolicyd deny-all enforcement configuration
+  shell: |
+    # No fapolicyd means no deny-all policy: a finding, not "not applicable".
+    # The STIG has no not-applicable clause for this rule.
+    if ! rpm -q fapolicyd &>/dev/null; then
+      echo "STATUS: FAIL"
+      echo "FAIL: fapolicyd not installed; no deny-all, permit-by-exception policy"
+      exit 0
+    fi
+
+    findings=""
+
+    # check 1: enforcement mode (permissive = 0)
+    perm_val=$(grep -i '^\s*permissive\s*=' /etc/fapolicyd/fapolicyd.conf 2>/dev/null \
+               | awk -F= '{print $2}' | xargs)
+    if [ -z "$perm_val" ]; then
+      findings="${findings}FAIL: permissive not set in /etc/fapolicyd/fapolicyd.conf\n"
+    elif [ "$perm_val" = "0" ]; then
+      findings="${findings}PASS: permissive=0 (enforcement mode)\n"
+    else
+      findings="${findings}FAIL: permissive=$perm_val (must be 0 for enforcement mode)\n"
+    fi
+
+    # check 2: compiled.rules ends with deny-all catch-all
+    rules_file=/etc/fapolicyd/compiled.rules
+    if [ ! -f "$rules_file" ]; then
+      findings="${findings}FAIL: $rules_file not found\n"
+    else
+      last_rule=$(tail -1 "$rules_file" 2>/dev/null | xargs)
+      prev_rule=$(tail -2 "$rules_file" 2>/dev/null | head -1 | xargs)
+
+      echo "COMPILED_RULES_TAIL:"
+      tail -5 "$rules_file" 2>/dev/null
+
+      # last line must be a deny-all (deny perm=any all : all)
+      if echo "$last_rule" | grep -qP '^deny\S*\s+perm=any\s+all\s*:\s*all'; then
+        findings="${findings}PASS: catch-all deny rule present: $last_rule\n"
+      else
+        findings="${findings}FAIL: last rule is not a deny-all catch-all: '$last_rule'\n"
+      fi
+
+      # preceding rule should be an ld_so deny
+      if echo "$prev_rule" | grep -qP '^deny\S*\s+perm=any\s+pattern=ld_so'; then
+        findings="${findings}PASS: ld_so deny rule present: $prev_rule\n"
+      else
+        findings="${findings}WARN: expected ld_so deny rule before catch-all, got: '$prev_rule'\n"
+      fi
+    fi
+
+    if echo -e "$findings" | grep -q '^FAIL:'; then
+      echo "STATUS: FAIL"
+    else
+      echo "STATUS: PASS"
+    fi
+    echo -e "$findings" | sed '/^$/d'
+  register: _433016_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-433016 | record fapolicyd deny-all policy status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-433016': {
+        'status':
+          'not_applicable' if _433016_result.stdout is search('^NA:')
+          else ('not_a_finding' if _433016_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open'),
+        'finding_details': _433016_result.stdout | trim,
+        'comments':
+          'Set permissive = 0 in /etc/fapolicyd/fapolicyd.conf. '
+          ~ 'Ensure compiled.rules ends with: '
+          ~ 'deny perm=any pattern=ld_so : all  then  deny perm=any all : all. '
+          ~ 'Regenerate with: fagenrules --load'
+      }
+    }) }}"
+  tags: [validate]

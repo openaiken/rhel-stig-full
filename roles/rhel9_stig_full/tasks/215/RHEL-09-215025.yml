@@ -1,0 +1,38 @@
+---
+# RHEL-09-215025 | V-257828
+# RHEL 9 must not have the nfs-utils package installed.
+# CAT II (Medium) | CCI-000381
+
+# Previously decided only by the formal role, whose check-mode result says
+# whether a task would change something. Checked here directly, as the STIG
+# command does, so the formal role is no longer needed for assessment.
+
+- name: RHEL-09-215025 | check nfs-utils is not installed
+  shell: |
+    if rpm -q --quiet nfs-utils; then state=installed; else state="not installed"; fi
+    echo "nfs-utils: $state ($(rpm -q nfs-utils 2>&1 | head -1))"
+    if [ "$state" = "not installed" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: nfs-utils must be not installed"
+    fi
+  register: _215025_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-215025 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-215025': {
+        'status':
+          'not_a_finding' if _215025_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _215025_result.stdout | trim,
+        'comments':
+          'Remove the package: sudo dnf remove nfs-utils'
+      }
+    }) }}"
+  tags: [validate]

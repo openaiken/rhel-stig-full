@@ -1,0 +1,36 @@
+---
+# RHEL-09-231055 | V-257852
+# RHEL 9 must prevent code from being executed on file systems that contain user home directories.
+# CAT II (Medium) | CCI-000366
+
+# Checks that /home is mounted with the noexec option.
+# An empty result means /home is not separately mounted, which is also a finding.
+
+- name: RHEL-09-231055 | get /home mount options
+  shell: awk '$2 == "/home" { print $4 }' /proc/mounts
+  register: _231055_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-231055 | record /home noexec mount option status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-231055': {
+        'status':
+          'not_a_finding'
+          if ('noexec' in (_231055_result.stdout | default('')))
+          else 'open',
+        'finding_details':
+          '/home mount options: '
+          ~ (_231055_result.stdout | default('') | trim
+             if _231055_result.stdout | default('') | trim
+             else '(not separately mounted - FINDING)')
+          ~ '\nResult: '
+          ~ ('not_a_finding - noexec is set on /home'
+             if ('noexec' in (_231055_result.stdout | default('')))
+             else 'OPEN - noexec not found in /home mount options'),
+        'comments': 'Add noexec to the /home entry in /etc/fstab and remount.'
+      }
+    }) }}"
+  tags: [validate]

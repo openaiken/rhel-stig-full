@@ -1,0 +1,68 @@
+---
+# RHEL-09-411040 | V-258047
+# RHEL 9 must automatically expire temporary accounts within 72 hours.
+# CAT II (Medium) | CCI-001682
+
+# Operator must list temporary account usernames in rhel9_temporary_accounts.
+# An empty list results in not_a_finding (no temp accounts on this system).
+# For each account the check verifies an expiration date is set and falls
+# within 72 hours of the account creation date per STIG intent. In practice
+# the STIG check runs chage -l per account — if expires is "never" or more
+# than 72 hours from now it is a finding.
+#
+# The list is passed via environment variable (comma-separated) to avoid
+# Ansible argument-splitting errors when the Jinja2 result contains spaces.
+
+- name: RHEL-09-411040 | check temporary account expiration dates
+  shell: |
+    if [ -z "$TEMP_ACCOUNTS" ]; then
+      echo "STATUS: PASS (no temporary accounts defined in rhel9_temporary_accounts)"
+      exit 0
+    fi
+    IFS=',' read -ra temp_accounts <<< "$TEMP_ACCOUNTS"
+    deadline=$(date -d '+72 hours' +%s)
+    findings=""
+    for account in "${temp_accounts[@]}"; do
+      if ! id "$account" &>/dev/null; then
+        findings="${findings}WARN: $account does not exist on this system\n"
+        continue
+      fi
+      expires_str=$(chage -l "$account" 2>/dev/null | grep -i 'account expires' | cut -d: -f2 | xargs)
+      if [ "$expires_str" = "never" ] || [ -z "$expires_str" ]; then
+        findings="${findings}FAIL: $account: no expiration date set\n"
+      else
+        exp_epoch=$(date -d "$expires_str" +%s 2>/dev/null)
+        if [ -z "$exp_epoch" ]; then
+          findings="${findings}FAIL: $account: could not parse expiration date '$expires_str'\n"
+        elif [ "$exp_epoch" -gt "$deadline" ]; then
+          findings="${findings}FAIL: $account: expires $expires_str (more than 72h from now)\n"
+        else
+          findings="${findings}PASS: $account: expires $expires_str\n"
+        fi
+      fi
+    done
+    if echo -e "$findings" | grep -q '^FAIL:'; then
+      echo "STATUS: FAIL"
+    else
+      echo "STATUS: PASS"
+    fi
+    echo -e "$findings" | sed '/^$/d'
+  environment:
+    TEMP_ACCOUNTS: "{{ rhel9_temporary_accounts | join(',') }}"
+  register: _411040_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-411040 | record temporary account expiry status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-411040': {
+        'status': 'not_a_finding' if _411040_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
+        'finding_details': _411040_result.stdout | trim,
+        'comments':
+          'List temporary account usernames in rhel9_temporary_accounts (group_vars/all/stig_attestation.yml). '
+          ~ 'Set expiration with: sudo chage -E $(date -d +72hours +%Y-%m-%d) <account>'
+      }
+    }) }}"
+  tags: [validate]

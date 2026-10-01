@@ -1,0 +1,44 @@
+---
+# RHEL-09-411035 | V-258046
+# RHEL 9 system accounts must not have an interactive login shell.
+# CAT II (Medium) | CCI-000366
+
+# System accounts are those with UID < 1000. The root account (UID 0) is the
+# only system account permitted to have an interactive shell. Shells like
+# /sbin/sync, /sbin/shutdown, and /sbin/halt are also acceptable as they do
+# not provide interactive access.
+
+- name: RHEL-09-411035 | check system accounts for interactive shells
+  shell: |
+    findings=""
+    while IFS=: read -r username _ uid _ _ _ shell; do
+      [ "$uid" -ge 1000 ] 2>/dev/null && continue
+      [ "$uid" -eq 0 ] 2>/dev/null && continue
+      # shells that are not interactive
+      case "$shell" in
+        */nologin|*/false|*/sync|*/shutdown|*/halt|"") continue ;;
+      esac
+      findings="${findings}FAIL: ${username} (uid=${uid}): shell=${shell}\n"
+    done < /etc/passwd
+    if [ -z "$findings" ]; then
+      echo "STATUS: PASS"
+      echo "RAW: All system accounts have non-interactive shells"
+    else
+      echo "STATUS: FAIL"
+      echo -e "$findings" | sed '/^$/d'
+    fi
+  register: _411035_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-411035 | record system account shell status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-411035': {
+        'status': 'not_a_finding' if _411035_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
+        'finding_details': _411035_result.stdout | trim,
+        'comments': 'Set shell to /sbin/nologin for system accounts: usermod -s /sbin/nologin <account>'
+      }
+    }) }}"
+  tags: [validate]

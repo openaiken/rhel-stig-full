@@ -1,0 +1,57 @@
+---
+# RHEL-09-252020 | V-257945
+# RHEL 9 must securely compare internal information system clocks at least
+# every 24 hours with an authoritative time source.
+# CAT II (Medium) | CCI-004923
+
+# Two components:
+#   1. maxpoll in /etc/chrony.conf must be <= 16 (automatable)
+#   2. Configured NTP server(s) must be authoritative DoD/org-approved sources
+#      (requires attestation via rhel9_attest_ntp_source_approved)
+
+- name: RHEL-09-252020 | collect chrony server and maxpoll config
+  shell: grep -E '^\s*(server|pool)\s' /etc/chrony.conf 2>/dev/null || true
+  register: _252020_servers
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-252020 | check maxpoll values
+  shell: |
+    awk '/^\s*(server|pool)\s/ {
+      maxpoll = 17
+      for (i=1; i<=NF; i++) {
+        if ($i == "maxpoll" && (i+1) <= NF) maxpoll = $(i+1)+0
+      }
+      if (maxpoll > 16) print "OVER_LIMIT: " $0
+    }' /etc/chrony.conf 2>/dev/null || true
+  register: _252020_maxpoll
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-252020 | record NTP sync status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-252020': {
+        'status':
+          'open' if (_252020_maxpoll.stdout | trim)
+          else ('open' if not (_252020_servers.stdout | trim)
+          else ('not_a_finding' if rhel9_attest_ntp_source_approved | bool
+          else 'open')),
+        'finding_details':
+          'Configured NTP server/pool lines:\n'
+          ~ (_252020_servers.stdout | trim if _252020_servers.stdout | trim else '(none found)')
+          ~ '\nEntries with maxpoll > 16:\n'
+          ~ (_252020_maxpoll.stdout | trim if _252020_maxpoll.stdout | trim else '(none)')
+          ~ '\nAttestation (rhel9_attest_ntp_source_approved): '
+          ~ (rhel9_attest_ntp_source_approved | bool | string | lower),
+        'comments':
+          'No server or pool line is itself a finding, attestation or not. '
+          ~ 'maxpoll must not exceed 16 on any server/pool line. '
+          ~ 'Set rhel9_attest_ntp_source_approved: true in stig_attestation.yml '
+          ~ 'after confirming configured NTP sources are organizationally approved '
+          ~ 'authoritative time sources (DoD NTP pool or equivalent upstream).'
+      }
+    }) }}"
+  tags: [validate]

@@ -1,0 +1,52 @@
+---
+# RHEL-09-213100 | V-257815
+# RHEL 9 must disable acquiring, saving, and processing core dumps.
+# CAT II (Medium) | CCI-000366
+
+# The formal role checks for its own line in one specific file, so a host
+# configured equivalently elsewhere (a drop-in, other spacing or case) was
+# reported open while compliant.
+# Not applicable when kernel dumps are disabled per RHEL-09-213040
+# (kernel.core_pattern |/bin/false), as the STIG note says; the formal role
+# reported open regardless. A documented ISSO exception is accepted
+# (rhel9_attest_documented_exceptions).
+
+- name: RHEL-09-213100 | check systemd-coredump.socket is masked
+  shell: |
+    cp=$(sysctl -n kernel.core_pattern 2>/dev/null)
+    if [ "$cp" = "|/bin/false" ]; then
+      echo "NA: kernel.core_pattern is |/bin/false, so core dumps are disabled per RHEL-09-213040"
+      exit 0
+    fi
+    echo "kernel.core_pattern: ${cp:-(unreadable)}"
+    state=$(systemctl show systemd-coredump.socket -p LoadState --value 2>/dev/null)
+    echo "systemd-coredump.socket LoadState: ${state:-(unknown)}"
+    if [ "$state" = "masked" ] || [ "$state" = "not-found" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: systemd-coredump.socket is loaded and not masked"
+    fi
+  register: _213100_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-213100 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-213100': {
+        'status':
+          'not_applicable' if _213100_result.stdout is search('^NA:', multiline=True)
+          else ('not_a_finding' if _213100_result.stdout is search('^STATUS: PASS', multiline=True)
+          else ('not_a_finding' if (rhel9_attest_documented_exceptions | default({})).get('RHEL-09-213100')
+          else 'open')),
+        'finding_details':
+          _213100_result.stdout | trim
+          ~ '\nDocumented exception (rhel9_attest_documented_exceptions): '
+          ~ ((rhel9_attest_documented_exceptions | default({})).get('RHEL-09-213100') or '(none)'),
+        'comments':
+          'Mask it: sudo systemctl mask --now systemd-coredump.socket'
+      }
+    }) }}"
+  tags: [validate]

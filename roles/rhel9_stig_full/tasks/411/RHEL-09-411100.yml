@@ -1,0 +1,33 @@
+---
+# RHEL-09-411100 | V-258059
+# The root account must be the only account having unrestricted access to
+# RHEL 9 system.
+# CAT I (High) | CCI-000366
+
+- name: RHEL-09-411100 | check only root has UID 0
+  shell: |
+    uid0=$(awk -F: '$3 == 0 {print $1}' /etc/passwd 2>/dev/null)
+    count=$(echo "$uid0" | grep -c '.')
+    if [ "$count" -eq 1 ] && [ "$uid0" = "root" ]; then
+      echo "STATUS: PASS"
+      echo "RAW: Only root has UID 0"
+    else
+      echo "STATUS: FAIL"
+      echo "RAW: Accounts with UID 0:"
+      echo "$uid0"
+    fi
+  register: _411100_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-411100 | record UID 0 uniqueness status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-411100': {
+        'status': 'not_a_finding' if _411100_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
+        'finding_details': _411100_result.stdout | trim,
+        'comments': 'No account other than root may have UID 0. Remove or reassign any such accounts.'
+      }
+    }) }}"
+  tags: [validate]

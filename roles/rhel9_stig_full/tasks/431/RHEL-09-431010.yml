@@ -1,0 +1,43 @@
+---
+# RHEL-09-431010 | V-258078
+# RHEL 9 must use a Linux Security Module configured to enforce limits on
+# system services.
+# CAT I (High) | CCI-001084, CCI-002696
+
+# The formal role checks for its own line in one specific file, so a host
+# configured equivalently elsewhere (a drop-in, other spacing or case) was
+# reported open while compliant.
+# Both conditions the STIG states: getenforce reports Enforcing, and
+# /etc/selinux/config sets SELINUX=enforcing.
+
+- name: RHEL-09-431010 | check SELinux enforcing now and at boot
+  shell: |
+    mode=$(getenforce 2>/dev/null)
+    cfg=$(awk -F= '$1 ~ /^[[:space:]]*SELINUX[[:space:]]*$/ {v = $2} END {gsub(/[[:space:]]/, "", v); print v}' /etc/selinux/config 2>/dev/null)
+    echo "getenforce: ${mode:-(unavailable)}"
+    echo "SELINUX in /etc/selinux/config: ${cfg:-(not set)}"
+    if [ "$mode" = "Enforcing" ] && [ "${cfg,,}" = "enforcing" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: SELinux must be Enforcing now and set to enforcing in /etc/selinux/config"
+    fi
+  register: _431010_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-431010 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-431010': {
+        'status':
+          'not_a_finding' if _431010_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _431010_result.stdout | trim,
+        'comments':
+          'Set SELINUX=enforcing in /etc/selinux/config and run setenforce 1.'
+      }
+    }) }}"
+  tags: [validate]

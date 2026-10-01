@@ -1,0 +1,38 @@
+---
+# RHEL-09-654120 | V-258198
+# RHEL 9 must audit all uses of the passwd command.
+# CAT II (Medium) | CCI-000130, CCI-000135, CCI-000169, CCI-000172, CCI-002884
+
+# Loaded rules (auditctl -l), as the STIG check reads them.
+# Each expected rule below (from the STIG check text) must be covered by a
+# rule that records at least the same events; keys, syscall order, merged
+# syscall lists, -w watches and auid!=unset are all accepted. See
+# filter_plugins/audit_rules.py. The formal role checked for its own lines in
+# /etc/audit/rules.d/audit.rules, so hosts hardened any other way were open.
+
+- name: RHEL-09-654120 | read audit rules
+  command: auditctl -l
+  register: _654120_rules
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-654120 | record audit rule coverage
+  vars:
+    _654120_expected:
+      - "-a always,exit -S all -F path=/usr/bin/passwd -F perm=x -F auid>=1000 -F auid!=-1 -F key=privileged-passwd"
+    _654120_cov: "{{ _654120_rules.stdout | default('') | rhel9_audit_coverage(_654120_expected) }}"
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-654120': {
+        'status':
+          'not_a_finding'
+          if (_654120_rules.rc | default(1) == 0 and _654120_cov.loaded > 0 and _654120_cov.missing | length == 0)
+          else 'open',
+        'finding_details': _654120_cov.report,
+        'comments':
+          'Add rules covering each MISSING line to a file in /etc/audit/rules.d/, '
+          ~ 'then run augenrules --load. Any key may be used.'
+      }
+    }) }}"
+  tags: [validate]

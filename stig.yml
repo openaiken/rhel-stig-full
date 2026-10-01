@@ -1,0 +1,38 @@
+---
+# Single entry point, driven by tags (run.sh passes them):
+#   --tags remediate            the DISA role enforces settings; no checklist
+#   --tags validate             every rule is assessed and a checklist rendered
+#   --tags remediate,validate   remediate, then assess
+#   --tags RHEL-09-XXXXXX       assess one rule (the checklist merges it with
+#                               earlier results; add validate to render)
+#   --tags render               re-render the checklist from earlier results
+# Without --tags every play runs, remediation included.
+
+- name: Remediate with the DISA RHEL 9 STIG role
+  hosts: "{{ my_host | default('default_host_group') }}"
+  become: true
+  # Play-level tag: nothing here, fact gathering included, runs unless the
+  # remediate tag is selected.
+  tags: [remediate]
+  # In a dry run (--check) some tasks fail only because an earlier task's
+  # change was not made (e.g. a log file a package would create). As in the
+  # old formal-role.yml, ignore errors in check mode only.
+  ignore_errors: "{{ ansible_check_mode }}"
+  tasks:
+    - name: DISA RHEL 9 STIG role
+      import_role:
+        name: rhel9STIG
+      when: ansible_distribution_major_version == "9"
+
+- name: Assess every RHEL 9 STIG rule and render the checklist
+  hosts: "{{ my_host | default('default_host_group') }}"
+  become: true
+  # No task reads gathered facts; skipping them saves time and keeps fact
+  # gathering out of tag selection.
+  gather_facts: false
+  ignore_errors: "{{ ignore_task_failures | default('no') | bool }}"
+  tasks:
+    - name: RHEL 9 STIG assessment
+      include_role:
+        name: rhel9_stig_full
+      tags: always

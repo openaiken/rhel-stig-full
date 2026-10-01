@@ -1,0 +1,53 @@
+---
+# RHEL-09-411015 | V-258042
+# RHEL 9 user account passwords must have a 60-day maximum password lifetime
+# restriction.
+# CAT II (Medium) | CCI-000199
+
+- name: RHEL-09-411015 | check shadow max password age for interactive users
+  shell: |
+    findings=""
+    while IFS=: read -r username _ uid _ _ homedir shell; do
+      [ "$uid" -lt 1000 ] 2>/dev/null && continue
+      [[ "$shell" =~ nologin|/false$ ]] && continue
+      entry=$(awk -F: -v u="$username" '$1==u{print "x" $5}' /etc/shadow 2>/dev/null)
+      if [ -z "$entry" ]; then
+        findings="${findings}FAIL: ${username}: no /etc/shadow entry\n"
+        continue
+      fi
+      max=${entry#x}
+      # A blank field means no maximum age, which the STIG awk ($5 <= 0) flags.
+      # It used to be skipped, passing accounts whose passwords never expire.
+      if [ -z "$max" ]; then
+        findings="${findings}FAIL: ${username}: PASS_MAX_DAYS blank (no expiry)\n"
+      elif ! [[ "$max" =~ ^-?[0-9]+$ ]]; then
+        findings="${findings}FAIL: ${username}: PASS_MAX_DAYS=${max} is not a number\n"
+      elif [ "$max" -gt 60 ]; then
+        findings="${findings}FAIL: ${username}: PASS_MAX_DAYS=${max} (> 60)\n"
+      elif [ "$max" -le 0 ]; then
+        findings="${findings}FAIL: ${username}: PASS_MAX_DAYS=${max} (<= 0, unlimited)\n"
+      else
+        findings="${findings}PASS: ${username}: PASS_MAX_DAYS=${max}\n"
+      fi
+    done < /etc/passwd
+    if echo -e "$findings" | grep -q '^FAIL:'; then
+      echo "STATUS: FAIL"
+    else
+      echo "STATUS: PASS"
+    fi
+    echo -e "$findings" | sed '/^$/d'
+  register: _411015_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-411015 | record shadow max age status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-411015': {
+        'status': 'not_a_finding' if _411015_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
+        'finding_details': _411015_result.stdout | trim,
+        'comments': 'For each failing account run: sudo chage -M 60 <username>'
+      }
+    }) }}"
+  tags: [validate]

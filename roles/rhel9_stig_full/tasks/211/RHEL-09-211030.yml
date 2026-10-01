@@ -1,0 +1,39 @@
+---
+# RHEL-09-211030 | V-257781
+# The graphical display manager must not be the default target on RHEL 9 unless approved.
+# CAT II (Medium) | CCI-000366
+#
+# Not a finding if default target is multi-user.target, or if rhel9_gui_approved is true
+# (ISSO has documented the GUI requirement for this system).
+
+- name: RHEL-09-211030 | get default systemd target
+  command: systemctl get-default
+  register: _211030_target
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-211030 | record default target status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-211030': {
+        'status':
+          'not_a_finding' if (_211030_target.stdout == 'multi-user.target'
+                              or rhel9_gui_approved | bool)
+          else 'open',
+        'finding_details':
+          'Default target: ' ~ _211030_target.stdout
+          ~ '\nGUI approved (rhel9_gui_approved): ' ~ (rhel9_gui_approved | bool | string | lower)
+          ~ '\nResult: '
+          ~ ('not_a_finding - default target is multi-user.target'
+             if _211030_target.stdout == 'multi-user.target'
+             else ('not_a_finding - graphical target is ISSO-approved for this system'
+                   if rhel9_gui_approved | bool
+                   else 'OPEN - graphical.target is default without ISSO approval')),
+        'comments':
+          'Set rhel9_gui_approved: true in group_vars/all/stig_controls.yml '
+          ~ 'if a graphical display manager is ISSO-approved for this system. '
+          ~ 'To remediate: sudo systemctl set-default multi-user.target'
+      }
+    }) }}"
+  tags: [validate]

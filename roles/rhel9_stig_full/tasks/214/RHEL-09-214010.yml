@@ -1,0 +1,63 @@
+---
+# RHEL-09-214010 | V-257819
+# RHEL 9 must ensure cryptographic verification of vendor software packages.
+# CAT II (Medium) | CCI-001749
+#
+# Three conditions checked:
+#   1. Red Hat GPG keys "release key 2" and "auxiliary key 3" are installed in RPM keyring.
+#   2. Key file /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release exists.
+#   3. Key fingerprints match RHEL 9 V2R9 vendor values (hardcoded from STIG check text):
+#        release key 2:   567E 347A D004 4ADE 55BA 8A5F 199E 2F91 FD43 1D51
+#        auxiliary key 3: 7E46 2425 8C40 6535 D56D 6F13 5054 E4A4 5A63 40B3
+
+- name: RHEL-09-214010 | check Red Hat GPG keys installed in RPM keyring
+  command: rpm -q --queryformat "%{SUMMARY}\n" gpg-pubkey
+  register: _214010_keys
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-214010 | check RPM GPG key file exists
+  stat:
+    path: /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+  register: _214010_keyfile
+  tags: [validate]
+
+- name: RHEL-09-214010 | check key fingerprints
+  command: gpg -q --keyid-format short --with-fingerprint /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+  register: _214010_fingerprints
+  changed_when: false
+  failed_when: false
+  when: _214010_keyfile.stat.exists
+  tags: [validate]
+
+- name: RHEL-09-214010 | record GPG key verification status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-214010': {
+        'status':
+          'not_a_finding'
+          if ('release key 2' in (_214010_keys.stdout | default('') | lower)
+              and 'auxiliary key 3' in (_214010_keys.stdout | default('') | lower)
+              and _214010_keyfile.stat.exists
+              and 'FD431D51' in (_214010_fingerprints.stdout | default(''))
+              and '5A6340B3' in (_214010_fingerprints.stdout | default('')))
+          else 'open',
+        'finding_details':
+          'release key 2 installed: '
+          ~ ('yes' if 'release key 2' in (_214010_keys.stdout | default('') | lower) else 'NO')
+          ~ '\nauxiliary key 3 installed: '
+          ~ ('yes' if 'auxiliary key 3' in (_214010_keys.stdout | default('') | lower) else 'NO')
+          ~ '\nkey file exists: ' ~ (_214010_keyfile.stat.exists | string | lower)
+          ~ '\nrelease key 2 fingerprint (FD431D51) matches: '
+          ~ ('yes' if 'FD431D51' in (_214010_fingerprints.stdout | default('')) else 'NO')
+          ~ '\nauxiliary key 3 fingerprint (5A6340B3) matches: '
+          ~ ('yes' if '5A6340B3' in (_214010_fingerprints.stdout | default('')) else 'NO'),
+        'comments':
+          'Expected fingerprints per RHEL 9 V2R9: '
+          ~ 'release key 2: 567E 347A D004 4ADE 55BA 8A5F 199E 2F91 FD43 1D51 | '
+          ~ 'auxiliary key 3: 7E46 2425 8C40 6535 D56D 6F13 5054 E4A4 5A63 40B3. '
+          ~ 'To remediate: sudo rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release'
+      }
+    }) }}"
+  tags: [validate]

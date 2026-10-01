@@ -1,0 +1,36 @@
+---
+# RHEL-09-231165 | V-257874
+# RHEL 9 must mount /var/log/audit with the noexec option.
+# CAT II (Medium) | CCI-001764
+
+# Checks that /var/log/audit is mounted with the noexec option.
+# An empty result means /var/log/audit is not separately mounted, which is also a finding.
+
+- name: RHEL-09-231165 | get /var/log/audit mount options
+  shell: awk '$2 == "/var/log/audit" { print $4 }' /proc/mounts
+  register: _231165_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-231165 | record /var/log/audit noexec mount option status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-231165': {
+        'status':
+          'not_a_finding'
+          if ('noexec' in (_231165_result.stdout | default('')))
+          else 'open',
+        'finding_details':
+          '/var/log/audit mount options: '
+          ~ (_231165_result.stdout | default('') | trim
+             if _231165_result.stdout | default('') | trim
+             else '(not separately mounted - FINDING)')
+          ~ '\nResult: '
+          ~ ('not_a_finding - noexec is set on /var/log/audit'
+             if ('noexec' in (_231165_result.stdout | default('')))
+             else 'OPEN - noexec not found in /var/log/audit mount options'),
+        'comments': 'Add noexec to the /var/log/audit entry in /etc/fstab and remount.'
+      }
+    }) }}"
+  tags: [validate]

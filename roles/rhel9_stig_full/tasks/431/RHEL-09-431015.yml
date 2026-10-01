@@ -1,0 +1,39 @@
+---
+# RHEL-09-431015 | V-258079
+# RHEL 9 must enable the SELinux targeted policy.
+# CAT II (Medium) | CCI-002696
+
+# The formal role checks for its own line in one specific file, so a host
+# configured equivalently elsewhere (a drop-in, other spacing or case) was
+# reported open while compliant.
+# The STIG checks the loaded policy name (sestatus).
+
+- name: RHEL-09-431015 | check loaded SELinux policy
+  shell: |
+    pol=$(sestatus 2>/dev/null | awk -F: '/Loaded policy name/ {gsub(/[[:space:]]/, "", $2); print $2}')
+    echo "Loaded policy name: ${pol:-(unavailable)}"
+    if [ "$pol" = "targeted" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: the loaded SELinux policy must be targeted"
+    fi
+  register: _431015_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-431015 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-431015': {
+        'status':
+          'not_a_finding' if _431015_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _431015_result.stdout | trim,
+        'comments':
+          'Set SELINUXTYPE=targeted in /etc/selinux/config and reboot.'
+      }
+    }) }}"
+  tags: [validate]

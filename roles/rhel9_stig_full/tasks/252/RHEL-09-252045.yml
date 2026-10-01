@@ -1,0 +1,50 @@
+---
+# RHEL-09-252045 | V-257950
+# RHEL 9 must not have unauthorized IP tunnels configured.
+# CAT II (Medium) | CCI-000382
+
+# If IPsec is inactive: not_a_finding.
+# If active with configured connections: open until the ISSO verifies approval
+# and rhel9_attest_ipsec_tunnels_approved is set true. A false attestation always
+# yields an open finding, never not_reviewed -- a submitted checklist must not
+# contain not_reviewed entries.
+
+- name: RHEL-09-252045 | check ipsec service state
+  shell: systemctl is-active ipsec 2>/dev/null || echo inactive
+  register: _252045_ipsec_state
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-252045 | collect configured ipsec connections
+  shell: grep -rni '\bconn\b' /etc/ipsec.conf /etc/ipsec.d/ 2>/dev/null | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' || true
+  register: _252045_conns
+  changed_when: false
+  failed_when: false
+  when: (_252045_ipsec_state.stdout | trim) == 'active'
+  tags: [validate]
+
+- name: RHEL-09-252045 | record IP tunnel status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-252045': {
+        'status':
+          'not_a_finding' if (_252045_ipsec_state.stdout | trim) != 'active'
+          else ('not_a_finding' if not (_252045_conns.stdout | default('') | trim)
+          else ('not_a_finding' if rhel9_attest_ipsec_tunnels_approved | bool
+          else 'open')),
+        'finding_details':
+          'IPsec service state: ' ~ (_252045_ipsec_state.stdout | trim)
+          ~ '\nConfigured conn entries:\n'
+          ~ (_252045_conns.stdout | default('') | trim
+             if (_252045_conns.stdout | default('') | trim)
+             else '(none or ipsec inactive)')
+          ~ '\nAttestation (rhel9_attest_ipsec_tunnels_approved): '
+          ~ (rhel9_attest_ipsec_tunnels_approved | bool | string | lower),
+        'comments':
+          'If IPsec tunnels are configured, verify each conn entry is documented '
+          ~ 'and approved by the ISSO, then set rhel9_attest_ipsec_tunnels_approved: true. '
+          ~ 'Remove any unapproved tunnels.'
+      }
+    }) }}"
+  tags: [validate]

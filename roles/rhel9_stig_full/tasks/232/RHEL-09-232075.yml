@@ -1,0 +1,40 @@
+---
+# RHEL-09-232075 | V-257895
+# RHEL 9 /etc/passwd file must have mode 0644 or less permissive to prevent
+# unauthorized access.
+# CAT II (Medium) | CCI-000366
+
+# The STIG allows the stated mode or anything less permissive. The formal
+# role sets that exact mode, so in check mode a host with a stricter mode
+# (e.g. 0600 where 0640 is the maximum) was reported open while compliant.
+# Checked with a bitmask of the forbidden bits; a missing file is open.
+
+- name: RHEL-09-232075 | check /etc/passwd mode
+  shell: |
+    mode=$(stat -c '%a' /etc/passwd 2>/dev/null)
+    echo "/etc/passwd mode: ${mode:-(file not found)} (maximum 0644)"
+    if [ -n "$mode" ] && [ $(( 8#$mode & 8#7133 )) -eq 0 ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: /etc/passwd is missing or more permissive than 0644"
+    fi
+  register: _232075_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-232075 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-232075': {
+        'status':
+          'not_a_finding' if _232075_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _232075_result.stdout | trim,
+        'comments':
+          'Set the mode: sudo chmod 0644 /etc/passwd (or stricter).'
+      }
+    }) }}"
+  tags: [validate]

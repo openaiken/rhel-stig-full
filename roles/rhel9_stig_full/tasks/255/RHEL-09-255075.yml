@@ -1,0 +1,45 @@
+---
+# RHEL-09-255075 | V-257991
+# The RHEL 9 SSH server must be configured to use only MACs employing
+# FIPS 140-3 validated cryptographic hash algorithms.
+# CAT I (High) | CCI-000877
+
+# Approved set (order-independent): hmac-sha2-256-etm@openssh.com,
+#   hmac-sha2-512-etm@openssh.com, hmac-sha2-256, hmac-sha2-512
+# Check sorts both the configured and approved sets before comparing.
+
+- name: RHEL-09-255075 | check SSH server MACs
+  shell: |
+    file=/etc/crypto-policies/back-ends/opensshserver.config
+    approved="hmac-sha2-256,hmac-sha2-256-etm@openssh.com,hmac-sha2-512,hmac-sha2-512-etm@openssh.com"
+    line=$(grep -i '^\s*MACs\s' "$file" 2>/dev/null | head -1)
+    if [ -z "$line" ]; then
+      echo "STATUS: FAIL"
+      echo "RAW: (MACs line missing or file not found)"
+    else
+      actual=$(echo "$line" | awk '{print $2}' | tr ',' '\n' | sort | tr '\n' ',' | sed 's/,$//')
+      echo "RAW: $line"
+      if [ "$actual" = "$approved" ]; then
+        echo "STATUS: PASS"
+      else
+        echo "STATUS: FAIL (sorted actual: $actual)"
+      fi
+    fi
+  register: _255075_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-255075 | record SSH server MAC status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-255075': {
+        'status': 'not_a_finding' if _255075_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
+        'finding_details': _255075_result.stdout | trim,
+        'comments':
+          'Set FIPS crypto policy: sudo update-crypto-policies --set FIPS. '
+          ~ 'Approved MACs: hmac-sha2-256-etm@openssh.com,hmac-sha2-512-etm@openssh.com,'
+          ~ 'hmac-sha2-256,hmac-sha2-512 (order does not matter for compliance).'
+      }
+    }) }}"
+  tags: [validate]

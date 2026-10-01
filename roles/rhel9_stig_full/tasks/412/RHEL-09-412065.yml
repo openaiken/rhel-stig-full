@@ -1,0 +1,56 @@
+---
+# RHEL-09-412065 | V-258074
+# RHEL 9 must define default permissions for all authenticated users in such a
+# way that the user can only read and modify their own files.
+# CAT II (Medium) | CCI-000366
+
+# The formal role checks for its own line in one specific file, so a host
+# configured equivalently elsewhere (a drop-in, other spacing or case) was
+# reported open while compliant.
+# The formal role also enforces one exact value, but the STIG sets a limit
+# ("X or more", "X or less", one of a set); a stricter value was reported open.
+# The files are read as the consuming library reads them (drop-ins where it
+# has them, comments ignored, last value wins) and compared as the STIG says.
+
+- name: RHEL-09-412065 | check login.defs UMASK
+  shell: |
+    shopt -s nullglob
+    files=(/etc/login.defs)
+    isint() { [[ "$1" =~ ^-?[0-9]+$ ]]; }
+    val=$(awk -v k="UMASK" -v m="ws" '
+      { line = $0; sub(/#.*/, "", line) }
+      line ~ /^[[:space:]]*$/ { next }
+      m == "eq" && index(line, "=") {
+        kk = substr(line, 1, index(line, "=") - 1); gsub(/[[:space:]]/, "", kk)
+        if (tolower(kk) == tolower(k)) { v = substr(line, index(line, "=") + 1); gsub(/^[[:space:]]+|[[:space:]]+$/, "", v); f = 1 }
+      }
+      m == "ws" { split(line, a, " "); if (tolower(a[1]) == tolower(k)) { v = a[2]; f = 1 } }
+      m == "flag" { t = line; gsub(/[[:space:]]/, "", t); if (tolower(t) == tolower(k)) { v = "set"; f = 1 } }
+      END { if (f) print v }' "${files[@]}" 2>/dev/null)
+    echo "UMASK (effective, last uncommented occurrence): ${val:-(not set)}"
+    echo "lines: $(grep -Hi 'UMASK' "${files[@]}" 2>/dev/null | grep -vE ':[[:space:]]*#' | tr '\n' ' ')"
+    if [[ "$val" =~ ^0?077$ ]]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: UMASK must be 077"
+    fi
+  register: _412065_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-412065 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-412065': {
+        'status':
+          'not_a_finding' if _412065_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _412065_result.stdout | trim,
+        'comments':
+          'Set UMASK 077 in /etc/login.defs.'
+      }
+    }) }}"
+  tags: [validate]

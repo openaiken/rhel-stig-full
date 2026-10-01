@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Unit tests for roles/rhel9_stig_supplement/filter_plugins/audit_rules.py.
+"""Unit tests for roles/rhel9_stig_full/filter_plugins/audit_rules.py.
 
 Run: python3 scripts/test_audit_rules.py   (exits non-zero on any failure)
 """
@@ -9,7 +9,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 spec = importlib.util.spec_from_file_location(
-    "audit_rules", os.path.join(HERE, "..", "roles", "rhel9_stig_supplement",
+    "audit_rules", os.path.join(HERE, "..", "roles", "rhel9_stig_full",
                                 "filter_plugins", "audit_rules.py"))
 m = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(m)

@@ -8,9 +8,9 @@ toggled. Cross-checks five sources that must agree:
 
   1. files/rules.json                  - the benchmark (parse_xccdf_benchmark.py)
   2. the CKLB template                 - the rules the checklist will contain
-  3. roles/rhel9_stig_supplement/tasks/<cat>/RHEL-09-XXXXXX.yml   - task files
-  4. roles/rhel9_stig_supplement/tasks/main.yml                   - import wiring
-  5. group_vars/all/stig_supplement.yml                           - supp_rules toggles
+  3. roles/rhel9_stig_full/tasks/<cat>/RHEL-09-XXXXXX.yml   - task files
+  4. roles/rhel9_stig_full/tasks/main.yml                   - import wiring
+  5. group_vars/all/stig_rules.yml                           - stig_rules toggles
 
 A rule present in the template but without a check renders not_reviewed,
 which reviewers reject.
@@ -28,10 +28,10 @@ import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RULES_JSON = os.path.join(REPO, "files", "rules.json")
-CKLB_DEFAULTS = os.path.join(REPO, "roles", "cklb_renderer", "defaults", "main.yml")
-SUPP_TASKS = os.path.join(REPO, "roles", "rhel9_stig_supplement", "tasks")
+CKLB_DEFAULTS = os.path.join(REPO, "roles", "rhel9_stig_full", "defaults", "main.yml")
+SUPP_TASKS = os.path.join(REPO, "roles", "rhel9_stig_full", "tasks")
 SUPP_MAIN = os.path.join(SUPP_TASKS, "main.yml")
-SUPP_VARS = os.path.join(REPO, "group_vars", "all", "stig_supplement.yml")
+SUPP_VARS = os.path.join(REPO, "group_vars", "all", "stig_rules.yml")
 
 STIG_ID_RE = re.compile(r"RHEL-09-\d{6}")
 
@@ -89,7 +89,7 @@ def wired_imports():
 
 
 def toggles():
-    """{stig_id} present as a key under supp_rules in stig_supplement.yml."""
+    """{stig_id} present as a key under stig_rules in stig_rules.yml."""
     keys = set()
     with open(SUPP_VARS) as f:
         for line in f:
@@ -131,7 +131,7 @@ def main():
         print(f"  CKLB template rules:              {len(template)}")
     print(f"  supplement task files on disk:    {len(files)}")
     print(f"  wired into tasks/main.yml:        {len(wired)}")
-    print(f"  supp_rules toggles declared:      {len(toggled)}")
+    print(f"  stig_rules toggles declared:      {len(toggled)}")
 
     problems = {
         "BENCHMARK/TEMPLATE mismatch (in rules.json, not in the template)":
@@ -146,9 +146,9 @@ def main():
             set(files) - wired,
         "DANGLING import (main.yml imports a rule with no task file)":
             wired - set(files),
-        "MISSING toggle (task file exists, no supp_rules entry)":
+        "MISSING toggle (task file exists, no stig_rules entry)":
             set(files) - toggled,
-        "ORPHAN toggle (supp_rules entry, no task file)":
+        "ORPHAN toggle (stig_rules entry, no task file)":
             toggled - set(files),
     }
 

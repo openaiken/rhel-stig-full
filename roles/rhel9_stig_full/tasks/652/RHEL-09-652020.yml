@@ -1,0 +1,31 @@
+---
+# RHEL-09-652020 | V-258142
+# The rsyslog service on RHEL 9 must be active.
+# CAT II (Medium) | CCI-000366
+
+# The formal role task errors when rsyslog is not installed and the error is
+# ignored, so the rule had no result and rendered as not_reviewed.
+
+- name: RHEL-09-652020 | check rsyslog service state
+  shell: |
+    rpm -q rsyslog &>/dev/null || echo "rsyslog package not installed"
+    echo "rsyslog: $(systemctl is-active rsyslog 2>&1)"
+  register: _652020_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-652020 | record rsyslog service status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-652020': {
+        'status':
+          'not_a_finding' if _652020_result.stdout is search('^rsyslog: active$', multiline=True)
+          else 'open',
+        'finding_details': _652020_result.stdout | trim,
+        'comments':
+          'Install and enable rsyslog: sudo dnf install rsyslog; '
+          ~ 'sudo systemctl enable --now rsyslog.'
+      }
+    }) }}"
+  tags: [validate]

@@ -1,0 +1,50 @@
+---
+# RHEL-09-271090 | V-258028
+# RHEL 9 effective dconf policy must match the policy keyfiles.
+# CAT II (Medium) | CCI-000366
+
+# Not Applicable if GDM is not installed.
+# A database is stale if its mtime is older than any of its keyfiles —
+# meaning dconf update has not been run since the keyfiles were modified.
+
+- name: RHEL-09-271090 | check dconf database freshness
+  shell: |
+    rpm -q gdm &>/dev/null || { echo "NA: gdm not installed"; exit 0; }
+    stale=""
+    # Walk the keyfile directories rather than the compiled databases, as the
+    # STIG loop does: a directory with keyfiles but no compiled database was
+    # never compiled at all, and iterating databases alone missed it. Lock
+    # files are compared too, since an uncompiled lock is not in effect.
+    for dir in /etc/dconf/db/*.d; do
+      [ -d "$dir" ] || continue
+      db="${dir%.d}"
+      newest=$(find "$dir" -type f -printf '%T@\n' 2>/dev/null | sort -n | tail -1)
+      newest=${newest%.*}
+      [ -n "$newest" ] || continue
+      if [ ! -f "$db" ]; then
+        stale="${stale}${db} missing but ${dir} has keyfiles\n"
+      elif [ "$(stat -c %Y "$db")" -lt "$newest" ]; then
+        stale="${stale}${db} needs update\n"
+      fi
+    done
+    if [ -z "$stale" ]; then echo "PASS: all databases are current"
+    else printf "FAIL:\n${stale}"
+    fi
+  register: _271090_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-271090 | record dconf database freshness status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-271090': {
+        'status':
+          'not_applicable' if _271090_result.stdout is search('^NA:', multiline=True)
+          else ('not_a_finding' if _271090_result.stdout is search('^PASS:', multiline=True)
+          else 'open'),
+        'finding_details': _271090_result.stdout | trim,
+        'comments': 'Run: sudo dconf update — to recompile all dconf databases.'
+      }
+    }) }}"
+  tags: [validate]

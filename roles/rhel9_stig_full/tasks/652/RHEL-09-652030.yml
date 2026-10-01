@@ -1,0 +1,52 @@
+---
+# RHEL-09-652030 | V-258144
+# All RHEL 9 remote access methods must be monitored.
+# CAT II (Medium) | CCI-000067
+
+# The formal role checks for its own line in one specific file, so a host
+# configured equivalently elsewhere (a drop-in, other spacing or case) was
+# reported open while compliant.
+# Parsed across /etc/rsyslog.conf and /etc/rsyslog.d/*.conf. A facility is
+# logged by a selector naming it with all priorities (fac.*), or by *.*.
+# The fix logs all three, so all three are required.
+
+- name: RHEL-09-652030 | check auth, authpriv and daemon logging
+  shell: |
+    shopt -s nullglob
+    # selector lines only: skip comments, directives, and anything inside a
+    # parenthesised RainerScript block, which can span several lines
+    sel=$(cat /etc/rsyslog.conf /etc/rsyslog.d/*.conf 2>/dev/null | awk '
+      { sub(/#.*/, "") }
+      depth == 0 && $0 ~ /^[[:space:]]*[a-z*][a-z0-9*,;.!=]*[[:space:]]/ && $0 !~ /^[[:space:]]*(module|global|input|template|if|action|ruleset|main_queue)[[:space:](]/ { print $1 }
+      { n = gsub(/\(/, "("); m = gsub(/\)/, ")"); depth += n - m; if (depth < 0) depth = 0 }')
+
+    missing=""
+    for f in auth authpriv daemon; do
+      if ! echo "$sel" | tr ';' '\n' | grep -qE "^(\*|([a-z0-9]+,)*${f}(,[a-z0-9]+)*)\.\*$"; then missing="$missing $f"; fi
+    done
+    echo "selectors: $(echo "$sel" | tr '\n' ' ')"
+    if [ -z "$missing" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: not logged with all priorities:$missing"
+    fi
+  register: _652030_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-652030 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-652030': {
+        'status':
+          'not_a_finding' if _652030_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _652030_result.stdout | trim,
+        'comments':
+          'Add auth.*;authpriv.*;daemon.* /var/log/secure to /etc/rsyslog.conf or a file in /etc/rsyslog.d.'
+      }
+    }) }}"
+  tags: [validate]

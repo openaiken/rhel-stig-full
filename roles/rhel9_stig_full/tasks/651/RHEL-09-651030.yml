@@ -1,0 +1,78 @@
+---
+# RHEL-09-651030 | V-258138
+# RHEL 9 must be configured so that the file integrity tool verifies
+# Access Control Lists (ACLs).
+# CAT III (Low) | CCI-000366
+
+# Checks that 'acl' appears in an active rule definition. Typically set via
+# a macro: NORMAL = p+i+n+u+g+s+m+S+sha512+acl+xattrs+selinux
+
+- name: RHEL-09-651030 | check AIDE ACL verification configuration
+  shell: |
+    # No AIDE is not "not applicable": the STIG asks how else this is done.
+    # rhel9_attest_alt_fim_tool is the not-applicable path; without it, open.
+    if ! rpm -q aide &>/dev/null; then
+      echo "STATUS: FAIL"
+      echo "FAIL: aide not installed and no alternate file integrity tool attested"
+      exit 0
+    fi
+
+    conf=/etc/aide.conf
+    if [ ! -f "$conf" ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: $conf not found"
+      exit 0
+    fi
+
+    # Every uncommented selection line must carry acl in its effective rule,
+    # as the STIG requires. Rule expressions are expanded through the macro
+    # definitions in the file, honouring + and - (for example LOG-xattrs-n
+    # removes xattrs). H, the group of all compiled hashsums, includes sha512.
+    # This formerly passed if acl appeared anywhere, and the stock macro
+    # definitions always contain it, so any host with AIDE installed passed.
+    awk -v want=acl '
+      function expand(expr, depth,   n, i, tok, op, parts, seps) {
+        if (depth > 20) return
+        gsub(/[[:space:]]/, "", expr)
+        n = split(expr, parts, /[+-]/, seps)
+        for (i = 1; i <= n; i++) {
+          tok = parts[i]
+          op = (i == 1) ? "+" : seps[i - 1]
+          if (tok == "") continue
+          if (tok in macro) { if (op == "+") expand(macro[tok], depth + 1) }
+          else if (tok == "H" && want == "sha512") acc["sha512"] = (op == "+")
+          else acc[tok] = (op == "+")
+        }
+      }
+      /^[[:space:]]*#/ || /^[[:space:]]*$/ || /^@@/ { next }
+      /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*[[:space:]]*=/ {
+        name = $0; sub(/[[:space:]]*=.*/, "", name); gsub(/[[:space:]]/, "", name)
+        val = $0; sub(/^[^=]*=/, "", val); macro[name] = val; next
+      }
+      /^[[:space:]]*[=\/]/ && NF >= 2 {
+        sel++; delete acc; expand($2, 0)
+        if (!acc[want]) { bad++; print "FAIL: " $1 " " $2 " (no " want ")" }
+      }
+      END {
+        print "SELECTION LINES: " sel + 0 ", without " want ": " bad + 0
+        print ((sel > 0 && bad == 0) ? "STATUS: PASS" : "STATUS: FAIL")
+      }' "$conf"
+  register: _651030_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-651030 | record AIDE ACL verification status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-651030': {
+        'status':
+          'not_applicable' if (_651030_result.stdout is search('^NA:')
+                              or (rhel9_attest_alt_fim_tool | bool))
+          else ('not_a_finding' if _651030_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open'),
+        'finding_details': _651030_result.stdout | trim,
+        'comments': 'Add acl to the rule macro in /etc/aide.conf, e.g.: NORMAL = ...+acl+...'
+      }
+    }) }}"
+  tags: [validate]

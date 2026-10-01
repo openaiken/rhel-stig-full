@@ -1,0 +1,35 @@
+---
+# RHEL-09-611145 | V-258118
+# RHEL 9 must not be configured to bypass password requirements for
+# privilege escalation.
+# CAT II (Medium) | CCI-004895, CCI-002038
+
+# pam_succeed_if in /etc/pam.d/sudo allows bypassing password requirements
+# based on group membership or other criteria — this is always a finding.
+
+- name: RHEL-09-611145 | check for pam_succeed_if in /etc/pam.d/sudo
+  shell: |
+    findings=$(grep -v '^\s*#' /etc/pam.d/sudo 2>/dev/null \
+               | grep 'pam_succeed_if' || true)
+    if [ -n "$findings" ]; then
+      echo "STATUS: FAIL"
+      echo "$findings"
+    else
+      echo "STATUS: PASS"
+      echo "PASS: pam_succeed_if not present in /etc/pam.d/sudo"
+    fi
+  register: _611145_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-611145 | record pam_succeed_if sudo status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-611145': {
+        'status': 'not_a_finding' if _611145_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
+        'finding_details': _611145_result.stdout | trim,
+        'comments': 'Remove pam_succeed_if lines from /etc/pam.d/sudo'
+      }
+    }) }}"
+  tags: [validate]

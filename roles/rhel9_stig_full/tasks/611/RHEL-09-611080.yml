@@ -1,0 +1,59 @@
+---
+# RHEL-09-611080 | V-258105
+# RHEL 9 passwords must have a 24 hours minimum password lifetime
+# restriction in /etc/shadow.
+# CAT II (Medium) | CCI-004066, CCI-000198
+
+# Field 4 of /etc/shadow is the minimum days between password changes.
+# Value < 1 (including 0) is a finding for interactive accounts.
+# System accounts (UID < 1000) and accounts with no login shell are excluded.
+# REMEDIATION NOTE: in SSSD/IdM environments, password policy for domain users
+# is managed through IdM password policy (ipa pwpolicy-mod), not /etc/shadow.
+# This check only applies to local accounts. IdM-managed accounts may show
+# field 4 as 0 in shadow with no security implication. Verify before remediating.
+
+- name: RHEL-09-611080 | check shadow minimum password age
+  shell: |
+    findings=""
+    while IFS=: read -r user shadow_pw last_change min_days rest; do
+      # skip blank lines
+      [ -z "$user" ] && continue
+      # skip system accounts (UID < 1000)
+      uid=$(getent passwd "$user" 2>/dev/null | cut -d: -f3)
+      [ -z "$uid" ] && continue
+      [ "$uid" -lt 1000 ] && continue
+      # skip accounts with locked or no login shell
+      shell=$(getent passwd "$user" 2>/dev/null | cut -d: -f7)
+      [[ "$shell" == "/sbin/nologin" || "$shell" == "/bin/false" || "$shell" == "/usr/sbin/nologin" ]] && continue
+
+      # A blank field means no minimum, which the STIG awk ($4 < 1) flags. It used
+      # to be skipped before the interactive-account filter, so it passed.
+      if [ -z "$min_days" ]; then
+        findings="${findings}FAIL: $user has a blank min_days (no minimum) in /etc/shadow\n"
+      elif [ "$min_days" -lt 1 ]; then
+        findings="${findings}FAIL: $user has min_days=$min_days in /etc/shadow\n"
+      fi
+    done < /etc/shadow
+
+    if [ -n "$findings" ]; then
+      echo "STATUS: FAIL"
+      echo -e "$findings" | sed '/^$/d'
+    else
+      echo "STATUS: PASS"
+      echo "PASS: all interactive accounts have min_days >= 1"
+    fi
+  register: _611080_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-611080 | record shadow min age status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-611080': {
+        'status': 'not_a_finding' if _611080_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
+        'finding_details': _611080_result.stdout | trim,
+        'comments': 'Set minimum password age: passwd -n 1 <username>'
+      }
+    }) }}"
+  tags: [validate]

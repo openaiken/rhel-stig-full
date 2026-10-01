@@ -1,0 +1,30 @@
+---
+# RHEL-09-231025 | V-257846
+# RHEL 9 must use a separate file system for /var/log.
+# CAT III (Low) | CCI-000366
+
+# Checks that /var/log is mounted as a separate filesystem.
+
+- name: RHEL-09-231025 | check /var/log is a separate filesystem
+  shell: awk '$2 == "/var/log"' /proc/mounts
+  register: _231025_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-231025 | record /var/log separate filesystem status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-231025': {
+        'status': 'not_a_finding' if (_231025_result.stdout | trim) else 'open',
+        'finding_details':
+          '/proc/mounts entry: '
+          ~ (_231025_result.stdout | trim if _231025_result.stdout | trim else '(not a separate mount - FINDING)')
+          ~ '\nResult: '
+          ~ ('not_a_finding - /var/log is a separate filesystem'
+             if (_231025_result.stdout | trim)
+             else 'OPEN - /var/log is not on a separate filesystem'),
+        'comments': 'Requires a dedicated partition or logical volume. Configure in /etc/fstab.'
+      }
+    }) }}"
+  tags: [validate]

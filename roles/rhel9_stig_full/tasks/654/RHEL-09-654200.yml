@@ -1,0 +1,40 @@
+---
+# RHEL-09-654200 | V-258214
+# Successful/unsuccessful uses of the shutdown command in RHEL 9 must generate
+# an audit record.
+# CAT II (Medium) | CCI-000172
+
+# The STIG reads the persistent rule files for this rule
+# (cat /etc/audit/rules.d/*), so the files are parsed rather than auditctl -l.
+# Each expected rule below (from the STIG check text) must be covered by a
+# rule that records at least the same events; keys, syscall order, merged
+# syscall lists, -w watches and auid!=unset are all accepted. See
+# filter_plugins/audit_rules.py. The formal role checked for its own lines in
+# /etc/audit/rules.d/audit.rules, so hosts hardened any other way were open.
+
+- name: RHEL-09-654200 | read audit rules
+  shell: cat /etc/audit/rules.d/*.rules 2>/dev/null || true
+  register: _654200_rules
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-654200 | record audit rule coverage
+  vars:
+    _654200_expected:
+      - "-a always,exit -S all -F path=/usr/sbin/shutdown -F perm=x -F auid>=1000 -F auid!=-1 -F key=privileged-shutdown"
+    _654200_cov: "{{ _654200_rules.stdout | default('') | rhel9_audit_coverage(_654200_expected) }}"
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-654200': {
+        'status':
+          'not_a_finding'
+          if (_654200_rules.rc | default(1) == 0 and _654200_cov.loaded > 0 and _654200_cov.missing | length == 0)
+          else 'open',
+        'finding_details': _654200_cov.report,
+        'comments':
+          'Add rules covering each MISSING line to a file in /etc/audit/rules.d/, '
+          ~ 'then run augenrules --load. Any key may be used.'
+      }
+    }) }}"
+  tags: [validate]

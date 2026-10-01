@@ -1,0 +1,89 @@
+---
+# RHEL-09-652055 | V-258149
+# RHEL 9 must be configured to forward audit records via TCP to a different
+# system or media from the system being audited via rsyslog.
+# CAT II (Medium) | CCI-001851
+
+# Checks for either forwarding syntax in rsyslog config:
+# - Legacy: @@ prefix (TCP) on a forwarding rule
+# - Rainer script: action with type="omfwd"
+# Single @ (UDP) is not TCP and would not satisfy this rule.
+#
+# If another tool handles log off-loading (SPLUNK, Elastic/Filebeat, Fluentd,
+# auditd audisp-remote, etc.), rsyslog forwarding may not be configured and
+# that is acceptable with attestation. Set rhel9_attest_alt_log_offload: true
+# and describe the mechanism in rhel9_attest_alt_log_offload_method.
+# Unlike 652025 (which is not_applicable with an alt tool), this rule IS
+# being met by the alt tool, so the status is not_a_finding.
+#
+# A forward to logcollector, the DISA role default placeholder, is a finding
+# regardless of attestation. Otherwise this checks a forwarding rule exists;
+# it does not verify the destination is reachable or that TLS is configured.
+
+- name: RHEL-09-652055 | check rsyslog is forwarding audit records via TCP
+  shell: |
+    if ! rpm -q rsyslog &>/dev/null; then
+      echo "STATUS: FAIL"
+      echo "FAIL: rsyslog not installed and no forwarding configured"
+      exit 0
+    fi
+
+    # Legacy TCP forwarding: @@ prefix (double-@ = TCP, single-@ = UDP)
+    legacy=$(grep -rh '@@' /etc/rsyslog.conf /etc/rsyslog.d/ 2>/dev/null \
+             | grep -v '^\s*#' || true)
+
+    # Rainer script omfwd action
+    rainer=$(grep -rh 'type="omfwd"' /etc/rsyslog.conf /etc/rsyslog.d/ 2>/dev/null \
+             | grep -v '^\s*#' || true)
+
+    # Forwarding targets: the host after @@ (optionally @@(options)) in legacy
+    # syntax, and target="..." in Rainer script.
+    targets=$( { echo "$legacy" | sed -nE 's/.*@@(\([^)]*\))?\[?([^]:; ]+).*/\2/p'
+                 echo "$rainer" | sed -nE 's/.*target="([^"]+)".*/\1/p'; } | sort -u)
+    [ -n "$legacy" ] && echo "LEGACY (@@): $legacy"
+    [ -n "$rainer" ] && echo "RAINER (omfwd): $rainer"
+    echo "TARGETS: $(echo $targets)"
+
+    # logcollector is the DISA role default target, a placeholder. Its
+    # presence is a finding whatever else is configured; a forward to it does
+    # not offload anything. Any /etc/hosts entry for it is shown for context.
+    if echo "$targets" | grep -qix 'logcollector'; then
+      echo "STATUS: FAIL"
+      echo "FAIL: forwarding target logcollector is the DISA role placeholder"
+      echo "/etc/hosts entry for logcollector: $(awk '!/^[[:space:]]*#/ {for (i = 2; i <= NF; i++) if (tolower($i) == "logcollector") print $0}' /etc/hosts | head -1)"
+      echo "PLACEHOLDER: true"
+    elif [ -n "$targets" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: no TCP remote forwarding found in rsyslog configuration"
+      echo "INFO: checked /etc/rsyslog.conf and /etc/rsyslog.d/"
+    fi
+  register: _652055_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-652055 | record rsyslog TCP forwarding status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-652055': {
+        'status':
+          'not_a_finding' if _652055_result.stdout is search('^STATUS: PASS', multiline=True)
+          else ('open' if 'PLACEHOLDER: true' in _652055_result.stdout
+          else ('not_a_finding' if (rhel9_attest_alt_log_offload | bool)
+          else 'open')),
+        'finding_details':
+          _652055_result.stdout | trim
+          ~ '\nAttestation (rhel9_attest_alt_log_offload): '
+          ~ (rhel9_attest_alt_log_offload | bool | string | lower)
+          ~ '\nAlt offload method: '
+          ~ (rhel9_attest_alt_log_offload_method
+             if rhel9_attest_alt_log_offload_method else '(not provided)'),
+        'comments':
+          'Add TCP forwarding to /etc/rsyslog.d/forward.conf. '
+          ~ 'Legacy syntax: *.* @@logserver.example.com:514 '
+          ~ '| Rainer script: action(type=omfwd target=logserver port=514 protocol=tcp)'
+      }
+    }) }}"
+  tags: [validate]

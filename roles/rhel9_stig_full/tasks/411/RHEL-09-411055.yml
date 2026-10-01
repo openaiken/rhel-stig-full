@@ -1,0 +1,78 @@
+---
+# RHEL-09-411055 | V-258050
+# Executable search paths within the initialization files of all local
+# interactive RHEL 9 users must only contain paths that resolve to the system
+# default or the users home directory.
+# CAT II (Medium) | CCI-000366
+
+# The check looks for PATH= lines in user init files (~/.bashrc, ~/.bash_profile,
+# etc.) and /etc/profile.d/*.sh. A path component that is an absolute path
+# starting with '/' but not '/home' or a $HOME/$USER-relative expression,
+# and is not an approved system default path, is a potential finding.
+# Because PATH composition varies widely, this check reports all PATH= lines
+# found and flags any that contain suspicious entries (e.g. '.' or '../').
+# Reviewers must verify absolute non-home paths are organizationally approved.
+
+- name: RHEL-09-411055 | check PATH statements in interactive user init files
+  shell: |
+    # Per the STIG command, user init files only. Every PATH component must be
+    # the inherited $PATH or inside the user home ($HOME, ~, or the literal
+    # home path). Anything else is outside the home: an absolute path such as
+    # /opt/tool/bin, a relative path, . or .., or an empty component (which
+    # means the current directory). This used to pass everything except a
+    # literal . or .. component, and also scanned global profile files the
+    # STIG does not cover.
+    findings=""
+    lines=""
+    while IFS=: read -r username _ uid _ _ homedir shell; do
+      [ "$uid" -lt 1000 ] 2>/dev/null && continue
+      [[ "$shell" =~ nologin|/false$ ]] && continue
+      [ -d "$homedir" ] || continue
+      while IFS= read -r initfile; do
+        while IFS= read -r line; do
+          [[ "$line" =~ ^[[:space:]]*# ]] && continue
+          [[ "$line" =~ (^|[[:space:];])(export[[:space:]]+)?PATH=(.*)$ ]] || continue
+          lines="${lines}FILE: ${initfile}: ${line}\n"
+          value=${BASH_REMATCH[3]}
+          value=${value%%[[:space:];]*}
+          value=${value//\"/}
+          value=${value//\'/}
+          IFS=':' read -ra comps <<< "$value:"
+          for c in "${comps[@]}"; do
+            case "$c" in
+              '$PATH'|'${PATH}') ;;
+              '$HOME'|'${HOME}'|'$HOME/'*|'${HOME}/'*|'~'|'~/'*) ;;
+              "$homedir"|"$homedir"/*) ;;
+              *) findings="${findings}FAIL: ${initfile}: PATH component '${c:-(empty = current directory)}' is outside ${homedir}\n" ;;
+            esac
+          done
+        done < "$initfile"
+      done < <(find "$homedir" -maxdepth 1 -type f -name ".[^.]*" 2>/dev/null)
+    done < /etc/passwd
+    if [ -n "$findings" ]; then
+      echo "STATUS: FAIL"
+      echo -e "$findings" | sed '/^$/d'
+    else
+      echo "STATUS: PASS"
+    fi
+    if [ -n "$lines" ]; then
+      echo "ALL PATH lines found:"
+      echo -e "$lines" | sed '/^$/d'
+    fi
+  register: _411055_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-411055 | record PATH init file check status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-411055': {
+        'status': 'not_a_finding' if _411055_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
+        'finding_details': _411055_result.stdout | trim,
+        'comments':
+          'Remove PATH components outside the user home from user init files, '
+          ~ 'or document them with the ISSO as an operational requirement.'
+      }
+    }) }}"
+  tags: [validate]

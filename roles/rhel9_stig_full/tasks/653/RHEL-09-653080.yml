@@ -1,0 +1,71 @@
+---
+# RHEL-09-653080 | V-258165
+# RHEL 9 audit logs must be group-owned by root or by a restricted logging
+# group to prevent unauthorized read access.
+# CAT II (Medium) | CCI-000162, CCI-000163
+
+# Reads log_group and log_file from auditd.conf. If log_group is not set,
+# root is required. Checks all files in the audit log directory.
+
+- name: RHEL-09-653080 | check audit log file group ownership
+  shell: |
+    conf=/etc/audit/auditd.conf
+    if [ ! -f "$conf" ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: $conf not found"
+      exit 0
+    fi
+
+    log_file=$(grep -E '^\s*log_file\s*=' "$conf" | awk -F'=' '{print $2}' | xargs)
+    log_file=${log_file:-/var/log/audit/audit.log}
+    log_dir=$(dirname "$log_file")
+
+    log_group=$(grep -E '^\s*log_group\s*=' "$conf" | awk -F'=' '{print $2}' | xargs)
+    log_group=${log_group:-root}
+    echo "INFO: expected group: $log_group (from auditd.conf log_group)"
+
+    if [ ! -d "$log_dir" ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: log directory $log_dir does not exist"
+      exit 0
+    fi
+
+    findings=""
+    while IFS= read -r f; do
+      grp=$(stat -c '%G' "$f" 2>/dev/null)
+      if [ "$grp" = "$log_group" ]; then
+        findings="${findings}PASS: $f (group: $grp)\n"
+      else
+        findings="${findings}FAIL: $f (group: $grp, expected: $log_group)\n"
+      fi
+    done < <(find "$log_dir" -maxdepth 1 -type f 2>/dev/null)
+
+    if [ -z "$findings" ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: no audit log files found in $log_dir"
+    elif echo -e "$findings" | grep -q '^FAIL:'; then
+      echo "STATUS: FAIL"
+    else
+      echo "STATUS: PASS"
+    fi
+    echo -e "$findings" | sed '/^$/d'
+  register: _653080_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-653080 | record audit log group ownership status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-653080': {
+        'status':
+          'not_a_finding' if _653080_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details': _653080_result.stdout | trim,
+        'comments':
+          'Run: chgrp root /var/log/audit/audit.log* (or the configured log_group). '
+          ~ 'If a non-root group is authorized, set log_group in '
+          ~ '/etc/audit/auditd.conf and restart auditd.'
+      }
+    }) }}"
+  tags: [validate]

@@ -1,0 +1,44 @@
+---
+# RHEL-09-213025 | V-257800
+# RHEL 9 must restrict exposed kernel pointer addresses access.
+# CAT II (Medium) | CCI-001082, CCI-002824
+
+# The STIG checks the running value (sysctl). The formal role's sysctl task
+# compares against /etc/sysctl.conf, so a host setting this in
+# /etc/sysctl.d/ (as ComplianceAsCode does) was reported open while
+# compliant. The value persisted by the sysctl configuration is shown for
+# context.
+
+- name: RHEL-09-213025 | check kernel.kptr_restrict (running value)
+  shell: |
+    want='1'
+    got=$(sysctl -n kernel.kptr_restrict 2>&1)
+    persisted=$(/usr/lib/systemd/systemd-sysctl --cat-config 2>/dev/null \
+      | grep -E '^[[:space:]]*-?kernel[.]kptr_restrict[[:space:]]*=' | tail -1 | cut -d= -f2- | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    echo "RUNTIME: kernel.kptr_restrict = $got"
+    echo "PERSISTED (systemd-sysctl --cat-config, last wins): ${persisted:-(not set)}"
+    if [ "$got" = "$want" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: running value must be $want"
+    fi
+  register: _213025_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-213025 | record kernel.kptr_restrict status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-213025': {
+        'status':
+          'not_a_finding' if _213025_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _213025_result.stdout | trim,
+        'comments':
+          'Set kernel.kptr_restrict = 1 in a file in /etc/sysctl.d/ and apply it: sysctl --system'
+      }
+    }) }}"
+  tags: [validate]

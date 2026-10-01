@@ -1,0 +1,50 @@
+---
+# RHEL-09-212020 | V-257789
+# RHEL 9 must require a unique superusers name upon booting into single-user and maintenance modes.
+# CAT I (High) | CCI-000213
+#
+# Operator must declare the configured superuser name in rhel9_grub_superuser
+# (group_vars/all/stig_controls.yml). The check verifies the name is non-common
+# and present in /etc/grub2.cfg.
+
+- name: RHEL-09-212020 | read grub2 superusers line
+  command: grep -i 'set superusers' /etc/grub2.cfg
+  register: _212020_superusers
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-212020 | record grub superuser name status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-212020': {
+        'status':
+          'not_a_finding'
+          if (rhel9_grub_superuser
+              and rhel9_grub_superuser | lower not in ['root', 'admin', 'administrator']
+              and rhel9_grub_superuser in (_212020_superusers.stdout | default('')))
+          else 'open',
+        'finding_details':
+          'Declared superuser (rhel9_grub_superuser): '
+          ~ (rhel9_grub_superuser if rhel9_grub_superuser else '(not set)')
+          ~ '\ngrub2.cfg superusers line: '
+          ~ (_212020_superusers.stdout | default('') | trim
+             if _212020_superusers.stdout | default('') | trim else '(not found)')
+          ~ '\nResult: '
+          ~ ('not_a_finding - unique superuser name is declared and present in grub2.cfg'
+             if (rhel9_grub_superuser
+                 and rhel9_grub_superuser | lower not in ['root', 'admin', 'administrator']
+                 and rhel9_grub_superuser in (_212020_superusers.stdout | default('')))
+             else ('OPEN - rhel9_grub_superuser is not set in stig_controls.yml'
+                   if not rhel9_grub_superuser
+                   else ('OPEN - declared name is a prohibited common name'
+                         if rhel9_grub_superuser | lower in ['root', 'admin', 'administrator']
+                         else 'OPEN - declared name not found in /etc/grub2.cfg; check grub config'))),
+        'comments':
+          'Set rhel9_grub_superuser to the configured non-default grub superuser name '
+          ~ 'in group_vars/all/stig_controls.yml. '
+          ~ 'To configure: edit /etc/grub.d/01_users with a unique username, '
+          ~ 'then run: sudo grub2-mkconfig -o /boot/grub2/grub.cfg'
+      }
+    }) }}"
+  tags: [validate]

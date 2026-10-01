@@ -1,0 +1,40 @@
+---
+# RHEL-09-654275 | V-258229
+# RHEL 9 audit system must protect auditing rules from unauthorized change.
+# CAT II (Medium) | CCI-000162, CCI-000163, CCI-000164
+
+# The STIG reads /etc/audit/audit.rules, the file augenrules generates from
+# rules.d. The formal role checks for its own line in rules.d/audit.rules, so a
+# host setting this in another rules.d file was reported open while compliant.
+# The STIG requires -e 2 as the last rule.
+
+- name: RHEL-09-654275 | check audit rules immutable -e 2 last
+  shell: |
+    rules=$(grep -vE '^[[:space:]]*(#|$)' /etc/audit/audit.rules 2>/dev/null)
+    last=$(echo "$rules" | tail -1 | sed 's/[[:space:]]*$//')
+    echo "last rule in audit.rules: ${last:-(none)}"
+    if [[ "$last" =~ ^[[:space:]]*-e[[:space:]]+2$ ]]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: the last rule must be -e 2"
+    fi
+  register: _654275_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-654275 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-654275': {
+        'status':
+          'not_a_finding' if _654275_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _654275_result.stdout | trim,
+        'comments':
+          'Put -e 2 in the last-sorting file in /etc/audit/rules.d/ (e.g. 99-finalize.rules) and run augenrules --load.'
+      }
+    }) }}"
+  tags: [validate]

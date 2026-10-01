@@ -1,0 +1,46 @@
+---
+# RHEL-09-412040 | V-258069
+# RHEL 9 must limit the number of concurrent sessions to ten for all accounts
+# and/or account types.
+# CAT III (Low) | CCI-000054
+
+# The formal role checks for its own line in one specific file, so a host
+# configured equivalently elsewhere (a drop-in, other spacing or case) was
+# reported open while compliant.
+# Every uncommented maxlogins entry must be 10 or less, with at least one. A
+# documented ISSO exception is accepted (rhel9_attest_documented_exceptions).
+
+- name: RHEL-09-412040 | check maxlogins limits
+  shell: |
+    lines=$(grep -hsE '^[[:space:]]*[^#[:space:]]+[[:space:]]+(hard|-)[[:space:]]+maxlogins[[:space:]]+' \
+      /etc/security/limits.conf /etc/security/limits.d/*.conf)
+    echo "maxlogins entries:"; echo "${lines:-  (none)}"
+    bad=$(echo "$lines" | awk 'NF >= 4 && !($4 ~ /^[0-9]+$/ && $4 + 0 <= 10)')
+    if [ -n "$lines" ] && [ -z "$bad" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: maxlogins must be set, 10 or less, for every domain that sets it"
+    fi
+  register: _412040_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-412040 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-412040': {
+        'status':
+          'not_a_finding' if _412040_result.stdout is search('^STATUS: PASS', multiline=True)
+          else ('not_a_finding' if (rhel9_attest_documented_exceptions | default({})).get('RHEL-09-412040')
+          else 'open'),
+        'finding_details':
+          _412040_result.stdout | trim
+          ~ '\nDocumented exception (rhel9_attest_documented_exceptions): '
+          ~ ((rhel9_attest_documented_exceptions | default({})).get('RHEL-09-412040') or '(none)'),
+        'comments':
+          'Add * hard maxlogins 10 to /etc/security/limits.conf or a file in limits.d.'
+      }
+    }) }}"
+  tags: [validate]

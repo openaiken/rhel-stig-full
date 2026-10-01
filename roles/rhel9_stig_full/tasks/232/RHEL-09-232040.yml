@@ -1,0 +1,26 @@
+---
+# RHEL-09-232040 | V-257888
+# RHEL 9 permissions of cron configuration files and directories must not be
+# modified from the vendor values.
+# CAT II (Medium) | CCI-000366
+
+- name: RHEL-09-232040 | check cron package file mode changes from vendor defaults
+  shell: >-
+    rpm --verify cronie crontabs 2>&1 | awk '! ($2 == "c" && $1 ~ /^.\..\.\.\.\..\./) {print $0}' || true
+  register: _232040_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-232040 | record cron permissions status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-232040': {
+        'status': 'not_a_finding' if not (_232040_result.stdout | trim) else 'open',
+        'finding_details':
+          'cronie files with mode changed from vendor defaults:\n'
+          ~ (_232040_result.stdout | trim if _232040_result.stdout | trim else '(none)'),
+        'comments': 'Restore vendor permissions with: rpm --setperms cronie'
+      }
+    }) }}"
+  tags: [validate]

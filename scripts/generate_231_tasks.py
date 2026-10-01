@@ -10,7 +10,7 @@ import json
 import os
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TASKS_DIR = os.path.join(REPO, 'roles', 'rhel9_stig_supplement', 'tasks')
+TASKS_DIR = os.path.join(REPO, 'roles', 'rhel9_stig_full', 'tasks')
 
 with open(os.path.join(REPO, 'files', 'rules.json')) as f:
     RULES = json.load(f)
@@ -105,7 +105,7 @@ SEPARATE_FS_TMPL = """\
 
 - name: ##SID## | record ##MP## separate filesystem status
   set_fact:
-    supp_facts: "{{ supp_facts | combine({
+    stig_facts: "{{ stig_facts | combine({
       '##SID##': {
         'status': 'not_a_finding' if (##VNAME##.stdout | trim) else 'open',
         'finding_details':
@@ -134,7 +134,7 @@ MOUNT_OPT_TMPL = """\
 
 - name: ##SID## | record ##MP## ##OPT## mount option status
   set_fact:
-    supp_facts: "{{ supp_facts | combine({
+    stig_facts: "{{ stig_facts | combine({
       '##SID##': {
         'status':
           'not_a_finding'
@@ -168,7 +168,7 @@ AUTOFS_TMPL = """\
 
 - name: ##SID## | record autofs status
   set_fact:
-    supp_facts: "{{ supp_facts | combine({
+    stig_facts: "{{ stig_facts | combine({
       '##SID##': {
         'status':
           'not_applicable'
@@ -212,7 +212,7 @@ NFS_OPT_TMPL = """\
 
 - name: ##SID## | record NFS ##OPT## status
   set_fact:
-    supp_facts: "{{ supp_facts | combine({
+    stig_facts: "{{ stig_facts | combine({
       '##SID##': {
         'status':
           'not_applicable' if not (##VNAME##_all.stdout | trim)
@@ -252,7 +252,7 @@ REMOVABLE_OPT_TMPL = """\
 
 - name: ##SID## | record removable media ##OPT## status
   set_fact:
-    supp_facts: "{{ supp_facts | combine({
+    stig_facts: "{{ stig_facts | combine({
       '##SID##': {
         'status':
           'not_applicable' if not (##VNAME##_all.stdout | trim)
@@ -294,7 +294,7 @@ BOOT_EFI_OPT_TMPL = """\
 
 - name: ##SID## | record /boot/efi ##OPT## status
   set_fact:
-    supp_facts: "{{ supp_facts | combine({
+    stig_facts: "{{ stig_facts | combine({
       '##SID##': {
         'status':
           'not_applicable' if not ##VNAME##_efi.stat.exists
@@ -332,7 +332,7 @@ ENCRYPTION_TMPL = """\
 
 - name: ##SID## | record disk encryption status
   set_fact:
-    supp_facts: "{{ supp_facts | combine({
+    stig_facts: "{{ stig_facts | combine({
       '##SID##': {
         'status':
           'not_applicable' if rhel9_attest_disk_encryption_na | bool
@@ -372,7 +372,7 @@ NODEV_NONROOT_TMPL = """\
 
 - name: ##SID## | record nodev non-root partition status
   set_fact:
-    supp_facts: "{{ supp_facts | combine({
+    stig_facts: "{{ stig_facts | combine({
       '##SID##': {
         'status': 'not_a_finding' if not (##VNAME##.stdout | trim) else 'open',
         'finding_details':
@@ -460,7 +460,7 @@ def main():
     for sid in generated:
         print(f"\n- import_tasks: {sid}.yml")
         print(f"  tags: [{sid}]")
-        print(f"  when: supp_rules['{sid}'] | default(true) | bool")
+        print(f"  when: stig_rules['{sid}'] | default(true) | bool")
 
 
 if __name__ == '__main__':

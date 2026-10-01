@@ -1,0 +1,45 @@
+---
+# RHEL-09-411050 | V-258049
+# RHEL 9 must disable account identifiers after 35 days of inactivity.
+# CAT II (Medium) | CCI-000795
+
+- name: RHEL-09-411050 | check INACTIVE setting in useradd defaults
+  shell: |
+    # Last uncommented line only. xargs used to join several lines into one
+    # string such as "35 -1", every numeric test then errored, and the script
+    # fell through to PASS.
+    val=$(grep -i '^\s*INACTIVE\s*=' /etc/default/useradd 2>/dev/null | tail -1 | cut -d= -f2 | tr -d '[:space:]')
+    if [ -z "$val" ]; then
+      echo "STATUS: FAIL"
+      echo "RAW: INACTIVE not set in /etc/default/useradd"
+    elif ! [[ "$val" =~ ^-?[0-9]+$ ]]; then
+      echo "STATUS: FAIL"
+      echo "RAW: INACTIVE=$val is not a number"
+    elif [ "$val" -eq -1 ]; then
+      echo "STATUS: FAIL"
+      echo "RAW: INACTIVE=-1 (disabled, must be 1-35)"
+    elif [ "$val" -gt 35 ]; then
+      echo "STATUS: FAIL"
+      echo "RAW: INACTIVE=$val (must be <= 35)"
+    elif [ "$val" -le 0 ]; then
+      echo "STATUS: FAIL"
+      echo "RAW: INACTIVE=$val (must be 1-35)"
+    else
+      echo "STATUS: PASS"
+      echo "RAW: INACTIVE=$val"
+    fi
+  register: _411050_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-411050 | record account inactivity setting status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-411050': {
+        'status': 'not_a_finding' if _411050_result.stdout is search('^STATUS: PASS', multiline=True) else 'open',
+        'finding_details': _411050_result.stdout | trim,
+        'comments': 'Set with: sudo useradd -D -f 35 (sets INACTIVE=35 in /etc/default/useradd)'
+      }
+    }) }}"
+  tags: [validate]

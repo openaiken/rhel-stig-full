@@ -1,0 +1,66 @@
+---
+# RHEL-09-653090 | V-258167
+# RHEL 9 audit logs file must have mode 0600 or less permissive to prevent
+# unauthorized access to the audit log.
+# CAT II (Medium) | CCI-000162
+
+# Checks all files in the audit log directory against a bitmask of the bits
+# 0600 forbids (8#177): any group or other bit, or owner execute, fails.
+
+- name: RHEL-09-653090 | check audit log file permissions
+  shell: |
+    conf=/etc/audit/auditd.conf
+    if [ ! -f "$conf" ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: $conf not found"
+      exit 0
+    fi
+
+    log_file=$(grep -E '^\s*log_file\s*=' "$conf" | awk -F'=' '{print $2}' | xargs)
+    log_file=${log_file:-/var/log/audit/audit.log}
+    log_dir=$(dirname "$log_file")
+
+    if [ ! -d "$log_dir" ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: log directory $log_dir does not exist"
+      exit 0
+    fi
+
+    findings=""
+    while IFS= read -r f; do
+      mode=$(stat -c '%a' "$f" 2>/dev/null)
+      # Bitmask of the bits 0600 forbids. This compared the mode as a number
+      # (-le 384, i.e. 0600), so 0006, 0060 and 0444 all passed.
+      if [ -n "$mode" ] && [ $(( 8#$mode & 8#177 )) -eq 0 ]; then
+        findings="${findings}PASS: $f ($mode)\n"
+      else
+        findings="${findings}FAIL: $f ($mode) - must be 0600 or less permissive\n"
+      fi
+    done < <(find "$log_dir" -maxdepth 1 -type f 2>/dev/null)
+
+    if [ -z "$findings" ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: no audit log files found in $log_dir"
+    elif echo -e "$findings" | grep -q '^FAIL:'; then
+      echo "STATUS: FAIL"
+    else
+      echo "STATUS: PASS"
+    fi
+    echo -e "$findings" | sed '/^$/d'
+  register: _653090_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-653090 | record audit log file permissions status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-653090': {
+        'status':
+          'not_a_finding' if _653090_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details': _653090_result.stdout | trim,
+        'comments': 'Run: chmod 0600 /var/log/audit/audit.log*'
+      }
+    }) }}"
+  tags: [validate]

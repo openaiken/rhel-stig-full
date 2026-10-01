@@ -1,0 +1,32 @@
+---
+# RHEL-09-255115 | V-257999
+# RHEL 9 SSH server configuration files' permissions must not be modified.
+# CAT II (Medium) | CCI-000366
+
+# Uses rpm --verify to detect mode/permission changes on openssh-server config
+# files. The awk filter excludes ghost files (type 'c') with only mtime changes,
+# matching the STIG check procedure exactly.
+
+- name: RHEL-09-255115 | verify openssh-server config file permissions
+  shell: >
+    rpm --verify openssh-server 2>/dev/null |
+    awk '! ($2 == "c" && $1 ~ /^.\..\.\.\.\..\./) {print $0}' || true
+  register: _255115_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-255115 | record sshd config permission status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-255115': {
+        'status': 'not_a_finding' if not (_255115_result.stdout | trim) else 'open',
+        'finding_details':
+          'rpm --verify openssh-server output:\n'
+          ~ (_255115_result.stdout | trim if _255115_result.stdout | trim else '(no discrepancies)'),
+        'comments':
+          'Restore original permissions: sudo rpm --setperms openssh-server && '
+          ~ 'sudo rpm --setugids openssh-server'
+      }
+    }) }}"
+  tags: [validate]

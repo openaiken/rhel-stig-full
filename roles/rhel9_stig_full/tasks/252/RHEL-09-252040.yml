@@ -1,0 +1,47 @@
+---
+# RHEL-09-252040 | V-257949
+# RHEL 9 must configure a DNS processing mode in Network Manager.
+# CAT II (Medium) | CCI-000366
+
+# The formal role checks for its own line in one specific file, so a host
+# configured equivalently elsewhere (a drop-in, other spacing or case) was
+# reported open while compliant.
+# Read from NetworkManager --print-config, the merged configuration, as the
+# STIG does. Another resolver documented with the ISSO is accepted
+# (rhel9_attest_documented_exceptions).
+
+- name: RHEL-09-252040 | check NetworkManager DNS mode
+  shell: |
+    val=$(NetworkManager --print-config 2>/dev/null | awk '
+      /^[[:space:]]*\[/ { sec = $0; next }
+      sec == "[main]" && $0 ~ /^[[:space:]]*dns[[:space:]]*=/ { v = $0; sub(/^[^=]*=[[:space:]]*/, "", v) }
+      END { print v }')
+    echo "[main] dns (NetworkManager --print-config): ${val:-(not set)}"
+    if [[ "$val" =~ ^(default|none|systemd-resolved)$ ]]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: dns in [main] must be default, none or systemd-resolved"
+    fi
+  register: _252040_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-252040 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-252040': {
+        'status':
+          'not_a_finding' if _252040_result.stdout is search('^STATUS: PASS', multiline=True)
+          else ('not_a_finding' if (rhel9_attest_documented_exceptions | default({})).get('RHEL-09-252040')
+          else 'open'),
+        'finding_details':
+          _252040_result.stdout | trim
+          ~ '\nDocumented exception (rhel9_attest_documented_exceptions): '
+          ~ ((rhel9_attest_documented_exceptions | default({})).get('RHEL-09-252040') or '(none)'),
+        'comments':
+          'Set dns=none (or default, systemd-resolved) under [main] in a file in /etc/NetworkManager/conf.d/.'
+      }
+    }) }}"
+  tags: [validate]

@@ -1,0 +1,39 @@
+---
+# RHEL-09-211040 | V-257783
+# RHEL 9 systemd-journald service must be enabled.
+# CAT II (Medium) | CCI-001665
+
+# Previously decided only by the formal role, whose check-mode result says
+# whether a task would change something. Checked here directly, as the STIG
+# command does, so the formal role is no longer needed for assessment.
+
+- name: RHEL-09-211040 | check systemd-journald is active
+  shell: |
+    active=$(systemctl is-active systemd-journald 2>/dev/null)
+    sub=$(systemctl show systemd-journald -p SubState --value 2>/dev/null)
+    echo "systemd-journald: ActiveState=${active:-unknown} SubState=${sub:-unknown}"
+    if [ "$active" = "active" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: systemd-journald is not active"
+    fi
+  register: _211040_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-211040 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-211040': {
+        'status':
+          'not_a_finding' if _211040_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _211040_result.stdout | trim,
+        'comments':
+          'Enable and start it: sudo systemctl enable --now systemd-journald'
+      }
+    }) }}"
+  tags: [validate]

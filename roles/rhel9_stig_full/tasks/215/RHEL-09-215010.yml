@@ -1,0 +1,41 @@
+---
+# RHEL-09-215010 | V-257825
+# RHEL 9 subscription-manager package must be installed.
+# CAT II (Medium) | CCI-003992, CCI-001749
+
+# Previously decided only by the formal role, whose check-mode result says
+# whether a task would change something. Checked here directly, as the STIG
+# command does, so the formal role is no longer needed for assessment.
+# Not applicable on a system that is not internet connected: record that in
+# rhel9_attest_documented_exceptions.
+
+- name: RHEL-09-215010 | check subscription-manager is installed
+  shell: |
+    if rpm -q --quiet subscription-manager; then state=installed; else state="not installed"; fi
+    echo "subscription-manager: $state ($(rpm -q subscription-manager 2>&1 | head -1))"
+    if [ "$state" = "installed" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: subscription-manager must be installed"
+    fi
+  register: _215010_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-215010 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-215010': {
+        'status':
+          'not_applicable' if ((rhel9_attest_documented_exceptions | default({})).get('RHEL-09-215010'))
+          else 'not_a_finding' if _215010_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _215010_result.stdout | trim,
+        'comments':
+          'Install the package: sudo dnf install subscription-manager'
+      }
+    }) }}"
+  tags: [validate]

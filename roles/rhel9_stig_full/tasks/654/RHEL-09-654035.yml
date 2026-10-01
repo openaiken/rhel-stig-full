@@ -1,0 +1,38 @@
+---
+# RHEL-09-654035 | V-258181
+# RHEL 9 must audit all uses of the chacl command.
+# CAT II (Medium) | CCI-000130, CCI-000135, CCI-000169, CCI-000172, CCI-002884
+
+# Loaded rules (auditctl -l), as the STIG check reads them.
+# Each expected rule below (from the STIG check text) must be covered by a
+# rule that records at least the same events; keys, syscall order, merged
+# syscall lists, -w watches and auid!=unset are all accepted. See
+# filter_plugins/audit_rules.py. The formal role checked for its own lines in
+# /etc/audit/rules.d/audit.rules, so hosts hardened any other way were open.
+
+- name: RHEL-09-654035 | read audit rules
+  command: auditctl -l
+  register: _654035_rules
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-654035 | record audit rule coverage
+  vars:
+    _654035_expected:
+      - "-a always,exit -S all -F path=/usr/bin/chacl -F perm=x -F auid>=1000 -F auid!=-1 -F key=perm_mod"
+    _654035_cov: "{{ _654035_rules.stdout | default('') | rhel9_audit_coverage(_654035_expected) }}"
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-654035': {
+        'status':
+          'not_a_finding'
+          if (_654035_rules.rc | default(1) == 0 and _654035_cov.loaded > 0 and _654035_cov.missing | length == 0)
+          else 'open',
+        'finding_details': _654035_cov.report,
+        'comments':
+          'Add rules covering each MISSING line to a file in /etc/audit/rules.d/, '
+          ~ 'then run augenrules --load. Any key may be used.'
+      }
+    }) }}"
+  tags: [validate]

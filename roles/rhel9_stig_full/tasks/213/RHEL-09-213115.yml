@@ -1,0 +1,41 @@
+---
+# RHEL-09-213115 | V-257818
+# The kdump service on RHEL 9 must be disabled.
+# CAT II (Medium) | CCI-000366
+
+# Previously decided only by the formal role, whose check-mode result says
+# whether a task would change something. Checked here directly, as the STIG
+# command does, so the formal role is no longer needed for assessment.
+# The STIG makes a loaded unit that is not masked a finding; a unit that does
+# not exist is not loaded.
+
+- name: RHEL-09-213115 | check kdump.service is masked
+  shell: |
+    state=$(systemctl show kdump.service -p LoadState --value 2>/dev/null)
+    active=$(systemctl is-active kdump.service 2>/dev/null)
+    echo "kdump.service: LoadState=${state:-unknown} ActiveState=${active:-unknown}"
+    if [ "$state" = "masked" ] || [ "$state" = "not-found" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: kdump.service is loaded and not masked"
+    fi
+  register: _213115_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-213115 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-213115': {
+        'status':
+          'not_a_finding' if _213115_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _213115_result.stdout | trim,
+        'comments':
+          'Mask it: sudo systemctl mask --now kdump.service'
+      }
+    }) }}"
+  tags: [validate]

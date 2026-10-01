@@ -1,0 +1,50 @@
+---
+# RHEL-09-653085 | V-258166
+# RHEL 9 audit log directory must be owned by root to prevent unauthorized
+# read access.
+# CAT II (Medium) | CCI-000162
+
+- name: RHEL-09-653085 | check audit log directory ownership
+  shell: |
+    conf=/etc/audit/auditd.conf
+    if [ ! -f "$conf" ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: $conf not found"
+      exit 0
+    fi
+
+    log_file=$(grep -E '^\s*log_file\s*=' "$conf" | awk -F'=' '{print $2}' | xargs)
+    log_file=${log_file:-/var/log/audit/audit.log}
+    log_dir=$(dirname "$log_file")
+
+    if [ ! -d "$log_dir" ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: audit log directory $log_dir does not exist"
+      exit 0
+    fi
+
+    owner=$(stat -c '%U' "$log_dir")
+    if [ "$owner" = "root" ]; then
+      echo "STATUS: PASS"
+      echo "PASS: $log_dir owned by root"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: $log_dir owned by '$owner', expected root"
+    fi
+  register: _653085_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-653085 | record audit log directory ownership status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-653085': {
+        'status':
+          'not_a_finding' if _653085_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details': _653085_result.stdout | trim,
+        'comments': 'Run: chown root /var/log/audit'
+      }
+    }) }}"
+  tags: [validate]

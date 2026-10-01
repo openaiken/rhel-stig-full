@@ -1,0 +1,36 @@
+---
+# RHEL-09-231150 | V-257871
+# RHEL 9 must mount /var/log with the noexec option.
+# CAT II (Medium) | CCI-001764
+
+# Checks that /var/log is mounted with the noexec option.
+# An empty result means /var/log is not separately mounted, which is also a finding.
+
+- name: RHEL-09-231150 | get /var/log mount options
+  shell: awk '$2 == "/var/log" { print $4 }' /proc/mounts
+  register: _231150_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-231150 | record /var/log noexec mount option status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-231150': {
+        'status':
+          'not_a_finding'
+          if ('noexec' in (_231150_result.stdout | default('')))
+          else 'open',
+        'finding_details':
+          '/var/log mount options: '
+          ~ (_231150_result.stdout | default('') | trim
+             if _231150_result.stdout | default('') | trim
+             else '(not separately mounted - FINDING)')
+          ~ '\nResult: '
+          ~ ('not_a_finding - noexec is set on /var/log'
+             if ('noexec' in (_231150_result.stdout | default('')))
+             else 'OPEN - noexec not found in /var/log mount options'),
+        'comments': 'Add noexec to the /var/log entry in /etc/fstab and remount.'
+      }
+    }) }}"
+  tags: [validate]

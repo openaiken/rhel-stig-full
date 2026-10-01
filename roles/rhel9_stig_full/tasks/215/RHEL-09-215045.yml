@@ -1,0 +1,41 @@
+---
+# RHEL-09-215045 | V-257832
+# RHEL 9 must not have the gssproxy package installed.
+# CAT II (Medium) | CCI-000381
+
+# Previously decided only by the formal role, whose check-mode result says
+# whether a task would change something. Checked here directly, as the STIG
+# command does, so the formal role is no longer needed for assessment.
+# Not applicable when NFS mounts are authorized and in use: record that in
+# rhel9_attest_documented_exceptions.
+
+- name: RHEL-09-215045 | check gssproxy is not installed
+  shell: |
+    if rpm -q --quiet gssproxy; then state=installed; else state="not installed"; fi
+    echo "gssproxy: $state ($(rpm -q gssproxy 2>&1 | head -1))"
+    if [ "$state" = "not installed" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: gssproxy must be not installed"
+    fi
+  register: _215045_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-215045 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-215045': {
+        'status':
+          'not_applicable' if ((rhel9_attest_documented_exceptions | default({})).get('RHEL-09-215045'))
+          else 'not_a_finding' if _215045_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _215045_result.stdout | trim,
+        'comments':
+          'Remove the package: sudo dnf remove gssproxy'
+      }
+    }) }}"
+  tags: [validate]

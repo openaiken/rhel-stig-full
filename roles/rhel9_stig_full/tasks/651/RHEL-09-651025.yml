@@ -1,0 +1,100 @@
+---
+# RHEL-09-651025 | V-258137
+# RHEL 9 must use cryptographic mechanisms to protect the integrity of
+# audit tools.
+# CAT II (Medium) | CCI-001496
+
+# Each audit tool binary must have a corresponding AIDE selection line that
+# includes sha512 (directly or via a macro). RHEL 9 default aide.conf uses
+# macros — e.g. /usr/sbin/auditctl CONTENT_EX — so we do one level of macro
+# expansion to check the effective rule, covering the common case.
+# Deeply nested macro chains are reported as WARN (not auto-failed) since
+# they are uncommon and the operator should verify manually.
+
+- name: RHEL-09-651025 | check AIDE audit tool integrity rules
+  shell: |
+    # No AIDE is not "not applicable": the STIG asks how else this is done.
+    # rhel9_attest_alt_fim_tool is the not-applicable path; without it, open.
+    if ! rpm -q aide &>/dev/null; then
+      echo "STATUS: FAIL"
+      echo "FAIL: aide not installed and no alternate file integrity tool attested"
+      exit 0
+    fi
+
+    conf=/etc/aide.conf
+    if [ ! -f "$conf" ]; then
+      echo "STATUS: FAIL"
+      echo "FAIL: $conf not found"
+      exit 0
+    fi
+
+    # Look up an AIDE macro value by name (one level, no recursive expansion).
+    # Using a function avoids bash associative arrays (declare -A), which are
+    # not reliable when the shell resolves to sh POSIX mode.
+    aide_macro() {
+      grep -v '^\s*#' "$conf" \
+        | grep -E "^\s*${1}\s*=" \
+        | head -1 \
+        | awk -F'=' '{$1=""; print $0}' \
+        | xargs
+    }
+
+    findings=""
+    for tool in auditctl auditd ausearch aureport autrace augenrules; do
+      path="/usr/sbin/${tool}"
+      line=$(grep -v '^\s*#' "$conf" | grep -E "^${path}[[:space:]]" | head -1)
+      if [ -z "$line" ]; then
+        findings="${findings}FAIL: $path not found in $conf\n"
+        continue
+      fi
+      rule_ref=$(echo "$line" | awk '{print $2}')
+      # expand one level of macro if applicable
+      expanded=$(aide_macro "$rule_ref")
+      if [ -n "$expanded" ]; then
+        effective="$expanded"
+        src="macro $rule_ref"
+      else
+        effective="$rule_ref"
+        src="direct"
+      fi
+      if echo "$effective" | grep -q 'sha512'; then
+        findings="${findings}PASS: $path -> $rule_ref ($src, sha512 present)\n"
+      elif echo "$effective" | grep -qE '^[A-Za-z_]'; then
+        # looks like another macro ref not yet expanded — warn rather than fail
+        findings="${findings}WARN: $path -> $rule_ref -> $effective (nested macro, verify sha512 manually)\n"
+      else
+        findings="${findings}FAIL: $path -> $rule_ref (sha512 NOT in effective rule: $effective)\n"
+      fi
+    done
+
+    if echo -e "$findings" | grep -q '^FAIL:'; then
+      echo "STATUS: FAIL"
+    elif echo -e "$findings" | grep -q '^WARN:'; then
+      echo "STATUS: FAIL"
+      echo "NOTE: WARN lines require manual macro expansion verification"
+    else
+      echo "STATUS: PASS"
+    fi
+    echo -e "$findings" | sed '/^$/d'
+  register: _651025_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-651025 | record AIDE audit tool integrity status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-651025': {
+        'status':
+          'not_applicable' if (_651025_result.stdout is search('^NA:')
+                              or (rhel9_attest_alt_fim_tool | bool))
+          else ('not_a_finding' if _651025_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open'),
+        'finding_details': _651025_result.stdout | trim,
+        'comments':
+          'Add to /etc/aide.conf for each audit tool: '
+          ~ '/usr/sbin/auditctl CONTENT_EX  (where CONTENT_EX includes sha512+acl+xattrs). '
+          ~ 'Repeat for: auditd ausearch aureport autrace augenrules'
+      }
+    }) }}"
+  tags: [validate]

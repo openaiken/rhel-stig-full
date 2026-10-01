@@ -1,0 +1,56 @@
+---
+# RHEL-09-611085 | V-258106
+# RHEL 9 must require users to provide a password for privilege escalation.
+# CAT II (Medium) | CCI-004895, CCI-002038
+
+# Checks local sudoers for NOPASSWD. The STIG allows an exception when the
+# ISSO has documented that the account uses MFA (e.g. PIV/CAC, FIDO2).
+# rhel9_attest_nopasswd_isso_approved: true acknowledges that finding and
+# accepts the ISSO documentation as justification.
+#
+# REMEDIATION NOTE: NOPASSWD is sometimes legitimately present for:
+# - Service accounts running automated tasks (may need ISSO approval)
+# - Accounts using certificate-based MFA where a second password prompt is
+#   operationally impractical (requires ISSO documentation per STIG exception)
+# - IdM/SSSD sudo rules are managed through IPA and do NOT appear in local
+#   sudoers — this check covers local sudoers only. IdM-managed sudo rules
+#   with NOPASSWD would need separate review via ipa sudorule-show.
+# Do NOT blindly remove NOPASSWD without reviewing operational impact.
+
+# NOTE: grep -n prefixes every output line with "file:lineno:", so a comment
+# filter must anchor past that prefix. A bare '^\s*#' never matches and lets
+# commented-out lines through as findings.
+- name: RHEL-09-611085 | check for NOPASSWD in sudoers
+  shell: |
+    findings=$(grep -irn 'NOPASSWD' /etc/sudoers /etc/sudoers.d/ 2>/dev/null \
+               | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' || true)
+    if [ -n "$findings" ]; then
+      echo "STATUS: FAIL"
+      echo "$findings"
+    else
+      echo "STATUS: PASS"
+      echo "PASS: NOPASSWD not found in local sudoers files"
+    fi
+  register: _611085_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-611085 | record NOPASSWD status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-611085': {
+        'status':
+          'not_a_finding' if _611085_result.stdout is search('^STATUS: PASS', multiline=True)
+          else ('not_a_finding' if (rhel9_attest_nopasswd_isso_approved | bool)
+          else 'open'),
+        'finding_details':
+          _611085_result.stdout | trim
+          ~ '\nAttestation (rhel9_attest_nopasswd_isso_approved): '
+          ~ (rhel9_attest_nopasswd_isso_approved | bool | string | lower),
+        'comments':
+          'Remove NOPASSWD from sudoers, or obtain ISSO documentation '
+          ~ 'for accounts using approved MFA and set rhel9_attest_nopasswd_isso_approved: true'
+      }
+    }) }}"
+  tags: [validate]

@@ -1,0 +1,38 @@
+---
+# RHEL-09-212030 | V-257791
+# RHEL 9 /boot/grub2/grub.cfg file must be owned by root.
+# CAT II (Medium) | CCI-000366
+
+# Previously decided only by the formal role, whose check-mode result says
+# whether a task would change something. Checked here directly, as the STIG
+# command does, so the formal role is no longer needed for assessment.
+
+- name: RHEL-09-212030 | check /boot/grub2/grub.cfg owner
+  shell: |
+    val=$(stat -c '%U' /boot/grub2/grub.cfg 2>/dev/null)
+    echo "/boot/grub2/grub.cfg owner: ${val:-(file not found)}"
+    if [ "$val" = "root" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: /boot/grub2/grub.cfg must exist with owner root"
+    fi
+  register: _212030_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-212030 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-212030': {
+        'status':
+          'not_a_finding' if _212030_result.stdout is search('^STATUS: PASS', multiline=True)
+          else 'open',
+        'finding_details':
+          _212030_result.stdout | trim,
+        'comments':
+          'sudo chown root /boot/grub2/grub.cfg'
+      }
+    }) }}"
+  tags: [validate]

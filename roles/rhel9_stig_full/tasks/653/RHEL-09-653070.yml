@@ -1,0 +1,61 @@
+---
+# RHEL-09-653070 | V-258163
+# RHEL 9 System Administrator (SA) and/or information system security officer
+# (ISSO) (at a minimum) must be alerted of an audit processing failure event.
+# CAT II (Medium) | CCI-000139, CCI-001855
+
+# The formal role checks for its own line in one specific file, so a host
+# configured equivalently elsewhere (a drop-in, other spacing or case) was
+# reported open while compliant.
+# The formal role also enforces one exact value, but the STIG sets a limit
+# ("X or more", "X or less", one of a set); a stricter value was reported open.
+# The files are read as the consuming library reads them (drop-ins where it
+# has them, comments ignored, last value wins) and compared as the STIG says.
+# The check text asks the SA for another mechanism when this is not set, so
+# a documented exception is accepted (rhel9_attest_documented_exceptions).
+
+- name: RHEL-09-653070 | check auditd action_mail_acct
+  shell: |
+    shopt -s nullglob
+    files=(/etc/audit/auditd.conf)
+    isint() { [[ "$1" =~ ^-?[0-9]+$ ]]; }
+    val=$(awk -v k="action_mail_acct" -v m="eq" '
+      { line = $0; sub(/#.*/, "", line) }
+      line ~ /^[[:space:]]*$/ { next }
+      m == "eq" && index(line, "=") {
+        kk = substr(line, 1, index(line, "=") - 1); gsub(/[[:space:]]/, "", kk)
+        if (tolower(kk) == tolower(k)) { v = substr(line, index(line, "=") + 1); gsub(/^[[:space:]]+|[[:space:]]+$/, "", v); f = 1 }
+      }
+      m == "ws" { split(line, a, " "); if (tolower(a[1]) == tolower(k)) { v = a[2]; f = 1 } }
+      m == "flag" { t = line; gsub(/[[:space:]]/, "", t); if (tolower(t) == tolower(k)) { v = "set"; f = 1 } }
+      END { if (f) print v }' "${files[@]}" 2>/dev/null)
+    echo "action_mail_acct (effective, last uncommented occurrence): ${val:-(not set)}"
+    echo "lines: $(grep -Hi 'action_mail_acct' "${files[@]}" 2>/dev/null | grep -vE ':[[:space:]]*#' | tr '\n' ' ')"
+    if [ -n "$val" ]; then
+      echo "STATUS: PASS"
+    else
+      echo "STATUS: FAIL"
+      echo "FAIL: action_mail_acct is not set"
+    fi
+  register: _653070_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-653070 | record status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-653070': {
+        'status':
+          'not_a_finding' if _653070_result.stdout is search('^STATUS: PASS', multiline=True)
+          else ('not_a_finding' if (rhel9_attest_documented_exceptions | default({})).get('RHEL-09-653070')
+          else 'open'),
+        'finding_details':
+          _653070_result.stdout | trim
+          ~ '\nDocumented exception (rhel9_attest_documented_exceptions): '
+          ~ ((rhel9_attest_documented_exceptions | default({})).get('RHEL-09-653070') or '(none)'),
+        'comments':
+          'Set action_mail_acct = root (or security personnel) in /etc/audit/auditd.conf.'
+      }
+    }) }}"
+  tags: [validate]

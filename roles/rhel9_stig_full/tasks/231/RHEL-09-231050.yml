@@ -1,0 +1,36 @@
+---
+# RHEL-09-231050 | V-257851
+# RHEL 9 must prevent files with the setuid and setgid bit set from being executed on file systems that contain user home directories.
+# CAT II (Medium) | CCI-001764
+
+# Checks that /home is mounted with the nosuid option.
+# An empty result means /home is not separately mounted, which is also a finding.
+
+- name: RHEL-09-231050 | get /home mount options
+  shell: awk '$2 == "/home" { print $4 }' /proc/mounts
+  register: _231050_result
+  changed_when: false
+  failed_when: false
+  tags: [validate]
+
+- name: RHEL-09-231050 | record /home nosuid mount option status
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({
+      'RHEL-09-231050': {
+        'status':
+          'not_a_finding'
+          if ('nosuid' in (_231050_result.stdout | default('')))
+          else 'open',
+        'finding_details':
+          '/home mount options: '
+          ~ (_231050_result.stdout | default('') | trim
+             if _231050_result.stdout | default('') | trim
+             else '(not separately mounted - FINDING)')
+          ~ '\nResult: '
+          ~ ('not_a_finding - nosuid is set on /home'
+             if ('nosuid' in (_231050_result.stdout | default('')))
+             else 'OPEN - nosuid not found in /home mount options'),
+        'comments': 'Add nosuid to the /home entry in /etc/fstab and remount.'
+      }
+    }) }}"
+  tags: [validate]
