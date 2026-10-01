@@ -13,6 +13,7 @@
   register: _252050_postfix
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-252050 | get smtpd_client_restrictions
@@ -20,6 +21,7 @@
   register: _252050_restriction
   changed_when: false
   failed_when: false
+  check_mode: false
   when: (_252050_postfix.stdout | trim) == 'installed'
   tags: [validate]
 

@@ -51,6 +51,7 @@
   register: _671025_result
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-671025 | record pam_unix sha512 status

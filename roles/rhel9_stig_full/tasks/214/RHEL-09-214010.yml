@@ -15,6 +15,7 @@
   register: _214010_keys
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-214010 | check RPM GPG key file exists
@@ -28,6 +29,7 @@
   register: _214010_fingerprints
   changed_when: false
   failed_when: false
+  check_mode: false
   when: _214010_keyfile.stat.exists
   tags: [validate]
 

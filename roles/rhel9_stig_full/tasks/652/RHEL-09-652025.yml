@@ -44,6 +44,7 @@
   register: _652025_result
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-652025 | record rsyslog remote-receive status

@@ -10,6 +10,7 @@
   register: _232260_result
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-232260 | record device file SELinux label status

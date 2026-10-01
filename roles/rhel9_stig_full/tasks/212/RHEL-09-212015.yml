@@ -11,6 +11,7 @@
   register: _212015_kernels
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-212015 | check for systemd.confirm_spawn in grub kernel args
@@ -18,6 +19,7 @@
   register: _212015_spawn
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-212015 | record interactive boot status

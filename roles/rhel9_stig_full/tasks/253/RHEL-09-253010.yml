@@ -26,6 +26,7 @@
   register: _253010_result
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-253010 | record net.ipv4.tcp_syncookies status

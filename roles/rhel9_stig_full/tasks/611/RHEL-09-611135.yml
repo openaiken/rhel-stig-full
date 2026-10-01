@@ -30,6 +30,7 @@
   register: _611135_result
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-611135 | record status

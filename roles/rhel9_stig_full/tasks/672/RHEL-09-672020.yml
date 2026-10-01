@@ -63,6 +63,7 @@
   register: _672020_result
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-672020 | record crypto policy override status

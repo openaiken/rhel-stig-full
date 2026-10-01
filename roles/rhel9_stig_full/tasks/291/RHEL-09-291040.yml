@@ -25,6 +25,7 @@
   register: _291040_wifi_devices
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-291040 | check wifi radio state
@@ -32,6 +33,7 @@
   register: _291040_radio
   changed_when: false
   failed_when: false
+  check_mode: false
   when: _291040_wifi_devices.stdout | trim
   tags: [validate]
 

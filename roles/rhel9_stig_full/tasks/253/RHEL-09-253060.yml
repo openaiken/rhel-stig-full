@@ -27,6 +27,7 @@
   register: _253060_result
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-253060 | record net.ipv4.icmp_ignore_bogus_error_responses status

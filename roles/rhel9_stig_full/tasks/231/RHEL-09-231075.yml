@@ -11,6 +11,7 @@
   register: _231075_result_all
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-231075 | get NFS fstab entries missing nosuid
@@ -18,6 +19,7 @@
   register: _231075_result_bad
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-231075 | record NFS nosuid status

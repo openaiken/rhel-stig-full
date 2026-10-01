@@ -38,6 +38,7 @@
   register: _411075_result
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-411075 | record status

@@ -18,6 +18,7 @@
   register: _231080_result_all
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-231080 | get removable media fstab entries missing noexec
@@ -28,6 +29,7 @@
   register: _231080_result_bad
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-231080 | record removable media noexec status

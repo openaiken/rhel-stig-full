@@ -15,6 +15,7 @@
   register: _215105_policy
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-215105 | get hash and rsa_size from CURRENT.pol
@@ -22,6 +23,7 @@
   register: _215105_pol
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-215105 | record FIPS crypto policy status

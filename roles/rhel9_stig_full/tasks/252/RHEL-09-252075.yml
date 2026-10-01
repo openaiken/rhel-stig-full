@@ -11,6 +11,7 @@
   register: _252075_result
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-252075 | record .shosts status

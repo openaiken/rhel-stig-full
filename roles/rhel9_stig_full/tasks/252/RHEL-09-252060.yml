@@ -17,6 +17,7 @@
   register: _252060_postfix
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-252060 | check postmaster alias
@@ -24,6 +25,7 @@
   register: _252060_alias
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-252060 | collect current aliases for context
@@ -31,6 +33,7 @@
   register: _252060_current
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-252060 | record postmaster alias status

@@ -39,6 +39,7 @@
   register: _255155_result
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-255155 | record status

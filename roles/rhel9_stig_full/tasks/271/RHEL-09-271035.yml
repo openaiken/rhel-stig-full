@@ -22,6 +22,7 @@
   register: _271035_result
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-271035 | record autorun-never lock status

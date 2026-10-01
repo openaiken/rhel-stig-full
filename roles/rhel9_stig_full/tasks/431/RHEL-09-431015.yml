@@ -21,6 +21,7 @@
   register: _431015_result
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-431015 | record status

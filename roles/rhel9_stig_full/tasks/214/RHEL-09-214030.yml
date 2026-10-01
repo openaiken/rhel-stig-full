@@ -12,6 +12,7 @@
   register: _214030_hash
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-214030 | record system file hash verification status

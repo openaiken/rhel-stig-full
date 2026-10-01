@@ -26,6 +26,7 @@
   register: _253035_result
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-253035 | record net.ipv4.conf.all.rp_filter status

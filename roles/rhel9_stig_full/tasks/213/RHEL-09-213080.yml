@@ -26,6 +26,7 @@
   register: _213080_result
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-213080 | record kernel.yama.ptrace_scope status

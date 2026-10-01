@@ -10,6 +10,7 @@
   register: _231010_result
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-231010 | record /home separate filesystem status

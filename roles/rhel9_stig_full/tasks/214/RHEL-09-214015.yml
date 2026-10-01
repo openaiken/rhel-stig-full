@@ -31,6 +31,7 @@
   register: _214015_result
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-214015 | record status

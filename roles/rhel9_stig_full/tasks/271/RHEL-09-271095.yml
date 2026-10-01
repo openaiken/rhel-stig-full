@@ -22,6 +22,7 @@
   register: _271095_result
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-271095 | record disable-restart-buttons status

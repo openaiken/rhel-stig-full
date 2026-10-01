@@ -27,6 +27,7 @@
   register: _253055_result
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-253055 | record net.ipv4.icmp_echo_ignore_broadcasts status

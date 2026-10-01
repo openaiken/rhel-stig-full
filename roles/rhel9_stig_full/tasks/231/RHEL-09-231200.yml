@@ -12,6 +12,7 @@
   register: _231200_result
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-231200 | record nodev non-root partition status

@@ -14,6 +14,7 @@
   register: _252020_servers
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-252020 | check maxpoll values
@@ -28,6 +29,7 @@
   register: _252020_maxpoll
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-252020 | record NTP sync status

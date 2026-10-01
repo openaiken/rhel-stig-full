@@ -20,6 +20,7 @@
   register: _433010_result
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-433010 | record status

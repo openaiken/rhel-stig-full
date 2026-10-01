@@ -10,6 +10,7 @@
   register: _231035_result
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-231035 | record /var/tmp separate filesystem status

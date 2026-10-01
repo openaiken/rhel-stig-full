@@ -12,6 +12,7 @@
   register: _215070_xorg
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-215070 | record graphical display manager status

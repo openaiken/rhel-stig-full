@@ -11,6 +11,7 @@
   register: _231150_result
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-231150 | record /var/log noexec mount option status

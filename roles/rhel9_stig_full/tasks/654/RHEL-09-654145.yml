@@ -15,6 +15,7 @@
   register: _654145_rules
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-654145 | record audit rule coverage

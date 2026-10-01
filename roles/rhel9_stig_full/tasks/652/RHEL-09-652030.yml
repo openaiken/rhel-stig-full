@@ -34,6 +34,7 @@
   register: _652030_result
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-652030 | record status

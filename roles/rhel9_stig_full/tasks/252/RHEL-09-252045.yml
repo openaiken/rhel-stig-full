@@ -14,6 +14,7 @@
   register: _252045_ipsec_state
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-252045 | collect configured ipsec connections
@@ -21,6 +22,7 @@
   register: _252045_conns
   changed_when: false
   failed_when: false
+  check_mode: false
   when: (_252045_ipsec_state.stdout | trim) == 'active'
   tags: [validate]
 

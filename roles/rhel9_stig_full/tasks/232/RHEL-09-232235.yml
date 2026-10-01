@@ -9,6 +9,7 @@
   register: _232235_result
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-232235 | record cron config group ownership status

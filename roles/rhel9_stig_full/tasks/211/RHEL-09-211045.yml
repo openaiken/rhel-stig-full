@@ -31,6 +31,7 @@
   register: _211045_burst
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-211045 | record CtrlAltDelBurstAction status

@@ -11,6 +11,7 @@
   register: _211030_target
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-211030 | record default target status

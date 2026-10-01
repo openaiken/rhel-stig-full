@@ -20,6 +20,7 @@
   register: _231105_result_opts
   changed_when: false
   failed_when: false
+  check_mode: false
   when: _231105_result_efi.stat.exists
   tags: [validate]
 

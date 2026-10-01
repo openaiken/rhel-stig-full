@@ -22,6 +22,7 @@
   register: _232055_result
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-232055 | record status

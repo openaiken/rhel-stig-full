@@ -38,6 +38,7 @@
   register: _214025_result
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-214025 | record GPG repo check status

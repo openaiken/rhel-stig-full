@@ -54,6 +54,7 @@
   register: _652040_result
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-652040 | record status

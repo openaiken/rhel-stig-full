@@ -41,6 +41,7 @@
   register: _611010_result
   changed_when: false
   failed_when: false
+  check_mode: false
   tags: [validate]
 
 - name: RHEL-09-611010 | record pwquality retry status
