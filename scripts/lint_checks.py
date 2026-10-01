@@ -47,7 +47,7 @@ def multi_condition_rules():
 CHECKS = {
     "NO-OPEN":      "status expression can never yield 'open' -- check cannot report a finding",
     "PREFIX-ANCHOR":"grep -n/-rn output is prefixed 'file:lineno:'; a '^\\s*' anchor can never match",
-    "NO-GUARDS":    "shell/command task missing changed_when: false and/or failed_when: false",
+    "NO-GUARDS":    "shell/command task missing changed_when, failed_when or check_mode: false",
     "DEAD-REGISTER":"registered variable is never referenced",
     "UNDEF-REF":    "variable referenced but never registered in this file",
     "SHELL-APOS":   "apostrophe in a shell comment (Ansible parse_kv sees unbalanced quotes)",
@@ -57,6 +57,10 @@ CHECKS = {
     "RPM-Q-ECHO":   "rpm -q X && echo ... prints the package name as well, so the output never equals the echoed word; use rpm -q --quiet",
     "JINJA-SYNTAX": "a templated value does not parse as Jinja; at run time this aborts the whole supplement play",
     "JINJA-COMMENT": "'{#' opens a Jinja comment (e.g. bash ${#arr[@]}); Ansible fails to parse the role",
+    "FIX-STRUCTURE":
+                    "fix file lacks block/rescue, or does not queue its rule for re-check",
+    "FIX-NOT-WIRED":
+                    "fix file and tasks/fix_imports.yml disagree, or the import is not gated on open",
     "FILE-NOT-EFFECTIVE":
                     "greps config files for a setting whose effective value can differ "
                     "(systemd drop-in without .conf, sysctl override, sshd Match block)",
@@ -75,13 +79,68 @@ def task_files():
     return out
 
 
+def fix_files():
+    """Fix tasks under tasks/fix/<cat>/, keyed 'fix:<STIG ID>'."""
+    out = []
+    root = os.path.join(TASKS, "fix")
+    if not os.path.isdir(root):
+        return out
+    for cat in sorted(os.listdir(root)):
+        d = os.path.join(root, cat)
+        for fn in sorted(os.listdir(d)) if os.path.isdir(d) else []:
+            if re.fullmatch(r"RHEL-09-\d{6}\.yml", fn):
+                out.append(("fix:" + fn[:-4], os.path.join(d, fn)))
+    return out
+
+
+def fix_wiring(fixes):
+    """Hits for fix files and fix_imports.yml entries that do not match up.
+    Every import must be gated on the rule's check having reported open, or
+    a fix could change a compliant or attested system."""
+    hits = {}
+    path = os.path.join(TASKS, "fix_imports.yml")
+    src = open(path, encoding="utf-8").read() if os.path.exists(path) else ""
+    imported = {}
+    for m in re.finditer(r"^- import_tasks: (fix/\d{3}/(RHEL-09-\d{6})\.yml)\n  when: (.*)$", src, re.M):
+        imported[m.group(2)] = (m.group(1), m.group(3))
+    for key, p in fixes:
+        sid = key[4:]
+        if sid not in imported:
+            hits.setdefault(key, []).append(("FIX-NOT-WIRED", 0, "no import in fix_imports.yml"))
+            continue
+        rel, cond = imported.pop(sid)
+        if os.path.join(TASKS, rel) != p:
+            hits.setdefault(key, []).append(("FIX-NOT-WIRED", 0, f"imported from {rel}"))
+        # tasks/remediate.yml derives the re-check path the same way
+        cat = {"171": "271"}.get(sid[8:11], sid[8:11])
+        if not os.path.exists(os.path.join(TASKS, cat, sid + ".yml")):
+            hits.setdefault(key, []).append(("FIX-NOT-WIRED", 0, f"re-check path {cat}/{sid}.yml does not exist"))
+        if f"stig_facts['{sid}']" not in cond or "== 'open'" not in cond or f"stig_rules['{sid}']" not in cond:
+            hits.setdefault(key, []).append(("FIX-NOT-WIRED", 0, "import not gated on toggle and open status"))
+    for sid in imported:
+        hits.setdefault("fix:" + sid, []).append(("FIX-NOT-WIRED", 0, "imported, but no fix file"))
+    return hits
+
+
 def lint(sid, path):
     src = open(path, encoding="utf-8").read()
     lines = src.splitlines()
     hits = []
+    fix = sid.startswith("fix:")
+
+    # F1: a fix runs in block/rescue, so a failure is recorded rather than
+    # aborting the host, and queues its rule for re-check either way.
+    if fix:
+        rid = sid[4:]
+        if not re.search(r"^  block:", src, re.M) or not re.search(r"^  rescue:", src, re.M):
+            hits.append(("FIX-STRUCTURE", 0, "no block/rescue"))
+        if src.count(f"stig_fixed + ['{rid}']") < 2:
+            hits.append(("FIX-STRUCTURE", 0, "block and rescue must both add the rule to stig_fixed"))
+        if f"stig_fix_errors | combine({{'{rid}':" not in src:
+            hits.append(("FIX-STRUCTURE", 0, "rescue does not record the error"))
 
     # C1: can the task ever report a finding?
-    if "'open'" not in src and '"open"' not in src:
+    if not fix and "'open'" not in src and '"open"' not in src:
         hits.append(("NO-OPEN", 0, "no 'open' literal anywhere in the file"))
 
     # C2: grep -n family piped into a line-start comment/keyword anchor
@@ -104,10 +163,13 @@ def lint(sid, path):
         blk = src[m.start():]
         nxt = re.search(r"\n- name: ", blk)
         blk = blk[:nxt.start()] if nxt else blk
-        if not re.search(r"^\s+(shell|command):", blk, re.M):
+        if fix or not re.search(r"^\s+(shell|command):", blk, re.M):
             continue
         ln = src[:m.start()].count("\n") + 1
-        for guard in ("changed_when", "failed_when"):
+        # check_mode: false too: checks are read-only, and under --check
+        # Ansible skips shell/command, so the record step would find no
+        # output and abort the play (checks also run under remediate).
+        for guard in ("changed_when", "failed_when", "check_mode"):
             if not re.search(rf"^\s+{guard}:\s*false\s*$", blk, re.M):
                 hits.append(("NO-GUARDS", ln, f"{m.group(1)[:52]} -- missing {guard}: false"))
 
@@ -198,7 +260,7 @@ def lint(sid, path):
 
     # C7: file-grep where the effective value can differ
     # (file ownership and mode checks, which use stat, read no setting)
-    if re.search(r"/etc/systemd/[\w.]*\.conf\.d|/etc/sysctl\.d|sshd_config", src) and "stat -c" not in src:
+    if not fix and re.search(r"/etc/systemd/[\w.]*\.conf\.d|/etc/sysctl\.d|sshd_config", src) and "stat -c" not in src:
         if not re.search(r"systemctl show|sysctl -n|sshd -T", src):
             hits.append(("FILE-NOT-EFFECTIVE", 0,
                          "greps config files without querying the effective value"))
@@ -211,11 +273,12 @@ def main():
     args = ap.parse_args()
 
     files = task_files()
-    all_hits = {}
-    for sid, path in files:
+    fixes = fix_files()
+    all_hits = fix_wiring(fixes)
+    for sid, path in files + fixes:
         h = lint(sid, path)
         if h:
-            all_hits[sid] = h
+            all_hits.setdefault(sid, []).extend(h)
 
     counts = {}
     for h in all_hits.values():
@@ -223,7 +286,7 @@ def main():
             counts[kind] = counts.get(kind, 0) + 1
 
     print("=" * 72)
-    print(f"SUPPLEMENT LINT -- {len(files)} task files")
+    print(f"LINT -- {len(files)} check files, {len(fixes)} fix files")
     print("=" * 72)
     for k, desc in CHECKS.items():
         print(f"  {k:<20} {counts.get(k, 0):>4}   {desc[:60]}")

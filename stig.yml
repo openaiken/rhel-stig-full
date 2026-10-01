@@ -1,19 +1,24 @@
 ---
 # Single entry point, driven by tags (run.sh passes them):
-#   --tags remediate            the DISA role enforces settings; no checklist
-#   --tags validate             every rule is assessed and a checklist rendered
-#   --tags remediate,validate   remediate, then assess
-#   --tags RHEL-09-XXXXXX       assess one rule (the checklist merges it with
+#   --tags validate             every rule is checked and a checklist rendered
+#   --tags remediate            check every rule, fix the open ones that have a
+#                               fix (tasks/fix/), report what changed; no
+#                               results file, no checklist
+#   --tags remediate,validate   check, fix, re-check what changed, render
+#   --tags disa_remediate       the DISA role enforces settings (unconditionally,
+#                               attestations and toggles notwithstanding)
+#   --tags RHEL-09-XXXXXX       check one rule (the checklist merges it with
 #                               earlier results; add validate to render)
 #   --tags render               re-render the checklist from earlier results
-# Without --tags every play runs, remediation included.
+# Without --tags: the DISA role, then check and render. The rhel9_stig_full
+# fixes run only when remediate is named, so a tag union can never select them.
 
 - name: Remediate with the DISA RHEL 9 STIG role
   hosts: "{{ my_host | default('default_host_group') }}"
   become: true
   # Play-level tag: nothing here, fact gathering included, runs unless the
-  # remediate tag is selected.
-  tags: [remediate]
+  # disa_remediate tag is selected.
+  tags: [disa_remediate]
   # In a dry run (--check) some tasks fail only because an earlier task's
   # change was not made (e.g. a log file a package would create). As in the
   # old formal-role.yml, ignore errors in check mode only.

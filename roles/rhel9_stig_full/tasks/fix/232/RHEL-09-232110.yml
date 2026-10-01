@@ -1,0 +1,32 @@
+---
+# RHEL-09-232110 | V-257902 | fix
+# RHEL 9 /etc/gshadow file must be owned by root.
+# CAT II (Medium)
+#
+# Sets owner root on /etc/gshadow; skipped if the file does not exist.
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-232110 | fix
+  block:
+    - name: RHEL-09-232110 | look for /etc/gshadow
+      ansible.builtin.stat:
+        path: /etc/gshadow
+      register: _232110_stat
+
+    - name: RHEL-09-232110 | set owner root on /etc/gshadow
+      ansible.builtin.file:
+        path: /etc/gshadow
+        owner: root
+      when: _232110_stat.stat.exists
+      register: _232110_fix
+
+    - name: RHEL-09-232110 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232110'] }}"
+      when: (_232110_fix is changed)
+  rescue:
+    - name: RHEL-09-232110 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-232110': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232110'] }}"

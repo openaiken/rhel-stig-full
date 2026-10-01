@@ -1,0 +1,51 @@
+---
+# RHEL-09-213040 | V-257803 | fix
+# RHEL 9 must disable the kernel.core_pattern.
+# CAT II (Medium)
+#
+# Sets kernel.core_pattern = |/bin/false now and persists it in
+# /etc/sysctl.d/zz-rhel9-stig-full.conf, named to load after every numbered
+# file and /etc/sysctl.conf; fails if a later file still overrides it.
+# ignoreerrors skips a key this kernel does not have (e.g. IPv6 disabled); the
+# re-check then still reports it.
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-213040 | fix
+  block:
+    - name: RHEL-09-213040 | set kernel.core_pattern = |/bin/false
+      ansible.posix.sysctl:
+        name: kernel.core_pattern
+        value: '|/bin/false'
+        sysctl_file: /etc/sysctl.d/zz-rhel9-stig-full.conf
+        sysctl_set: true
+        reload: false
+        ignoreerrors: true
+        state: present
+      register: _213040_fix
+
+    - name: RHEL-09-213040 | read the value that wins at boot
+      ansible.builtin.shell: |
+        /usr/lib/systemd/systemd-sysctl --cat-config 2>/dev/null \
+          | grep -E '^[[:space:]]*-?kernel[.]core_pattern[[:space:]]*=' | tail -1 | cut -d= -f2- \
+          | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
+      register: _213040_boot
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      when: not ansible_check_mode
+
+    - name: RHEL-09-213040 | fail if another file overrides it at boot
+      ansible.builtin.fail:
+        msg: "kernel.core_pattern was set, but the last value in the sysctl configuration is {{ _213040_boot.stdout | trim | default('(none)', true) }}, so it reverts at boot"
+      when: not ansible_check_mode and (_213040_boot.stdout | trim) != '|/bin/false'
+
+    - name: RHEL-09-213040 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-213040'] }}"
+      when: (_213040_fix is changed)
+  rescue:
+    - name: RHEL-09-213040 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-213040': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-213040'] }}"

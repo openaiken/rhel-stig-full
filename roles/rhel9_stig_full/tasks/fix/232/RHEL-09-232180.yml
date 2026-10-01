@@ -1,0 +1,32 @@
+---
+# RHEL-09-232180 | V-257916 | fix
+# RHEL 9 /var/log/messages file must be owned by root.
+# CAT II (Medium)
+#
+# Sets owner root on /var/log/messages; skipped if the file does not exist.
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-232180 | fix
+  block:
+    - name: RHEL-09-232180 | look for /var/log/messages
+      ansible.builtin.stat:
+        path: /var/log/messages
+      register: _232180_stat
+
+    - name: RHEL-09-232180 | set owner root on /var/log/messages
+      ansible.builtin.file:
+        path: /var/log/messages
+        owner: root
+      when: _232180_stat.stat.exists
+      register: _232180_fix
+
+    - name: RHEL-09-232180 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232180'] }}"
+      when: (_232180_fix is changed)
+  rescue:
+    - name: RHEL-09-232180 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-232180': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232180'] }}"

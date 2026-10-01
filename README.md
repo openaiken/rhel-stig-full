@@ -1,5 +1,5 @@
 # rhel-stig-full
-Automated assessment of every RHEL 9 STIG control, producing a ready-to-report Checklist for STIG Viewer 3.x, plus remediation through the DISA RHEL 9 STIG Ansible role.
+Automated assessment of every RHEL 9 STIG control, producing a ready-to-report Checklist for STIG Viewer 3.x, plus remediation: its own fixes for open rules, and the DISA RHEL 9 STIG Ansible role.
 
 ## WIP
 This project is a Work-In-Progress. Furthermore, *this document was largely written by Claude Code, and manually edited for clarity and finer details.*
@@ -7,7 +7,7 @@ This project is a Work-In-Progress. Furthermore, *this document was largely writ
 ## Overview
 
 - **Assessment** (`./run.sh validate`): the **`rhel9_stig_full` role** checks all 445 rules of RHEL 9 STIG V2R9, read-only, one task file per STIG ID, then renders the results into a populated `.cklb` checklist.
-- **Remediation** (`./run.sh remediate`): the unmodified **DISA formal role** (`rhel9STIG`) enforces settings. It takes no part in assessment.
+- **Remediation** (`./run.sh remediate`): the unmodified **DISA formal role** (`rhel9STIG`) enforces settings, then `rhel9_stig_full` checks every rule and fixes the open ones it has a fix for (a first batch of 85: packages, file ownership and modes, sysctl). The DISA role takes no part in assessment. See [How Remediation Works](#how-remediation-works).
 
 Why the formal role does not assess: in check mode it reports whether a task *would change something*, and its tasks write one exact line into one exact file. A host configured correctly any other way (a drop-in file, different spelling, a stricter value) was reported open. The assessment role checks what each STIG check text checks, on the effective state wherever there is one.
 
@@ -15,7 +15,9 @@ Why the formal role does not assess: in check mode it reports whether a task *wo
 
 ```bash
 ./run.sh validate                      # assess every rule, write a checklist to reports/
-./run.sh remediate                     # DISA role enforces settings; run validate after
+./run.sh remediate                     # DISA role, then check and fix open rules; no checklist
+./run.sh remediate --validate          # ... then re-check what changed and render the checklist
+./run.sh remediate --skip-formal       # rhel9_stig_full fixes only, no DISA role
 ./run.sh --help                        # all options, including exit codes
 ```
 
@@ -37,11 +39,12 @@ ansible-playbook stig.yml -t validate -e my_host=myserver              # assess 
 ansible-playbook stig.yml -t RHEL-09-653030 -e my_host=myserver        # one rule, no render
 ansible-playbook stig.yml -t RHEL-09-653030,render -e my_host=myserver # one rule + checklist
 ansible-playbook stig.yml -t render -e my_host=myserver                # re-render only
-ansible-playbook stig.yml -t remediate -e my_host=myserver             # remediate only
-ansible-playbook stig.yml -t remediate,validate -e my_host=myserver    # remediate, then assess
+ansible-playbook stig.yml -t remediate -e my_host=myserver             # check, fix open rules
+ansible-playbook stig.yml -t remediate,validate -e my_host=myserver    # check, fix, re-check, render
+ansible-playbook stig.yml -t disa_remediate -e my_host=myserver        # DISA role only
 ```
 
-`stig.yml` is the single playbook. Remediation runs only under the `remediate` tag, and a checklist is rendered only under `validate` or `render`. Every check is tagged `validate` and its STIG ID; a tag-limited run updates only those rules, since the renderer merges results per rule across runs. Without `--tags` every play runs, remediation included.
+`stig.yml` is the single playbook. The DISA role runs only under `disa_remediate`, the `rhel9_stig_full` fixes only under `remediate`, and a checklist is rendered only under `validate` or `render`. Every check is tagged `validate` and its STIG ID; a tag-limited run updates only those rules, since the renderer merges results per rule across runs. Without `--tags` the DISA role runs, then assessment and render; the `rhel9_stig_full` fixes need `remediate` named explicitly.
 
 ## Configuration
 
@@ -133,14 +136,24 @@ Assessment never writes `not_reviewed`. In a rendered checklist it means the rul
 
 Checks prefer the effective value to configuration text (`sysctl -n`, `sshd -T`, `auditctl -l`, `gsettings`, `systemctl show`, `systemd-analyze cat-config`), read files the way their consumer does (drop-ins, last value wins), and compare thresholds as thresholds. Audit-rule coverage is checked semantically by the `rhel9_audit_coverage` filter plugin (unit tests: `python3 scripts/test_audit_rules.py`).
 
+## How Remediation Works
+
+`--tags remediate` (in `tasks/remediate.yml`, after every check has run):
+
+1. Each fix in `tasks/fix/<category>/RHEL-09-XXXXXX.yml` runs **only if that rule's check reported `open`** and its `stig_rules` toggle is on. A compliant, not-applicable or attested rule is never touched.
+2. Fixes use Ansible modules (`dnf`, `file`, `ansible.posix.sysctl`), in `block`/`rescue`: a failed fix is recorded and the host carries on.
+3. With `validate` also selected, every rule a fix changed (or failed on) is re-checked, its `finding_details` notes that it was remediated (or why the fix failed), and the results are written and rendered. With `remediate` alone, nothing is written: the pre-fix verdicts would be stale, and a later render would show fixed rules as open. Either way a summary task lists what changed and what failed.
+
+sysctl fixes write `/etc/sysctl.d/zz-rhel9-stig-full.conf`, named to load after every numbered file and `/etc/sysctl.conf`, and fail if a later file still overrides the value at boot. Deliberately not fixed: user namespaces (213105, breaks rootless containers) and IP forwarding (253075, 254025).
+
 ## Project Structure
 
 ### Playbooks
-- **`stig.yml`** — the single playbook: play 1 is the DISA role (`remediate` tag), play 2 the assessment and checklist (`validate` / `render` tags).
+- **`stig.yml`** — the single playbook: play 1 is the DISA role (`disa_remediate` tag), play 2 assessment, fixes and checklist (`validate` / `remediate` / `render` tags).
 - **`run.sh`** — orchestration: credentials, skip flags, per-host failure handling, argument passthrough.
 
 ### Roles
-- **`roles/rhel9_stig_full/`** — 445 assessment tasks, one per STIG ID, under `tasks/<category>/`; `tasks/render.yml` and `filter_plugins/cklb.py` render the checklist; `filter_plugins/audit_rules.py` checks audit-rule coverage.
+- **`roles/rhel9_stig_full/`** — 445 assessment tasks, one per STIG ID, under `tasks/<category>/`; fixes under `tasks/fix/<category>/`, wired in `tasks/fix_imports.yml`; `tasks/render.yml` and `filter_plugins/cklb.py` render the checklist; `filter_plugins/audit_rules.py` checks audit-rule coverage.
 - **`roles/rhel9STIG/`** — unmodified DISA formal role (V2R9), remediation only. Do not edit.
 
 ### Supporting Files
@@ -148,7 +161,7 @@ Checks prefer the effective value to configuration text (`sysctl -n`, `sshd -T`,
 - **`files/rules.json`** — all 445 rules keyed by STIG ID (check and fix text, severity, CCIs). Regenerate with `python3 scripts/parse_xccdf_benchmark.py`.
 - **`files/empty-checklist-rhel9v2r9.cklb`** — CKLB template used by the renderer.
 - **`scripts/audit_coverage.py`** — every rule in `rules.json` and the template must have exactly one wired, toggled task. Must print `CLEAN`.
-- **`scripts/lint_checks.py`** — static checks for the bug classes found in this codebase. Must report 0.
+- **`scripts/lint_checks.py`** — static checks for the bug classes found in this codebase, and fix-file structure and wiring. Must report 0.
 - **`scripts/diff_benchmarks.py`** — diffs two benchmarks by STIG ID; run first on a revision bump.
 - **`scripts/test_audit_rules.py`** — unit tests for the audit-rule filter.
 
@@ -168,7 +181,14 @@ Checks prefer the effective value to configuration text (`sysctl -n`, `sshd -T`,
 ### Task conventions
 - One file per STIG ID: `roles/rhel9_stig_full/tasks/<category>/RHEL-09-XXXXXX.yml`
 - Status markers at the start of a line, matched with `is search('^...', multiline=True)`
-- `changed_when: false` and `failed_when: false` on every shell/command task
+- `changed_when: false`, `failed_when: false` and `check_mode: false` on every check shell/command task (checks also run under `--check` and under `remediate`)
 - No apostrophes in shell comments; no double quotes inside the `set_fact` string; no `{#` anywhere
 - Attestation vars: bool + optional `_method` string, and the method must reach `finding_details`
 - Wire into `tasks/main.yml` with `import_tasks`, a STIG ID tag, and a `stig_rules` conditional
+
+### Fix conventions
+- One file per STIG ID: `roles/rhel9_stig_full/tasks/fix/<category>/RHEL-09-XXXXXX.yml`, same category directory as the check
+- Prefer Ansible modules; a shell task in a fix is for reading state only
+- Everything in one `block:`; when a task changed something, add the rule to `stig_fixed`. The `rescue:` records `ansible_failed_result.msg` in `stig_fix_errors` and also adds the rule to `stig_fixed`, since a failed fix may have changed something
+- Wire into `tasks/fix_imports.yml`, gated on the toggle and on the check having reported `open`
+- Only fixes with one reasonable implementation; anything site-dependent stays manual or behind a var

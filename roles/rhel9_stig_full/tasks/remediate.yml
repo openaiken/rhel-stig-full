@@ -1,0 +1,56 @@
+---
+# Remediation pass. Runs after every rule has been checked, only when the
+# remediate tag was selected (tasks/main.yml). For each rule with a fix in
+# tasks/fix/, the fix runs only if the check reported open: a rule that is
+# compliant, not applicable, or cleared by an attestation is never changed.
+# Each fix runs in block/rescue, so one failure cannot abort the host.
+#
+# remediate alone: check, fix, report. No results file is written (main.yml),
+# since the pre-fix verdicts would be the newest and a later render would show
+# fixed rules as open.
+# remediate + validate: check, fix, re-check every rule a fix changed (or
+# attempted and failed on), then write results and render.
+
+- name: initialize remediation bookkeeping
+  set_fact:
+    stig_fixed: []
+    stig_fix_errors: {}
+
+- import_tasks: fix_imports.yml
+
+# A check lives in <first three digits of its number>/, except DISA's
+# misnumbered RHEL-09-171011, which belongs to (and lives in) 271/.
+# scripts/lint_checks.py verifies this path for every fix (FIX-NOT-WIRED).
+- name: re-check the rules a fix changed
+  when: "'validate' in ansible_run_tags"
+  include_tasks:
+    file: "{{ {'171': '271'}.get(_stig_recheck_id[8:11], _stig_recheck_id[8:11]) }}/{{ _stig_recheck_id }}.yml"
+    apply:
+      tags: [remediate]
+  loop: "{{ stig_fixed | unique }}"
+  loop_control:
+    loop_var: _stig_recheck_id
+
+- name: note in each changed rule that it was remediated
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({item: stig_facts[item] | combine({'finding_details':
+      stig_facts[item].finding_details ~ '\n'
+      ~ ('Check mode: a fix would have been applied by rhel9_stig_full; nothing was changed.'
+         if ansible_check_mode else
+         'Remediated by rhel9_stig_full in this run; the result above is the re-check after the change.')})}) }}"
+  loop: "{{ stig_fixed | unique }}"
+  when: "'validate' in ansible_run_tags and item not in stig_fix_errors"
+
+- name: note failed fixes in the results
+  set_fact:
+    stig_facts: "{{ stig_facts | combine({item.key: stig_facts[item.key] | combine({'finding_details':
+      stig_facts[item.key].finding_details ~ '\nRemediation by rhel9_stig_full failed: ' ~ item.value
+      ~ ' (the result above is a re-check after the attempt)'})}) }}"
+  loop: "{{ stig_fix_errors | dict2items }}"
+  when: "'validate' in ansible_run_tags"
+
+- name: summarize remediation
+  debug:
+    msg:
+      changed: "{{ stig_fixed | difference(stig_fix_errors.keys()) | unique | sort }}"
+      failed: "{{ stig_fix_errors }}"

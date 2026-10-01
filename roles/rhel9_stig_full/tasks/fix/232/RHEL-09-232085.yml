@@ -1,0 +1,33 @@
+---
+# RHEL-09-232085 | V-257897 | fix
+# RHEL 9 /etc/shadow- file must have mode 0000 or less permissive to prevent
+# unauthorized access.
+# CAT II (Medium)
+#
+# Sets mode '0000' on /etc/shadow-; skipped if the file does not exist.
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-232085 | fix
+  block:
+    - name: RHEL-09-232085 | look for /etc/shadow-
+      ansible.builtin.stat:
+        path: /etc/shadow-
+      register: _232085_stat
+
+    - name: RHEL-09-232085 | set mode '0000' on /etc/shadow-
+      ansible.builtin.file:
+        path: /etc/shadow-
+        mode: '0000'
+      when: _232085_stat.stat.exists
+      register: _232085_fix
+
+    - name: RHEL-09-232085 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232085'] }}"
+      when: (_232085_fix is changed)
+  rescue:
+    - name: RHEL-09-232085 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-232085': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232085'] }}"

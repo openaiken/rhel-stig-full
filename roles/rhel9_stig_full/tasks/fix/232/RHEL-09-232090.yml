@@ -1,0 +1,32 @@
+---
+# RHEL-09-232090 | V-257898 | fix
+# RHEL 9 /etc/group file must be owned by root.
+# CAT II (Medium)
+#
+# Sets owner root on /etc/group; skipped if the file does not exist.
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-232090 | fix
+  block:
+    - name: RHEL-09-232090 | look for /etc/group
+      ansible.builtin.stat:
+        path: /etc/group
+      register: _232090_stat
+
+    - name: RHEL-09-232090 | set owner root on /etc/group
+      ansible.builtin.file:
+        path: /etc/group
+        owner: root
+      when: _232090_stat.stat.exists
+      register: _232090_fix
+
+    - name: RHEL-09-232090 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232090'] }}"
+      when: (_232090_fix is changed)
+  rescue:
+    - name: RHEL-09-232090 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-232090': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232090'] }}"

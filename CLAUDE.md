@@ -10,8 +10,12 @@ Current revision: **RHEL 9 STIG V2R9** (445 rules, Release: 9, 01 Jul 2026).
 
 **`roles/rhel9_stig_full` assesses every rule; the DISA formal role
 (`roles/rhel9STIG`) only remediates.** One playbook, `stig.yml`, selected by
-tag: `remediate` runs the DISA role and never renders a checklist; `validate`
-assesses and renders; `render` re-renders from earlier results. Every rule in
+tag: `disa_remediate` runs the DISA role; `remediate` runs every check, then
+our own fixes (`tasks/fix/`) for rules that came back `open` only; `validate`
+assesses and renders (with `remediate`: re-checks what a fix changed first);
+`render` re-renders from earlier results. `remediate` alone writes no results
+file: its pre-fix verdicts would be newest and a render would show fixed
+rules open. Every rule in
 `rules.json` and the CKLB template has exactly one task (`audit_coverage.py`
 enforces it).
 
@@ -74,7 +78,8 @@ Do not confuse `not_applicable` (rule doesn't apply here) with `not_a_finding`
 
 - One file per STIG ID: `roles/rhel9_stig_full/tasks/<cat>/RHEL-09-XXXXXX.yml`
 - Shell emits `STATUS: PASS` / `STATUS: FAIL` / `NA:`; exit code is never used
-- `changed_when: false` and `failed_when: false` on every shell task
+- `changed_when: false`, `failed_when: false`, `check_mode: false` on every
+  shell task (checks gate fixes, so they must run under `--check` too)
 - No apostrophes in shell comments (Ansible `parse_kv` sees unbalanced quotes)
 - No literal double quotes in `set_fact` strings (they sit inside double-quoted YAML)
 - Wire into `tasks/main.yml` with `import_tasks`, a STIG ID tag, and a
@@ -136,6 +141,21 @@ report 0. Re-run it after touching any task.
   `DCONF_PROFILE=user XDG_CONFIG_HOME=/nonexistent`), as the STIG does. Keyfile
   greps miss defaults, override order, uncompiled databases, and commented locks.
 
+## Writing fix tasks (phase 4: own remediation, replacing the DISA role)
+
+- `tasks/fix/<cat>/RHEL-09-XXXXXX.yml`, same `<cat>` as the check; wired in
+  `tasks/fix_imports.yml` gated on toggle **and** `status == 'open'`
+- Modules, not shell. One `block:`; a changed task appends the ID to
+  `stig_fixed`; `rescue:` records `stig_fix_errors[id]` **and** appends to
+  `stig_fixed` (a failed fix may still have changed state, so re-check it)
+- Only fixes with one reasonable implementation. Never: 213105 (userns,
+  breaks podman), 253075/254025 (forwarding), removals with exception
+  clauses (nfs-utils, postfix, tuned, ...)
+- A check that reads only runtime state passes as soon as the fix applies it,
+  so the fix must prove persistence itself (sysctl fixes verify the last value
+  in `systemd-sysctl --cat-config`, writing `zz-rhel9-stig-full.conf`)
+- `lint_checks.py` FIX-STRUCTURE / FIX-NOT-WIRED enforce the above
+
 ## Verification loop
 
 ```bash
@@ -158,7 +178,9 @@ Test hosts (`demoserver` group): `stigging-sandbox3` is deliberately unhardened 
 fapolicyd plus `noexec` on `/home`, `/tmp`, `/var/tmp` means Ansible cannot drop
 and execute a module file, and every module fails without it. It is set per-host
 in `hosts`. Validate is read-only: it runs only the assessment shells. Test
-`remediate` with `-- --check` (the formal role honours check mode).
+`remediate` with `-- --check` first, then for real, then again (must be
+changed=0). Both demoserver hosts are dedicated test VMs, safe to break
+(rebuilds just cost the owner time; delta-bindtest runs test containers).
 
 ## Revision bump procedure
 

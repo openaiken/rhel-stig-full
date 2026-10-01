@@ -1,0 +1,51 @@
+---
+# RHEL-09-253035 | V-257962 | fix
+# RHEL 9 must use reverse path filtering on all IPv4 interfaces.
+# CAT II (Medium)
+#
+# Sets net.ipv4.conf.all.rp_filter = 1 now and persists it in
+# /etc/sysctl.d/zz-rhel9-stig-full.conf, named to load after every numbered
+# file and /etc/sysctl.conf; fails if a later file still overrides it.
+# ignoreerrors skips a key this kernel does not have (e.g. IPv6 disabled); the
+# re-check then still reports it.
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-253035 | fix
+  block:
+    - name: RHEL-09-253035 | set net.ipv4.conf.all.rp_filter = 1
+      ansible.posix.sysctl:
+        name: net.ipv4.conf.all.rp_filter
+        value: '1'
+        sysctl_file: /etc/sysctl.d/zz-rhel9-stig-full.conf
+        sysctl_set: true
+        reload: false
+        ignoreerrors: true
+        state: present
+      register: _253035_fix
+
+    - name: RHEL-09-253035 | read the value that wins at boot
+      ansible.builtin.shell: |
+        /usr/lib/systemd/systemd-sysctl --cat-config 2>/dev/null \
+          | grep -E '^[[:space:]]*-?net[.]ipv4[.]conf[.]all[.]rp_filter[[:space:]]*=' | tail -1 | cut -d= -f2- \
+          | sed 's/^[[:space:]]*//;s/[[:space:]]*$//'
+      register: _253035_boot
+      changed_when: false
+      failed_when: false
+      check_mode: false
+      when: not ansible_check_mode
+
+    - name: RHEL-09-253035 | fail if another file overrides it at boot
+      ansible.builtin.fail:
+        msg: "net.ipv4.conf.all.rp_filter was set, but the last value in the sysctl configuration is {{ _253035_boot.stdout | trim | default('(none)', true) }}, so it reverts at boot"
+      when: not ansible_check_mode and (_253035_boot.stdout | trim) != '1'
+
+    - name: RHEL-09-253035 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-253035'] }}"
+      when: (_253035_fix is changed)
+  rescue:
+    - name: RHEL-09-253035 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-253035': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-253035'] }}"

@@ -1,0 +1,34 @@
+---
+# RHEL-09-232075 | V-257895 | fix
+# RHEL 9 /etc/passwd file must have mode 0644 or less permissive to prevent
+# unauthorized access.
+# CAT II (Medium)
+#
+# Sets mode 'u-sx,g-swx,o-twx' on /etc/passwd (removes only the bits 0644
+# forbids, so a stricter mode is kept); skipped if the file does not exist.
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-232075 | fix
+  block:
+    - name: RHEL-09-232075 | look for /etc/passwd
+      ansible.builtin.stat:
+        path: /etc/passwd
+      register: _232075_stat
+
+    - name: RHEL-09-232075 | set mode 'u-sx,g-swx,o-twx' on /etc/passwd
+      ansible.builtin.file:
+        path: /etc/passwd
+        mode: 'u-sx,g-swx,o-twx'
+      when: _232075_stat.stat.exists
+      register: _232075_fix
+
+    - name: RHEL-09-232075 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232075'] }}"
+      when: (_232075_fix is changed)
+  rescue:
+    - name: RHEL-09-232075 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-232075': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232075'] }}"

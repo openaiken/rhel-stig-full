@@ -1,0 +1,26 @@
+---
+# RHEL-09-653130 | V-258175 | fix
+# RHEL 9 audispd-plugins package must be installed.
+# CAT II (Medium)
+#
+# Installs audispd-plugins.
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-653130 | fix
+  block:
+    - name: RHEL-09-653130 | install audispd-plugins
+      ansible.builtin.dnf:
+        name: audispd-plugins
+        state: present
+      register: _653130_fix
+
+    - name: RHEL-09-653130 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-653130'] }}"
+      when: (_653130_fix is changed)
+  rescue:
+    - name: RHEL-09-653130 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-653130': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-653130'] }}"

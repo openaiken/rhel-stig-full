@@ -1,0 +1,26 @@
+---
+# RHEL-09-215075 | V-257838 | fix
+# RHEL 9 must have the openssl-pkcs11 package installed.
+# CAT II (Medium)
+#
+# Installs openssl-pkcs11.
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-215075 | fix
+  block:
+    - name: RHEL-09-215075 | install openssl-pkcs11
+      ansible.builtin.dnf:
+        name: openssl-pkcs11
+        state: present
+      register: _215075_fix
+
+    - name: RHEL-09-215075 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-215075'] }}"
+      when: (_215075_fix is changed)
+  rescue:
+    - name: RHEL-09-215075 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-215075': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-215075'] }}"

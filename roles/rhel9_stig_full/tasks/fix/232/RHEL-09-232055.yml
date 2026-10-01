@@ -1,0 +1,34 @@
+---
+# RHEL-09-232055 | V-257891 | fix
+# RHEL 9 /etc/group file must have mode 0644 or less permissive to prevent
+# unauthorized access.
+# CAT II (Medium)
+#
+# Sets mode 'u-sx,g-swx,o-twx' on /etc/group (removes only the bits 0644
+# forbids, so a stricter mode is kept); skipped if the file does not exist.
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-232055 | fix
+  block:
+    - name: RHEL-09-232055 | look for /etc/group
+      ansible.builtin.stat:
+        path: /etc/group
+      register: _232055_stat
+
+    - name: RHEL-09-232055 | set mode 'u-sx,g-swx,o-twx' on /etc/group
+      ansible.builtin.file:
+        path: /etc/group
+        mode: 'u-sx,g-swx,o-twx'
+      when: _232055_stat.stat.exists
+      register: _232055_fix
+
+    - name: RHEL-09-232055 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232055'] }}"
+      when: (_232055_fix is changed)
+  rescue:
+    - name: RHEL-09-232055 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-232055': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232055'] }}"

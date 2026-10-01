@@ -1,0 +1,32 @@
+---
+# RHEL-09-212025 | V-257790 | fix
+# RHEL 9 /boot/grub2/grub.cfg file must be group-owned by root.
+# CAT II (Medium)
+#
+# Sets group root on /boot/grub2/grub.cfg; skipped if the file does not exist.
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-212025 | fix
+  block:
+    - name: RHEL-09-212025 | look for /boot/grub2/grub.cfg
+      ansible.builtin.stat:
+        path: /boot/grub2/grub.cfg
+      register: _212025_stat
+
+    - name: RHEL-09-212025 | set group root on /boot/grub2/grub.cfg
+      ansible.builtin.file:
+        path: /boot/grub2/grub.cfg
+        group: root
+      when: _212025_stat.stat.exists
+      register: _212025_fix
+
+    - name: RHEL-09-212025 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-212025'] }}"
+      when: (_212025_fix is changed)
+  rescue:
+    - name: RHEL-09-212025 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-212025': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-212025'] }}"
