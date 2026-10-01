@@ -1,0 +1,35 @@
+---
+# RHEL-09-653100 | V-258169 | fix
+# RHEL 9 must produce audit records containing information to establish the
+# identity of any individual or process associated with the event.
+# CAT II (Medium)
+#
+# Sets log_format = ENRICHED (the STIG fix value) in /etc/audit/auditd.conf,
+# replacing the last log_format line (the one in effect), and has auditd
+# reread its configuration.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-653100 | fix
+  block:
+    - name: RHEL-09-653100 | set log_format
+      ansible.builtin.lineinfile:
+        path: /etc/audit/auditd.conf
+        regexp: '^[ \t]*log_format[ \t]*='
+        line: 'log_format = ENRICHED'
+      register: _653100_fix
+
+    - name: RHEL-09-653100 | have auditd reread its configuration
+      ansible.builtin.command: auditctl --signal reload
+      when: _653100_fix is changed
+
+    - name: RHEL-09-653100 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-653100'] }}"
+      when: (_653100_fix is changed)
+  rescue:
+    - name: RHEL-09-653100 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-653100': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-653100'] }}"

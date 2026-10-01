@@ -231,6 +231,12 @@
 - import_tasks: fix/232/RHEL-09-232100.yml
   when: (stig_rules['RHEL-09-232100'] | default(true) | bool) and ((stig_facts['RHEL-09-232100'] | default({})).status | default('') == 'open')
 
+- import_tasks: fix/232/RHEL-09-232103.yml
+  when: (stig_rules['RHEL-09-232103'] | default(true) | bool) and ((stig_facts['RHEL-09-232103'] | default({})).status | default('') == 'open')
+
+- import_tasks: fix/232/RHEL-09-232104.yml
+  when: (stig_rules['RHEL-09-232104'] | default(true) | bool) and ((stig_facts['RHEL-09-232104'] | default({})).status | default('') == 'open')
+
 - import_tasks: fix/232/RHEL-09-232105.yml
   when: (stig_rules['RHEL-09-232105'] | default(true) | bool) and ((stig_facts['RHEL-09-232105'] | default({})).status | default('') == 'open')
 
@@ -675,6 +681,9 @@
 - import_tasks: fix/653/RHEL-09-653010.yml
   when: (stig_rules['RHEL-09-653010'] | default(true) | bool) and ((stig_facts['RHEL-09-653010'] | default({})).status | default('') == 'open')
 
+- import_tasks: fix/653/RHEL-09-653015.yml
+  when: (stig_rules['RHEL-09-653015'] | default(true) | bool) and ((stig_facts['RHEL-09-653015'] | default({})).status | default('') == 'open')
+
 - import_tasks: fix/653/RHEL-09-653020.yml
   when: (stig_rules['RHEL-09-653020'] | default(true) | bool) and ((stig_facts['RHEL-09-653020'] | default({})).status | default('') == 'open')
 
@@ -693,8 +702,38 @@
 - import_tasks: fix/653/RHEL-09-653050.yml
   when: (stig_rules['RHEL-09-653050'] | default(true) | bool) and ((stig_facts['RHEL-09-653050'] | default({})).status | default('') == 'open')
 
+- import_tasks: fix/653/RHEL-09-653055.yml
+  when: (stig_rules['RHEL-09-653055'] | default(true) | bool) and ((stig_facts['RHEL-09-653055'] | default({})).status | default('') == 'open')
+
 - import_tasks: fix/653/RHEL-09-653060.yml
   when: (stig_rules['RHEL-09-653060'] | default(true) | bool) and ((stig_facts['RHEL-09-653060'] | default({})).status | default('') == 'open')
+
+- import_tasks: fix/653/RHEL-09-653065.yml
+  when: (stig_rules['RHEL-09-653065'] | default(true) | bool) and ((stig_facts['RHEL-09-653065'] | default({})).status | default('') == 'open')
+
+- import_tasks: fix/653/RHEL-09-653070.yml
+  when: (stig_rules['RHEL-09-653070'] | default(true) | bool) and ((stig_facts['RHEL-09-653070'] | default({})).status | default('') == 'open')
+
+- import_tasks: fix/653/RHEL-09-653075.yml
+  when: (stig_rules['RHEL-09-653075'] | default(true) | bool) and ((stig_facts['RHEL-09-653075'] | default({})).status | default('') == 'open')
+
+- import_tasks: fix/653/RHEL-09-653080.yml
+  when: (stig_rules['RHEL-09-653080'] | default(true) | bool) and ((stig_facts['RHEL-09-653080'] | default({})).status | default('') == 'open')
+
+- import_tasks: fix/653/RHEL-09-653085.yml
+  when: (stig_rules['RHEL-09-653085'] | default(true) | bool) and ((stig_facts['RHEL-09-653085'] | default({})).status | default('') == 'open')
+
+- import_tasks: fix/653/RHEL-09-653090.yml
+  when: (stig_rules['RHEL-09-653090'] | default(true) | bool) and ((stig_facts['RHEL-09-653090'] | default({})).status | default('') == 'open')
+
+- import_tasks: fix/653/RHEL-09-653095.yml
+  when: (stig_rules['RHEL-09-653095'] | default(true) | bool) and ((stig_facts['RHEL-09-653095'] | default({})).status | default('') == 'open')
+
+- import_tasks: fix/653/RHEL-09-653100.yml
+  when: (stig_rules['RHEL-09-653100'] | default(true) | bool) and ((stig_facts['RHEL-09-653100'] | default({})).status | default('') == 'open')
+
+- import_tasks: fix/653/RHEL-09-653105.yml
+  when: (stig_rules['RHEL-09-653105'] | default(true) | bool) and ((stig_facts['RHEL-09-653105'] | default({})).status | default('') == 'open')
 
 - import_tasks: fix/653/RHEL-09-653110.yml
   when: (stig_rules['RHEL-09-653110'] | default(true) | bool) and ((stig_facts['RHEL-09-653110'] | default({})).status | default('') == 'open')

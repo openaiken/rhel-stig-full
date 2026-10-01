@@ -1,0 +1,29 @@
+---
+# RHEL-09-653015 | V-258152 | fix
+# RHEL 9 audit service must be enabled.
+# CAT II (Medium)
+#
+# Enables and starts auditd (installed by the RHEL-09-653010 fix). auditd
+# refuses a manual stop, but start and enable work normally.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-653015 | fix
+  block:
+    - name: RHEL-09-653015 | enable and start auditd
+      ansible.builtin.systemd_service:
+        name: auditd
+        enabled: true
+        state: started
+      register: _653015_fix
+
+    - name: RHEL-09-653015 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-653015'] }}"
+      when: (_653015_fix is changed)
+  rescue:
+    - name: RHEL-09-653015 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-653015': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-653015'] }}"

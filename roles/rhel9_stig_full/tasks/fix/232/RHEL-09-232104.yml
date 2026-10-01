@@ -1,0 +1,28 @@
+---
+# RHEL-09-232104 | V-270176 | fix
+# RHEL 9 "/etc/audit/" must be group-owned by root.
+# CAT II (Medium)
+#
+# Sets the group of /etc/audit to root.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-232104 | fix
+  block:
+    - name: RHEL-09-232104 | set the group of /etc/audit to root
+      ansible.builtin.file:
+        path: /etc/audit
+        group: root
+        state: directory
+      register: _232104_fix
+
+    - name: RHEL-09-232104 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232104'] }}"
+      when: (_232104_fix is changed)
+  rescue:
+    - name: RHEL-09-232104 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-232104': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-232104'] }}"

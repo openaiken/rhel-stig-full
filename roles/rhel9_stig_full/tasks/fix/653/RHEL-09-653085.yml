@@ -1,0 +1,41 @@
+---
+# RHEL-09-653085 | V-258166 | fix
+# RHEL 9 audit log directory must be owned by root to prevent unauthorized
+# read access.
+# CAT II (Medium)
+#
+# Sets the owner of the audit log directory (the directory of log_file in
+# auditd.conf) to root.
+#
+# Runs only when the check reported open (tasks/remediate.yml); the rule is
+# re-checked afterwards. A failure is recorded, not fatal.
+
+- name: RHEL-09-653085 | fix
+  block:
+    - name: RHEL-09-653085 | read the audit log location and group from auditd.conf
+      ansible.builtin.shell: |
+        f=$(awk -F= '$1 ~ /^[[:space:]]*log_file[[:space:]]*$/ { v = $2 } END { gsub(/[[:space:]]/, "", v); print v }' /etc/audit/auditd.conf)
+        g=$(awk -F= '$1 ~ /^[[:space:]]*log_group[[:space:]]*$/ { v = $2 } END { gsub(/[[:space:]]/, "", v); print v }' /etc/audit/auditd.conf)
+        echo "${f:-/var/log/audit/audit.log}"
+        echo "${g:-root}"
+      register: _653085_conf
+      changed_when: false
+      failed_when: false
+      check_mode: false
+
+    - name: RHEL-09-653085 | own the audit log directory by root
+      ansible.builtin.file:
+        path: "{{ _653085_conf.stdout_lines[0] | dirname }}"
+        owner: root
+        state: directory
+      register: _653085_fix
+
+    - name: RHEL-09-653085 | note that the rule changed
+      ansible.builtin.set_fact:
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-653085'] }}"
+      when: (_653085_fix is changed)
+  rescue:
+    - name: RHEL-09-653085 | record the failed fix; re-check, since it may have changed something
+      ansible.builtin.set_fact:
+        stig_fix_errors: "{{ stig_fix_errors | combine({'RHEL-09-653085': ansible_failed_result.msg | default('fix failed')}) }}"
+        stig_fixed: "{{ stig_fixed + ['RHEL-09-653085'] }}"
