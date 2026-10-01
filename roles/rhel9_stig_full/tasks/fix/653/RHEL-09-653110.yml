@@ -9,11 +9,43 @@
 # /etc/audit/audit.rules and every file in /etc/audit/rules.d/, leaving each
 # at 0600 or stricter.
 #
+# augenrules rewrites /etc/audit/audit.rules with mode 0640 every time it
+# loads, and auditd.service runs it at every start, so the host fell out of
+# compliance at each boot. An auditd.service drop-in adds ExecStartPost=chmod
+# 0600 after the vendor augenrules step (drop-in ExecStartPost lines run after
+# the unit file ones).
+#
 # Runs only when the check reported open (tasks/remediate.yml); the rule is
 # re-checked afterwards. A failure is recorded, not fatal.
 
 - name: RHEL-09-653110 | fix
   block:
+    - name: RHEL-09-653110 | create the auditd.service drop-in directory
+      ansible.builtin.file:
+        path: /etc/systemd/system/auditd.service.d
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    - name: RHEL-09-653110 | keep audit.rules at 0600 after augenrules runs at auditd start
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/auditd.service.d/zz-rhel9-stig-full.conf
+        content: |
+          # Managed by rhel9_stig_full (RHEL-09-653110): augenrules leaves
+          # /etc/audit/audit.rules at 0640; the STIG requires 0600.
+          [Service]
+          ExecStartPost=-/usr/bin/chmod 0600 /etc/audit/audit.rules
+        owner: root
+        group: root
+        mode: '0644'
+      register: _653110_dropin
+
+    - name: RHEL-09-653110 | reload systemd
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+      when: _653110_dropin is changed
+
     - name: RHEL-09-653110 | find the audit rules files
       ansible.builtin.find:
         paths: /etc/audit/rules.d
@@ -30,7 +62,7 @@
     - name: RHEL-09-653110 | note that the rule changed
       ansible.builtin.set_fact:
         stig_fixed: "{{ stig_fixed + ['RHEL-09-653110'] }}"
-      when: (_653110_fix is changed)
+      when: (_653110_dropin is changed) or (_653110_fix is changed)
   rescue:
     - name: RHEL-09-653110 | record the failed fix; re-check, since it may have changed something
       ansible.builtin.set_fact:

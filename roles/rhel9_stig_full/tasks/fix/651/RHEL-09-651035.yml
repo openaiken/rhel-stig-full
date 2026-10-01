@@ -9,10 +9,11 @@
 # xattrs (an earlier -xattrs, as in LOG-xattrs-n, does not count), as the STIG
 # fix says (xattrs on all uncommented selection lists). Appending last means a
 # macro that removes it (e.g. LOG-...) cannot win. Exclusion lines (!/path)
-# carry no rule and are left alone. The AIDE database is not rebuilt
-# here.\n\nReview: this widens what AIDE records for every selection, logs
-# included; the STIG suggests excluding frequently changing files, which is a
-# site decision.
+# carry no rule and are left alone. The AIDE database is not rebuilt here.
+#
+# Review: this widens what AIDE records for every selection, logs included;
+# the STIG suggests excluding frequently changing files, which is a site
+# decision.
 #
 # Runs only when the check reported open (tasks/remediate.yml); the rule is
 # re-checked afterwards. A failure is recorded, not fatal.

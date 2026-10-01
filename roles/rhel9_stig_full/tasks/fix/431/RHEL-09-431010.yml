@@ -8,9 +8,10 @@
 # (ansible.posix.selinux, targeted policy). If SELinux was disabled it cannot
 # be enabled without a reboot: /.autorelabel is created so the file system is
 # relabeled on that boot (booting enforcing on an unlabeled system can fail),
-# and the fix records that a reboot is required.\n\nReview: enforcing mode can
-# stop software that runs with an unconfined or wrong label; check the audit
-# log for AVC denials after.
+# and the fix records that a reboot is required.
+#
+# Review: enforcing mode can stop software that runs with an unconfined or
+# wrong label; check the audit log for AVC denials after.
 #
 # Runs only when the check reported open (tasks/remediate.yml); the rule is
 # re-checked afterwards. A failure is recorded, not fatal.
