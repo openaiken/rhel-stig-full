@@ -59,6 +59,8 @@ CHECKS = {
     "JINJA-COMMENT": "'{#' opens a Jinja comment (e.g. bash ${#arr[@]}); Ansible fails to parse the role",
     "JINJA-QUANTIFIER":
                     "'{{' before a digit: a regex quantifier such as {{3,4}} that Jinja renders as a tuple",
+    "XARGS-BRACES":
+                    "xargs -I{} replaces every {} in the command, including a later find -exec ... {}",
     "FIX-STRUCTURE":
                     "fix file lacks block/rescue, or does not queue its rule for re-check",
     "FIX-NOT-WIRED":
@@ -288,6 +290,17 @@ def lint(sid, path):
     for i, l in enumerate(lines, 1):
         if re.search(r"\{\{\s*\d", l):
             hits.append(("JINJA-QUANTIFIER", i, l.strip()[:70]))
+
+    # C6g: xargs -I{} substitutes the input for every {} in its command, so a
+    # find -exec stat {} after it acted on the xargs input (232240 reported
+    # the mount point instead of the directory it found).
+    for i, l in enumerate(lines, 1):
+        m = re.search(r"xargs\s+-I\s*(\S+)\s(.*)", l)
+        if m and m.group(1) == "{}" and re.search(r"-exec\b[^|]*\{\}", m.group(2)):
+            hits.append(("XARGS-BRACES", i, l.strip()[:70]))
+        elif m and m.group(1) != "{}" and m.group(1) in m.group(2).split("|")[0].replace(m.group(1), "", 1):
+            # the replacement string also occurs elsewhere (e.g. -I% with stat -c '%n')
+            hits.append(("XARGS-BRACES", i, l.strip()[:70]))
 
     # C6b: "{#" anywhere opens a Jinja comment. Bash ${#var} / ${#arr[@]} is the
     # usual culprit. Ansible then cannot split the task's arguments and the

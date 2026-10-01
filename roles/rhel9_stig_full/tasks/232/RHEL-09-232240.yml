@@ -10,7 +10,7 @@
 
 - name: RHEL-09-232240 | find world-writable directories owned by UID >= 1000
   shell: >-
-    df --local -P | awk 'NR > 1 {print $6}' | xargs -I{} find {} -xdev -type d -perm -0002 -uid +999 -exec stat -c '%U, %u, %A, %n' {} \; 2>/dev/null | head -40 || true
+    df --local -P | awk 'NR > 1 {print $6}' | xargs -I MNT find MNT -xdev -type d -perm -0002 -uid +999 -exec stat -c '%U, %u, %A, %n' {} \; 2>/dev/null | head -40 || true
   register: _232240_result
   changed_when: false
   failed_when: false
