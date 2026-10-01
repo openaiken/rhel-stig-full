@@ -148,8 +148,9 @@ def fix_wiring(fixes):
             ce, fe = _expected(os.path.join(TASKS, cat, sid + ".yml")), _expected(p)
             if fe is not None and ce != fe:
                 hits.setdefault(key, []).append(("FIX-AUDIT-DRIFT", 0, "expected rules differ from the check's"))
-        if f"stig_facts['{sid}']" not in cond or "== 'open'" not in cond or f"stig_rules['{sid}']" not in cond:
-            hits.setdefault(key, []).append(("FIX-NOT-WIRED", 0, "import not gated on toggle and open status"))
+        if (f"stig_facts['{sid}']" not in cond or "== 'open'" not in cond or f"stig_rules['{sid}']" not in cond
+                or f"'{sid}' not in (stig_fix_skip" not in cond):
+            hits.setdefault(key, []).append(("FIX-NOT-WIRED", 0, "import not gated on toggle, stig_fix_skip and open status"))
     for sid in imported:
         hits.setdefault("fix:" + sid, []).append(("FIX-NOT-WIRED", 0, "imported, but no fix file"))
     return hits
